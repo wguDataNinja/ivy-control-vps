@@ -4,16 +4,14 @@ This file tracks approved follow-up work for IvyControlVPS. Keep entries concise
 
 ## Next
 
-- Define the detailed local implementation agent contract for OpenCode, Codex, and similar agents.
-- Define the provisional VPS/Hermes orchestration contract.
-- Resolve the actual VPS checkout path and private-context model only when known.
+- Define the provisional VPS/Hermes orchestration contract. The actual VPS checkout path, deployment mechanism, credential model, destructive/production permissions, and private-context provisioning model remain unknown and must not be resolved in this task.
+
+## Later
+
 - Define logging retention and periodic review automation.
 - Define the repository-admission process.
 - Define the portfolio-level LLM strategy.
 - Define the planned daily documentation loop and its pull-request workflow.
-
-## Later
-
 - Define repo-specific templates only after validating them against real repository needs.
 - Decide whether a license should be added.
 - Decide whether any private MacBook context should be provisioned to the VPS for Hermes.

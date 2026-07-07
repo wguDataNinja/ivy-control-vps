@@ -1,5 +1,3 @@
-
-
 # Agent Entry Point
 
 This repository supports two distinct agent execution contexts. The repository path is the primary routing signal.
@@ -30,11 +28,8 @@ This context is for local implementation agents such as OpenCode or Codex perfor
 
 Local implementation agents must:
 
-- read `README.md`, `docs/README.md`, and applicable standards (`docs/LOGGING_STANDARD.md`, `docs/GIT_WORKFLOW.md`) before making changes;
+- read and follow the detailed contract in `agents/LOCAL_IMPLEMENTATION.md`;
 - inspect `internal/README_INTERNAL.md` when it is available locally;
-- keep public tracked files publication-safe;
-- keep private notes and session material under ignored `internal/` paths;
-- create or update a concise agent log for meaningful work as required by `docs/LOGGING_STANDARD.md`;
 - avoid VPS operational changes unless the task explicitly grants that authority;
 - report unresolved ambiguity, failed validation, and process friction rather than inventing policy.
 
