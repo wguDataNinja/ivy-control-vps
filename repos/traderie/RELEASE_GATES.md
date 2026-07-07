@@ -1,6 +1,6 @@
 # Traderie — Release Gates
 
-**Authority:** ivy-control-vps — this file is the single source of gate decisions for Traderie.
+**Authority:** ivy-control-vps — gate decisions are owned by the control plane. The active governance authority is `repos/traderie/CONTROL.md`. This file records the detailed gate evidence.
 **Approved SHA:** `b3b70a01426694d06d6c07a09f0c33427f530f0d`
 **Date:** 2026-07-07
 

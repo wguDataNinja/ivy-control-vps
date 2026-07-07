@@ -1,6 +1,9 @@
 # Traderie — VPS Status
 
-**Purpose:** Single source of current operational state for ivy-control agents.
+> **DEPRECATED** — replaced by `repos/traderie/CONTROL.md` as the active governance authority.
+> Retained as historical reference. Not updated. See `CONTROL.md` for current state.
+
+**Purpose:** (Historical) Former single source of operational state.
 **Canonical repo:** `github.com/wguDataNinja/d2-market-helper` (public)
 **Local path:** `/Users/buddy/projects/traderie`
 **Release gates:** `repos/traderie/RELEASE_GATES.md`
