@@ -6,6 +6,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 
 | Document | Purpose |
 |----------|---------|
+| [`AGENTS.md`](../AGENTS.md) | Agent entry point — path-based router to local or VPS context |
 | [`README.md`](../README.md) | Public repository overview — purpose, current stage, design principles |
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
 | [`LOGGING_STANDARD.md`](LOGGING_STANDARD.md) | Three-layer logging standard — machine/runtime, agent work, and GPT/planning logs |
