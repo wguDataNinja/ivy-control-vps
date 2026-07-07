@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Define the logging layers used across the IvyControlVPS portfolio. Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
+Define the logging layers used across the IvyControlVPS portfolio and make the requirements discoverable to agents through the repository entry point. Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
 
 ## Layer 1: Machine and runtime logs
 
@@ -54,6 +54,10 @@ An agent log is required whenever an agent performs meaningful work that changes
 - Identify the task or agent clearly.
 - Create or update the log before the agent declares meaningful work complete.
 
+- `AGENTS.md` or the applicable agent contract should route agents to this standard before meaningful work begins.
+- When requested, include concise process feedback covering friction, unclear instructions, missing prerequisites, or possible improvements.
+- Do not treat a missing log as agent failure when the logging requirement was not yet written or discoverable at the time of the work.
+
 ### Provisional path convention
 
 ```
@@ -88,6 +92,14 @@ internal/logs/gpt/YYYY-MM-DD/<session-slug>.md
 - Logs are evidence and source material, not automatically authoritative policy.
 - Secrets should not be stored in these logs merely because they are private.
 
+- Each session log should begin with a short meta section defining its purpose and structure.
+- A recommended structure is: Context, Approved decisions, Work completed, Process observations, Unresolved items, Items to promote later, and Next-session handoff.
+- Keep session logs concise and avoid duplicating Git history, implementation reports, or public documentation unless an undocumented decision or process lesson is attached.
+- Flag uncertainty rather than guessing.
+- MacBook-private session logs are not automatically copied to the VPS; only material needed for VPS or Hermes operations should later be promoted or provisioned deliberately.
+
 ### Session close review
 
 GPT planning sessions should normally be closed using the [session-close workflow](../workflows/session-close.md) before the resulting private record is saved.
+
+The resulting record should be saved under the GPT/planning-session path above unless a more specific private location has been approved.
