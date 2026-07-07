@@ -39,7 +39,7 @@ The following high-level direction is agreed:
 - Hermes is expected to orchestrate work across managed repositories.
 - Hermes may invoke narrowly defined agents.
 - Workflows should be defined independently of any single provider or model.
-- Agent permissions, routing, and repository-local contracts are still pending.
+A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHESTRATION.md`. The actual VPS path, deployment mechanism, credentials, destructive permissions, and private-context provisioning remain unresolved.
 
 ## Documentation maintenance
 
@@ -57,7 +57,7 @@ The following areas are identified as requiring standards that have not yet been
 
 - **Git workflow** — initial standard defined in `docs/GIT_WORKFLOW.md` (provisional). Repository protection settings, VPS deployment details, and Hermes permissions remain pending.
 - **Logging standard** — initial three-layer model defined in `docs/LOGGING_STANDARD.md` (provisional). Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
-- **Agent/Hermes contract** — agent capabilities, permissions, and communication protocol.
+- **VPS/Hermes orchestration contract** — provisional contract defined in `agents/VPS_ORCHESTRATION.md`. The actual VPS path, deployment mechanism, credentials, destructive permissions, and private-context provisioning remain unresolved.
 - **Repository admission process** — criteria and gate for onboarding a new project.
 - **Portfolio-level LLM strategy** — when and how LLMs are used operationally.
 - **Repository-specific templates** — conventions for `README.md`, `AGENTS.md`, `.gitignore`, and other files tailored to project types.

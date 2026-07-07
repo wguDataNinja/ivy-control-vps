@@ -53,7 +53,9 @@ This context is intended for Hermes and agents invoked by Hermes for:
 - deployment coordination;
 - bounded operational actions.
 
-The detailed Hermes contract, permissions, routing rules, approval boundaries, deployment authority, and VPS-private context model are not yet finalized.
+Read and follow the provisional orchestration contract in `agents/VPS_ORCHESTRATION.md`.
+
+The detailed Hermes permissions, approval boundaries, deployment authority, and VPS-private context model are not yet finalized.
 
 Until those standards are approved, an agent running in the VPS context must not assume unrestricted authority. It must stop before destructive, production-changing, policy-changing, credential-related, or self-merging actions unless the task and an approved standard explicitly authorize them.
 
