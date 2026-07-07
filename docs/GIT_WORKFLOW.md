@@ -6,7 +6,7 @@
 
 - The public repository at `/Users/buddy/projects/ivy-control-vps` contains only material that may be pushed to GitHub.
 - Private notes live at `/Users/buddy/projects/ivy-control-vps/_internal/`.
-- `_internal/` is excluded locally (`.git/info/exclude` plus pre-commit and pre-push hooks) and must not be tracked by the public repository.
+- `_internal/` is excluded via `.gitignore` plus pre-commit and pre-push hooks, and must not be tracked by the public repository. It remains visible on disk and in the editor — ignored does not mean hidden.
 - `_internal/` must be its own local Git repository with no remote configured.
 - Public and private history must remain physically and logically separate.
 - Agents must not self-merge unless a task explicitly authorizes a bounded integration.
@@ -241,12 +241,21 @@ The following are prohibited without Buddy's explicit approval for the exact com
 
 The following local protections are in place:
 
-- `.git/info/exclude` — excludes `_internal/` from the public repository working tree.
+- `.gitignore` (root-anchored `/_internal/`) — excludes `_internal/` from the public repository working tree. Ignored does not mean hidden; `_internal/` remains visible on disk and in the editor.
 - `.git/hooks/pre-commit` — blocks any public commit that stages `_internal/` paths.
 - `.git/hooks/pre-push` — blocks any public push whose outgoing history contains `_internal/` paths.
 - `_internal/.git/hooks/pre-push` — blocks all pushes from the private repository.
 
 Back up the private repository separately. A local Git repository without a remote protects history from ordinary edits, but not from disk loss or destructive shell commands.
+
+## Private repository visibility and recovery
+
+`_internal/` is ignored by public Git but intentionally visible on disk and in the editor:
+
+- It is an independent no-remote private Git repository. Commands that affect it must be run from inside `_internal/`.
+- If a tracked private file is deleted from the working tree, it can be recovered from the private repository: `cd _internal && git restore <file>`.
+- Public Git commands (`git add`, `git commit`, `git push` from the parent `ivy-control-vps` directory) must never be used as a substitute for managing private history.
+- The private repository has no remote and its pre-push hook blocks all pushes. It is not backed up by GitHub.
 
 ## Legacy `internal/` path
 

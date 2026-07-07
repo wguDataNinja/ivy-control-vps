@@ -1,5 +1,6 @@
 # Entire private working tree — design notes, session logs, draft decisions
 internal/
+/_internal/
 
 # Secrets
 .env

@@ -16,7 +16,7 @@ Private working material belongs under `_internal/` (the canonical path). Legacy
 
 `_internal/`:
 - Is a separate local-only Git repository with no remote.
-- Is excluded from the public repository via local exclusion and pre-commit/pre-push hooks.
+- Is excluded from the public repository via `.gitignore` and pre-commit/pre-push hooks. It remains visible on disk — ignoring is not hiding.
 - May contain private operating notes, draft decisions, publication notes, and session logs.
 - Is authoritative only according to the future private-note policy.
 - Must not contain secrets merely because it is private.
