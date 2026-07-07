@@ -30,7 +30,7 @@ The following high-level direction is agreed:
 - Agents should not merge their own work.
 - Direct production edits are not the intended workflow.
 
-A detailed Git standard is still pending.
+An initial Git workflow is defined in `docs/GIT_WORKFLOW.md` (provisional). Repository protection settings, VPS deployment details, and Hermes permissions remain explicitly unresolved.
 
 ## Hermes and agents
 
@@ -55,7 +55,7 @@ A daily documentation loop is planned but not yet implemented. The intended work
 
 The following areas are identified as requiring standards that have not yet been drafted or resolved:
 
-- **Git workflow** — branch naming, commit conventions, merge policy.
+- **Git workflow** — initial standard defined in `docs/GIT_WORKFLOW.md` (provisional). Repository protection settings, VPS deployment details, and Hermes permissions remain pending.
 - **Logging standard** — initial three-layer model defined in `docs/LOGGING_STANDARD.md` (provisional). Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
 - **Agent/Hermes contract** — agent capabilities, permissions, and communication protocol.
 - **Repository admission process** — criteria and gate for onboarding a new project.

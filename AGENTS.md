@@ -10,7 +10,8 @@ Before performing any write, deployment, maintenance, or operational action:
 2. Match the current repository path to one of the approved contexts below.
 3. Read the required context-specific instructions before continuing.
 4. Follow the repository logging standard in `docs/LOGGING_STANDARD.md`.
-5. If the path or assigned role is ambiguous, stop and report the ambiguity.
+5. Follow the repository Git workflow in `docs/GIT_WORKFLOW.md`.
+6. If the path or assigned role is ambiguous, stop and report the ambiguity.
 
 ## Local implementation context
 
@@ -29,7 +30,7 @@ This context is for local implementation agents such as OpenCode or Codex perfor
 
 Local implementation agents must:
 
-- read `README.md`, `docs/README.md`, and applicable standards before making changes;
+- read `README.md`, `docs/README.md`, and applicable standards (`docs/LOGGING_STANDARD.md`, `docs/GIT_WORKFLOW.md`) before making changes;
 - inspect `internal/README_INTERNAL.md` when it is available locally;
 - keep public tracked files publication-safe;
 - keep private notes and session material under ignored `internal/` paths;

@@ -9,6 +9,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`README.md`](../README.md) | Public repository overview — purpose, current stage, design principles |
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
 | [`LOGGING_STANDARD.md`](LOGGING_STANDARD.md) | Three-layer logging standard — machine/runtime, agent work, and GPT/planning logs |
+| [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Initial Git workflow — branch naming, commits, PRs, agents, VPS provisional rules |
 | [`../workflows/session-close.md`](../workflows/session-close.md) | Workflow for closing a session without losing important decisions |
 
 ## Future documentation
@@ -20,4 +21,5 @@ Deeper workflow documents, project-specific standards, and process guides will b
 1. `README.md` — what this repository is and is not
 2. `OPERATING_MODEL.md` — how the repository and portfolio are governed
 3. `LOGGING_STANDARD.md` — logging conventions for machine, agent, and planning work
-4. `workflows/session-close.md` — closeout workflow (useful after any session)
+4. `GIT_WORKFLOW.md` — branch naming, commit messages, PRs, agent rules
+5. `workflows/session-close.md` — closeout workflow (useful after any session)
