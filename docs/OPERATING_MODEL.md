@@ -56,7 +56,7 @@ A daily documentation loop is planned but not yet implemented. The intended work
 The following areas are identified as requiring standards that have not yet been drafted or resolved:
 
 - **Git workflow** — branch naming, commit conventions, merge policy.
-- **Logging standard** — structured logging format, retention, and aggregation.
+- **Logging standard** — initial three-layer model defined in `docs/LOGGING_STANDARD.md` (provisional). Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
 - **Agent/Hermes contract** — agent capabilities, permissions, and communication protocol.
 - **Repository admission process** — criteria and gate for onboarding a new project.
 - **Portfolio-level LLM strategy** — when and how LLMs are used operationally.
