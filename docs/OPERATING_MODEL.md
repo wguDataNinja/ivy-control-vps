@@ -41,6 +41,9 @@ The following high-level direction is agreed:
 - Hermes is expected to orchestrate work across managed repositories.
 - Hermes may invoke narrowly defined agents.
 - Workflows should be defined independently of any single provider or model.
+
+Portfolio-level principles for designing LLM workflows are defined in `docs/LLM_TENETS.md`. These tenets establish the baseline for auditable interfaces, constrained workflows, model portability, minimal context, and deterministic preprocessing.
+
 A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHESTRATION.md`. The actual VPS path, deployment mechanism, credentials, destructive permissions, and private-context provisioning remain unresolved.
 
 ## Documentation maintenance
@@ -61,7 +64,7 @@ The following areas are identified as requiring standards that have not yet been
 - **Logging standard** — initial three-layer model defined in `docs/LOGGING_STANDARD.md` (provisional). Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
 - **VPS/Hermes orchestration contract** — provisional contract defined in `agents/VPS_ORCHESTRATION.md`. The actual VPS path, deployment mechanism, credentials, destructive permissions, and private-context provisioning remain unresolved.
 - **Repository admission process** — criteria and gate for onboarding a new project.
-- **Portfolio-level LLM strategy** — when and how LLMs are used operationally.
+- **Portfolio-level LLM strategy** — foundational design tenets are defined in `docs/LLM_TENETS.md`. Operational adoption, benchmarking, provider interfaces, validation patterns, and repository-specific implementation remain pending.
 - **Repository-specific templates** — conventions for `README.md`, `AGENTS.md`, `.gitignore`, and other files tailored to project types.
 
 These items are explicitly pending and should not be treated as resolved until a standard is drafted, reviewed, and approved.
