@@ -10,8 +10,10 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
 | [`LOGGING_STANDARD.md`](LOGGING_STANDARD.md) | Three-layer logging standard — machine/runtime, agent work, and GPT/planning logs |
 | [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Initial Git workflow — branch naming, commits, PRs, agents, VPS provisional rules |
+| [`LLM_TENETS.md`](LLM_TENETS.md) | Design tenets for auditable, constrained, portable, and data-efficient LLM systems |
 | [`../agents/VPS_ORCHESTRATION.md`](../agents/VPS_ORCHESTRATION.md) | Provisional VPS/Hermes orchestration contract — role, delegation, approval boundaries, logging |
 | [`../workflows/session-close.md`](../workflows/session-close.md) | Workflow for closing a session without losing important decisions |
+| `repos/` | Per-project status files — current phase, gates, blockers, deployment state. Read by ivy-control agents before acting on a project. |
 
 ## Future documentation
 
@@ -23,4 +25,5 @@ Deeper workflow documents, project-specific standards, and process guides will b
 2. `OPERATING_MODEL.md` — how the repository and portfolio are governed
 3. `LOGGING_STANDARD.md` — logging conventions for machine, agent, and planning work
 4. `GIT_WORKFLOW.md` — branch naming, commit messages, PRs, agent rules
-5. `workflows/session-close.md` — closeout workflow (useful after any session)
+5. `LLM_TENETS.md` — system design principles for reliable, auditable LLM workflows
+6. `workflows/session-close.md` — closeout workflow (useful after any session)
