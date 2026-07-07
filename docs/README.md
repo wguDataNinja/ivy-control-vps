@@ -31,6 +31,36 @@ This index is the operational map for agents and maintainers working with IvyCon
    - `LLM_TENETS.md` — LLM system design principles
 5. Repository control sheet — `repos/<repo>/CONTROL.md` when working with a specific managed repository
 6. Detailed gate evidence or phase packet only when the task requires gate-specific detail
+7. For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures
+
+## Old-tree cross-reference
+
+The predecessor VPS authority tree at `ivy-control/vps/` (in the old `ivy-control` repository) contains documents that remain authoritative for this portfolio until promoted here. This table classifies every old-tree artifact:
+
+| Old path | Classification | New path or note |
+|----------|---------------|------------------|
+| `vps/vps-host.md` | PROMOTE NOW — canonical VPS host identity, workloads, disk state | `_internal/vps-inventory-and-runbook.md` (private) consolidates operational details |
+| `vps/shared-conventions.md` | PARTIALLY PROMOTED — §1-3, §5-7, §9-10, §12-17 not yet in new repo | `docs/PORTFOLIO_CONVENTIONS.md` contains promoted subset (§2-3 PG, §5 systemd, §6 health, §7 gates, §8 deploy stop) |
+| `vps/DEPLOYMENT_WORKFLOW.md` | PROMOTE NOW — canonical deployment workflow | No equivalent in new repo |
+| `vps/repo-operating-standard.md` | PARTIALLY PROMOTED — §1-5, §8 concepts incorporated | No direct equivalent for §1 required doc set, §9 Admission Gate |
+| `vps/github-readiness-checklist.md` | PROMOTE NOW — GitHub promotion gate | No equivalent in new repo |
+| `vps/IMPLEMENTATION_PROGRAM.md` | PROMOTE NOW — active work queue | No equivalent in new repo |
+| `vps/VPS_MIGRATION_STATUS.md` | PROMOTE NOW — per-repo migration tracker | No equivalent in new repo |
+| `vps/postgres/` (templates, env ref, project files) | KEEP PRIVATE / REFERENCE ONLY — inert templates, no secrets | Reference design; live state in DATABASE_AUTHORITY_GATE report |
+| `vps/worker-control/reports/` (19 reports) | PROMOTE NOW — active gate evidence, Git forensics, execution reports | No reports mechanism in new repo yet |
+| `vps/archive/` (full tree) | HISTORICAL EVIDENCE — well-organized, replacement authorities documented | Referenced only; not promoted |
+| `vps/README.md` | PARTIALLY PROMOTED — old VPS doc index | Concepts incorporated in this file |
+| `vps-worker-control/` | HISTORICAL EVIDENCE | Archived in old tree |
+
+**Key finding:** The old tree CANNOT yet be archived. Eight critical document classes lack equivalents in this repository. See `_internal/vps-inventory-and-runbook.md` §14 for the archive-readiness assessment.
+
+## VPS access
+
+VPS host identity, SSH access, workload map, current capacity evidence, and read-only assessment procedures are documented privately:
+
+`_internal/vps-inventory-and-runbook.md`
+
+Read this file before any VPS inspection work. It consolidates operational details from the authoritative old-tree documents and provides safe read-only inspection commands.
 
 ## New documents
 

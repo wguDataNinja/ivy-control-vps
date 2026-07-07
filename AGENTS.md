@@ -196,3 +196,11 @@ This file is for local development only.
 Do not perform VPS, Hermes, deployment, production, credential, or host-maintenance work from this repository unless Buddy gives a separate explicit task with the exact environment, permissions, and limits.
 
 A separate VPS `AGENTS.md` will be created later in the actual VPS checkout.
+
+### VPS inventory location
+
+VPS host identity, SSH access, workload map, current capacity evidence, and read-only inspection procedures are documented privately at:
+
+`_internal/vps-inventory-and-runbook.md`
+
+Before any VPS inspection work, read this file. It consolidates operational details from the authoritative `ivy-control/vps/` old-tree documents and provides safe read-only commands. Do not rely on old-tree documents alone for discovery — the private inventory is the intended entry point for VPS operational work from this repository.

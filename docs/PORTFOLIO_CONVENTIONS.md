@@ -1,7 +1,39 @@
 # Portfolio Conventions
 
-**Status:** Current authority — promoted from `ivy-control/vps/` historical material.
+**Status:** Current authority — promoted subset of `ivy-control/vps/shared-conventions.md` and related old-tree material.
 **Purpose:** Durable cross-repo conventions for PostgreSQL, systemd, health, gates, and deployment. Repository-specific deviations must be documented in the repo STATUS file.
+
+## Supersession index
+
+This document promotes the following sections from `ivy-control/vps/shared-conventions.md`:
+- §2 PostgreSQL Instance Model → this doc (simplified)
+- §3 PostgreSQL Role Naming → this doc (§PostgreSQL naming)
+- §5 Environment Variable Naming → this doc (pattern only, not naming table)
+- §7 Systemd Naming → this doc (§Systemd naming)
+- §8 Health Contract → this doc (§Health contract, simplified)
+- §11 Shadow, Parity, and Authority Gates → this doc (§Gate definitions, simplified)
+- §14 Gate Terminology → this doc (§Gate definitions)
+- §15 Repo-Roadmap Requirements → `docs/REPOSITORY_CONTROL_MODEL.md` (partially)
+
+The following sections from `shared-conventions.md` remain ONLY in the old tree and have NOT been promoted:
+- §1 Full Eventual VPS Role (workflow classification table)
+- §4 Migration File Layout (directory structure, naming, version tracking)
+- §5 Environment Variable Naming (full per-project variable table — see `ENV_REFERENCE.md` in old tree)
+- §6 VPS Filesystem Layout (default structure and examples)
+- §8 Health Contract (full table definition)
+- §9 Backup and Restore (detailed procedures, transport, restore drill)
+- §10 Raw Artifact and Export Policy
+- §11 Shadow, Parity, and Authority Gates (full authority transfer sequence)
+- §12 Branch and PR Ownership
+- §13 Hermes Convention
+- §14 Gate Terminology (full approver/permission table)
+- §16 Known Exceptions and Pending Decisions
+- §17 Adoption Plan
+
+Also promoted from `old tree postgres/`:
+- PostgreSQL naming conventions from `vps/postgres/README.md` and templates
+- Backup format from template procedures
+- Env variable reference (non-secret) — see `ivy-control/vps/postgres/ENV_REFERENCE.md`
 
 ---
 
