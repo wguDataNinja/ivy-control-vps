@@ -1,39 +1,7 @@
 # Portfolio Conventions
 
-**Status:** Current authority — promoted subset of `ivy-control/vps/shared-conventions.md` and related old-tree material.
-**Purpose:** Durable cross-repo conventions for PostgreSQL, systemd, health, gates, and deployment. Repository-specific deviations must be documented in the repo STATUS file.
-
-## Supersession index
-
-This document promotes the following sections from `ivy-control/vps/shared-conventions.md`:
-- §2 PostgreSQL Instance Model → this doc (simplified)
-- §3 PostgreSQL Role Naming → this doc (§PostgreSQL naming)
-- §5 Environment Variable Naming → this doc (pattern only, not naming table)
-- §7 Systemd Naming → this doc (§Systemd naming)
-- §8 Health Contract → this doc (§Health contract, simplified)
-- §11 Shadow, Parity, and Authority Gates → this doc (§Gate definitions, simplified)
-- §14 Gate Terminology → this doc (§Gate definitions)
-- §15 Repo-Roadmap Requirements → `docs/REPOSITORY_CONTROL_MODEL.md` (partially)
-
-The following sections from `shared-conventions.md` remain ONLY in the old tree and have NOT been promoted:
-- §1 Full Eventual VPS Role (workflow classification table)
-- §4 Migration File Layout (directory structure, naming, version tracking)
-- §5 Environment Variable Naming (full per-project variable table — see `ENV_REFERENCE.md` in old tree)
-- §6 VPS Filesystem Layout (default structure and examples)
-- §8 Health Contract (full table definition)
-- §9 Backup and Restore (detailed procedures, transport, restore drill)
-- §10 Raw Artifact and Export Policy
-- §11 Shadow, Parity, and Authority Gates (full authority transfer sequence)
-- §12 Branch and PR Ownership
-- §13 Hermes Convention
-- §14 Gate Terminology (full approver/permission table)
-- §16 Known Exceptions and Pending Decisions
-- §17 Adoption Plan
-
-Also promoted from `old tree postgres/`:
-- PostgreSQL naming conventions from `vps/postgres/README.md` and templates
-- Backup format from template procedures
-- Env variable reference (non-secret) — see `ivy-control/vps/postgres/ENV_REFERENCE.md`
+**Status:** Current authority.
+**Purpose:** Durable cross-repo conventions for PostgreSQL, systemd, health, migration, environment variables, and deployment. Repository-specific deviations must be documented in the repo CONTROL.md.
 
 ---
 
@@ -54,30 +22,47 @@ No application uses `postgres` superuser. No pooling yet. Standard schemas: `app
 
 ---
 
-## Backup format
+## Migration layout
 
-```bash
-pg_dump -h 127.0.0.1 -p 5432 -U {project}_backup -Fc -Z 9 -f {file}
-sha256sum {file} > {file}.sha256
+Each repository with a PostgreSQL database follows this migration structure:
+
+```
+db/
+  migrations/
+    YYYYMMDD_NNN_description.sql
+    rollback/
+      YYYYMMDD_NNN_description_down.sql
+    validation/
+      YYYYMMDD_NNN_description_check.sql
+  fixtures/
+  README.md
 ```
 
-Manifest includes: database name, timestamp, PG version, dump size, SHA-256, schema version, source commit, restore database name, restore/validation/cleanup status.
+File naming format: `YYYYMMDD_NNN_description.sql` where `NNN` is a zero-padded sequence number (001, 002...).
 
-Retention: latest + pre-migration baseline kept on Mac under `/Users/buddy/projects/backups/postgres/{project}/`.
+Every migration MUST provide:
+1. **Forward SQL** — the schema change, idempotent where practical
+2. **Rollback SQL** (or a documented statement of irreversibility with rationale)
+3. **Validation query** — row-count check, constraint check, or invariant assertion
+4. **Version record** — INSERT into the project's `_migrations` tracking table
+
+Schema version tracking table:
+
+```sql
+CREATE TABLE {schema}.{project}_migrations (
+  version integer PRIMARY KEY,
+  name text NOT NULL,
+  checksum_sha256 text NOT NULL,
+  applied_at timestamptz NOT NULL DEFAULT now(),
+  applied_by text NOT NULL DEFAULT current_user,
+  duration_ms integer NOT NULL CHECK (duration_ms >= 0)
+);
+```
+
+Migration SQL files must NOT contain production credentials, data dumps, environment-specific paths, or secrets of any kind.
 
 ---
 
-## Restore proof
-
-Before any real-data operation or destructive change: restore drill must pass. Procedure:
-1. Create restore database: `{db}_restore_verify_{timestamp}`
-2. pg_restore the latest baseline dump
-3. Run `db/validation/999_full_validation.sql`
-4. Verify schema ownership, table ownership, and row counts
-5. Drop restore database
-6. Record evidence in project LOG.md
-
----
 
 ## Systemd naming
 
@@ -89,38 +74,93 @@ Services and timers must remain disabled until Scheduler Gate approval. Exact SH
 
 ---
 
-## Health contract
+## Environment variable naming
 
-Each project maintains a `health` schema with:
-- `health_status` or `health_runs` table — records per-run health data
-- `workflow_status` table — current workflow state per workflow
+Pattern: `{PROJECT}_{VARIABLE}` — uppercase, project prefix.
 
-Sanitized JSON export excludes: IP addresses, filesystem paths, credentials, private repo names, raw error messages, sensitive source names.
+| Variable pattern | Purpose | Secret? |
+|-----------------|---------|---------|
+| `{PROJECT}_PG_URL` | Full PostgreSQL connection URL | Yes (contains password) |
+| `{PROJECT}_PG_DATABASE` | Database name | No |
+| `{PROJECT}_PG_WRITER_USER` | Writer role name | No |
+| `{PROJECT}_PG_READER_USER` | Reader role name | No |
+| `{PROJECT}_PG_MONITOR_USER` | Monitor role name | No |
+| `{PROJECT}_PG_MIGRATOR_USER` | Migrator role name | No |
+| `{PROJECT}_PG_BACKUP_USER` | Backup role name | No |
+| `{PROJECT}_DATA_ROOT` | VPS data directory | No |
+| `{PROJECT}_RAW_ROOT` | VPS raw capture directory | No |
+| `{PROJECT}_EXPORT_ROOT` | VPS export directory | No |
+| `{PROJECT}_HEALTH_OUTPUT` | Health JSON output path | No |
+| `{PROJECT}_BACKUP_ROOT` | Backup directory | No |
+
+VPS config files live at `/home/scraper/config/{project}.env` (outside Git). Repositories keep safe `.env.example` with variable names and placeholders only.
 
 ---
 
-## Gate definitions
+## Health contract
 
-| Gate | Controls | Minimum evidence | Authority |
-|------|----------|-----------------|-----------|
-| Database Authority | Creating DBs/roles, migrations, PG connections | DB names/roles, capacity evidence, migration plan, rollback path | Buddy |
-| Backup/Restore | Live backups, restore drills, destructive/cutover work | Dump file + SHA-256, restore target, successful restore + validation | Buddy |
-| GitHub Push | Remote writes, PR creation, workflow pushes | GitHub readiness checklist, clean secrets/history, target branch | Buddy |
-| VPS Capacity | Host inspection, provisioning, shadow services | CPU/RAM/disk/process metrics, forecast, safe threshold, rollback | Buddy |
+Each project maintains a health schema with a per-run health table containing at minimum:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `project` | text | Project slug |
+| `workflow` | text | Workflow name |
+| `run_id` | uuid | Unique run identifier |
+| `status` | text | ok, warn, fail, skip |
+| `started_at` | timestamptz | Run start |
+| `finished_at` | timestamptz | Run finish |
+| `last_success_at` | timestamptz | Last successful run |
+| `expected_cadence` | interval | Expected time between runs |
+| `freshness_age` | interval | Time since last run |
+| `records_read` | integer | Input records processed |
+| `records_written` | integer | Output records produced |
+| `records_rejected` | integer | Records rejected or failed |
+| `backlog` | integer | Pending items |
+| `retry_count` | integer | Current retry attempt |
+| `error_class` | text | Error type if failed |
+| `deployed_revision` | text | Git commit hash |
+| `schema_version` | integer | DB migration version |
+| `backup_state` | text | ok, stale, fail |
+| `incident_state` | text | none, active, resolved |
+
+Sanitized public export MUST exclude: IP addresses, filesystem paths, credentials, private repo names, raw error messages or stack traces, sensitive source names, approval details or reviewer identities, private backlog contents.
+
+---
+
+## Deployment preflight
+
+Before any VPS checkout update, verify:
+- Correct repo path and remote origin (GitHub)
+- Correct branch or detached SHA
+- Clean working tree with no modified tracked files
+- Untracked files are expected and acceptable (runtime data outside Git)
+- Secrets are outside Git checkout
+- Sufficient disk headroom (below 85% or above 1 GB free)
+- Approved target SHA matches deployment registry
+- Approved pull request number recorded
+- No unexpected local commits
+- Dependency-change flag set if requirements changed
+- Migration-change flag set if migration files changed
+- Service impact assessed
+- Rollback SHA recorded
+
+---
+
+Backup retention, restore-proof requirements, and backup versus application-history distinction are defined in `docs/DATA_LIFECYCLE_STANDARD.md`.
 
 ---
 
 ## Deployment stop conditions
 
 Deployment must stop immediately if:
-- Dirty checkout: `git status` shows modified tracked files
-- Unknown remote: `origin` does not match expected GitHub URL
-- Unapproved SHA: commit SHA not in deployment registry
-- Insufficient disk: >85% or <1 GB free
-- Runtime data inside Git tree
-- Secrets tracked in Git
+- Dirty checkout — `git status` shows modified tracked files
+- Unknown remote — `origin` does not match expected GitHub URL
+- Unapproved SHA — commit SHA not in deployment registry
+- Insufficient disk — >85% or < 1 GB free
+- Runtime data mixed inside Git working tree
+- Secret files tracked in Git
 - Pending migration without Database Authority Gate approval
 - Unresolved merge or divergent branches
-- Detached HEAD inconsistent with registry
-- Service mapping unknown
-- Rollback SHA unavailable
+- Detached HEAD inconsistent with registered SHA
+- Service mapping unknown — cannot determine which services to restart
+- Rollback SHA not recorded

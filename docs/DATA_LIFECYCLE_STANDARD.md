@@ -26,9 +26,84 @@ Every data class must have a documented retention window, a pruning mechanism, a
 | **Backup** | Point-in-time recovery artifacts. | PostgreSQL dumps, checksums, manifests. | Separate retention from application data. Never stored inside a working tree. |
 | **Disposable / ephemeral** | Runtime caches, logs, temporary artifacts. | Browser caches, .venv, __pycache__, systemd logs. | Not backed up. Pruneable at any time. |
 
----
+### Git boundary on data classes
 
-## Raw-to-aggregate lifecycle
+| Class | In Git? | Rule |
+|-------|---------|------|
+| Canonical source | Never | Raw HTML, PDF, screenshots, DB dumps, large JSONL history. Stay on VPS or Mac with bounded retention. |
+| Derived operational | Never | Production database state, intermediate pipeline outputs. PostgreSQL holds current state; Git holds migrations. |
+| Product / export | May be | Small deterministic exports (<1 MB), manifests, test fixtures (<100 KB), schema/migration files, `.env.example`. |
+| Cached / staging | Never | Working temp files, normalized snapshots, staging tables. Pruned after processing. |
+| Audit trail | Schema only | Migration version tables, prune logs. Schema is committed; data stays in DB. |
+| Health | Schema only | Health table definitions committed. Row data stays in DB or exempted JSON export. |
+| Backup | Never | `.dump`, `.dump.gz`, `.sha256` files. Separate retention from application data. Never inside a working tree. |
+| Disposable / ephemeral | Never | `.venv`, `__pycache__`, `node_modules/`, browser caches, systemd logs. |
+
+## Restore-proof requirements
+
+Every project with a database must demonstrate a working restore before any real-data operation or destructive change:
+
+1. Create a restore test database: `{db}_restore_verify_{timestamp}`
+2. Restore the latest baseline dump using `pg_restore`
+3. Run the project's `db/validation/999_full_validation.sql`
+4. Verify schema ownership, table ownership, and row counts against documented expected values
+5. Drop the restore test database
+6. Record evidence in the project's durable activity log
+
+The restore drill confirms that the backup format, transport, and procedure all produce a usable database. A failing restore drill blocks cutover, destructive work, and authority transfer.
+
+Monthly restore verification is recommended for any continuously running project.
+
+## Backup versus application retention
+
+Backup retention is independent of application-history retention:
+
+- **Backups** serve point-in-time recovery — kept as long as recovery must be possible
+- **Application history** serves UI queries, audits, and regeneration — kept as long as users or downstream consumers need it
+
+A project may prune old application history while maintaining the ability to restore from backup. A project may expire old backups while retaining application history for query.
+
+Backups are never pruned to free application storage. Application history is never removed from backup scope to reduce backup size without documented approval.
+
+## Raw artifact and export Git boundaries
+
+The following NEVER enter Git history:
+- Raw HTML, PDF, screenshots, browser traces
+- Large JSONL history files (>1 MB)
+- Database dumps of any kind
+- Mutable production data
+- Working intermediate pipeline outputs
+- Caches, virtual environments, compiled dependencies
+- Runtime logs
+
+The following MAY be in Git:
+- Small deterministic exports (product JSON, manifests under 1 MB)
+- Safe test fixtures (<100 KB representative samples)
+- Schemas, migrations, model definitions
+- Generated manifests and run summaries
+- Configuration files without secrets
+- Environment variable examples (`.env.example`)
+
+## Deletion prerequisites
+
+No production data file or storage artifact may be deleted without:
+1. **Backup/restore verification** — a recent successful restore drill exists
+2. **Destructive Operation Gate approval** — Buddy approved the exact target set
+3. **Explicit target list** — every file, directory, table row, or storage path to be deleted
+4. **Dry-run verification** — the deletion operation ran in dry-run mode and reported only the intended targets
+5. **Buddy approval for each operation** — blanket deletion authority is not granted
+
+## Archive verification
+
+Data transferred to archive status (cold storage, long-term retention, or removal from active query path) must be:
+1. **Checksum-verified** — SHA-256 of the archive artifact matches the source
+2. **Manifest-recorded** — archive timestamp, source path, checksum, retention window, and restore procedure are documented
+3. **Restore-tested** — at least one restore from archive confirmed functional before the active copy is removed
+4. **Retention-labeled** — archive is labeled with its planned deletion or review date
+
+Archives without a documented retention date are not truly archived — they are deferred clutter.
+
+## Backup retention vs application retention
 
 Canonical source data SHOULD flow through a bounded raw phase into a derived/aggregated phase, after which the raw copy MAY be pruned once parity is proven:
 

@@ -260,3 +260,37 @@ Back up the private repository separately. A local Git repository without a remo
 ## Legacy `internal/` path
 
 The old `internal/` directory (gitignored) still exists and is preserved temporarily. New private content should be created under `_internal/`. A later task should migrate any remaining useful content and remove the legacy path.
+
+## Public Repository Readiness
+
+Before a repository is published on GitHub, the following must be verified:
+
+### Secrets and credentials
+- `.env`, `.env.*`, `tunnel.json`, `*.key`, `*.pem` in `.gitignore`
+- No API keys, tokens, or passwords in committed files (`grep -r` zero hits)
+- No PII in datasets, examples, or test fixtures
+- No internal paths like `/Users/buddy/` in committed files
+
+### Generated and runtime files
+- Large binary files (>1 MB) excluded — no datasets, model weights, databases
+- `node_modules/`, `__pycache__/`, `.venv/`, `.idea/` neither committed nor untracked
+- Logs, caches, generated outputs gitignored or in designated directories
+
+### Documentation and README
+- `README.md` describes purpose, status, and basic usage — no placeholder content
+- `AGENTS.md` exists if agent interaction is expected
+- `README_INTERNAL.md` exists if durable memory content is needed
+- No TODO, FIXME, or placeholder stubs in public-facing text
+- LICENSE present or documented lack of license
+
+### Fresh-clone validation
+- Repository is self-contained — clone builds and tests pass
+- Dependencies documented (`requirements.txt`, `package.json`, `pyproject.toml`)
+- CI workflow configured (GitHub Actions or equivalent)
+
+### Remote and identity
+- Canonical remote URL matches the intended GitHub repository
+- Push identity (GitHub user or deploy key) matches the repository owner
+- Branch and upstream state confirm clean history with no unexpected divergence
+
+Detailed gate evidence is recorded in `repos/<repo>/RELEASE_GATES.md`. This section defines the standards; the gate file records the specific pass/fail evidence.

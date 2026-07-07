@@ -15,6 +15,80 @@ Until the actual VPS path is approved, the path remains:
 
 If the path or role is ambiguous, stop before write, deployment, maintenance, or operational actions and report the ambiguity.
 
+### Applicability for local agents
+
+When OpenCode, Codex, or similar implementation agents operate from the Mac repository checkout (`/Users/buddy/projects/ivy-control-vps`), this contract applies only to the extent that the agent is authorized for VPS interaction. The default state is Mode 1 (local repository inspection only — see §1a).
+
+## 1a. VPS interaction modes for local agents
+
+This section defines the interaction-mode model for agents (OpenCode, Codex) operating from the Mac checkout. The Hermes role (§2) has a separate scope.
+
+Every VPS interaction belongs to exactly one mode. The mode determines what is allowed, what requires approval, and what is prohibited.
+
+The governing default: **"Check the VPS" means Mode 2 (read-only SSH inspection). It never authorizes cleanup, deployment, restart, migration, or service activation.**
+
+| # | Mode | Access | Default authorization | Requires explicit task approval |
+|---|------|--------|----------------------|--------------------------------|
+| 1 | Local repository inspection | No SSH | Always available | No — default fallback |
+| 2 | Direct read-only SSH inspection | SSH, non-mutating | When task says "check", "inspect", "verify" | Yes — VPS interaction |
+| 3 | Read-only inspection requiring sudo | SSH + sudo | Never without Buddy present | Yes — plus Buddy present for credentials |
+| 4 | Approved bounded mutation | SSH + mutation | Never by default | Yes — named exact scope |
+| 5 | Exact-SHA deployment | SSH + Git checkout | Never without control gate | Yes — CONTROL.md phase + gate |
+| 6 | Database interaction | Read-only or migration | Read-only (monitor/backup role) | Yes — migration mutation |
+| 7 | Service and timer interaction | systemctl | Inspection only | Yes — start, restart, enable, disable |
+| 8 | File transfer | scp / rsync | Never by default | Yes — named source and destination |
+| 9 | Long-running or disruptive work | SSH + bounded commands | Never by default | Yes — separate execution packet |
+
+### Mode details
+
+Each mode is fully defined in the private VPS runbook at `_internal/vps-inventory-and-runbook.md` §9. Read that file before any VPS interaction.
+
+### Mode selection
+
+1. Read the task. If it says "check the VPS" or equivalent, default to Mode 2.
+2. If the task names a specific action (deploy SHA, restart service, run migration), that authorizes only the named mode for the named scope.
+3. If the agent cannot connect (prerequisites missing), fall back to Mode 1 and report what is missing.
+4. A general task never authorizes Mode 3-9.
+
+### Approval boundaries by mode
+
+| Mode | Approved by task | Approved by gate + buddy |
+|------|-----------------|--------------------------|
+| 1 | Always | N/A |
+| 2 | Task stating VPS access | N/A |
+| 3 | Task + Buddy present | N/A |
+| 4 | Task naming exact scope | Destructive Operation Gate for deletions |
+| 5 | CONTROL.md phase authorization | Deployment Readiness (Gate 4) or VPS Deployment (Gate 5) |
+| 6 read-only | Task stating DB inspection | N/A |
+| 6 migration | Database Authority sub-gate | Backup/Restore sub-gate |
+| 7 inspect | Task stating service check | N/A |
+| 7 start/restart | Task naming exact service | Scheduler sub-gate for timer enable |
+| 7 enable timer | Operational Activation (Gate 6) | Buddy |
+| 8 transfer | Task naming files | Sensitive Review if private data |
+| 9 | Separate execution packet | Named gate per packet |
+
+### Failure-reporting expectations
+
+When VPS interaction fails at any mode, report:
+- The attempted mode
+- Which prerequisite was missing or which condition failed
+- Whether the failure is a capability gap (no SSH alias, no key) or an authorization gap (task does not permit this mode)
+- Do not attempt workarounds for missing prerequisites
+- Do not escalate the mode without explicit authorization
+
+### Relationship to private runbook
+
+The private runbook at `_internal/vps-inventory-and-runbook.md` contains:
+- Host identity and SSH access details
+- Connection preflight and failure diagnosis
+- Protected workload rules
+- Agent capability detection decision tree
+- Exact read-only inspection commands
+- Capacity evidence format
+- Database, service, transfer, and deployment procedures
+
+This public contract defines the boundaries. The private runbook defines the execution.
+
 ## 2. Hermes role
 
 Hermes is the orchestration and maintenance layer for the VPS portfolio. It may coordinate:
@@ -34,16 +108,18 @@ Hermes is not an unrestricted coding, deployment, or production-administration a
 Concise startup sequence:
 
 1. `AGENTS.md`
-2. `agents/VPS_ORCHESTRATION.md` — this file
-3. `docs/GIT_WORKFLOW.md`
-4. `docs/LOGGING_STANDARD.md`
-5. Applicable repo- or service-specific authority documents when they exist
-6. Approved private VPS context when provisioned
+2. `agents/VPS_ORCHESTRATION.md` — this file (especially §1a for mode model)
+3. `_internal/vps-inventory-and-runbook.md` — private VPS identity, access, procedures, protected workloads
+4. `docs/GIT_WORKFLOW.md`
+5. `docs/LOGGING_STANDARD.md`
+6. Applicable repo- or service-specific authority documents when they exist
+7. Approved private VPS context when provisioned
 
 Before acting, confirm:
 
 - current path matches the approved VPS context;
 - role is confirmed;
+- VPS interaction mode is identified (§1a);
 - branch and working tree are clean;
 - current commit SHA is known;
 - task scope and authority are clear;
@@ -76,6 +152,56 @@ Follow `docs/GIT_WORKFLOW.md`.
 - Treat rollback as returning to a known approved SHA once service-specific rollback procedures exist.
 
 The actual deployment workflow is pending.
+
+### VPS deployment sequence
+
+When a deployment is authorized, the generic sequence is:
+
+1. **Verify approved SHA** — confirm the target commit SHA is recorded in the deployment registry
+2. **Inspect checkout** — verify correct repo path, clean working tree, no unexpected local commits
+3. **Fetch** — `git fetch origin` to retrieve the target commit
+4. **Verify clean state** — confirm no dirty files, correct remote origin, sufficient disk headroom
+5. **Apply change** — checkout the approved SHA; apply configuration or migration step only if separately authorized
+6. **Restart** — restart only the affected services when authorized; do not restart unrelated workloads
+7. **Validate health** — run the project's health check or validation command; record evidence
+8. **Record evidence** — old SHA, new SHA, validation result, services restarted, timestamp
+9. **Rollback** — if health check fails, return to the prior SHA and restart services; record the rollback
+
+Disk, migration, and secret checks are mandatory at every step. No automated migration application. No timer or scheduler activation without Scheduler Gate.
+
+### Branch ownership models
+
+Projects on the VPS may use one of the following models for automated branch and PR creation:
+
+| Model | Who creates branch | Who pushes | Who creates PR | Who merges |
+|-------|-------------------|------------|----------------|------------|
+| VPS-direct | VPS systemd timer | VPS (deploy key) | VPS (`gh` CLI) | Buddy |
+| GitHub-triggered | VPS timer pushes trigger branch | VPS | GitHub Actions | Buddy |
+| Hermes-assisted | Hermes | Hermes (narrow scope) | Hermes | Buddy |
+
+Each repo roadmap must document:
+- Credentials used (deploy key vs PAT vs Hermes API key)
+- Audit trail — how each PR is traced to the triggering event
+- Failure isolation — what happens when PR creation fails
+- Stale branch cleanup — how abandoned branches are detected and removed
+- Retry behavior — whether PR creation retries on transient failure
+- Who may merge — always Buddy, never automation
+
+Default recommendation: VPS-direct with scoped deploy key.
+
+## 5a. Hermes allowed and prohibited actions
+
+Hermes uses each project's `_monitor` PostgreSQL role. When operational, the following boundaries apply:
+
+| Allowed | Not allowed |
+|---------|-------------|
+| Read health status and safe operational data | Write to production tables |
+| Summarize incidents from health records | Bypass human review gates |
+| Create issues when failure thresholds exceed | Access sensitive raw data |
+| Create PRs with remediation proposals when authorized | Push directly to main |
+| Read from project schemas with monitor-granted views | Modify schemas or run migrations |
+
+Hermes is NOT required for ingestion, backups, or recovery. It does not receive sensitive raw data by default. Write capabilities are added only through explicit project-level approval. Hermes commits to branches, never to main.
 
 ## 6. Delegation model
 

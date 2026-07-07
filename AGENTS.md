@@ -197,10 +197,11 @@ Do not perform VPS, Hermes, deployment, production, credential, or host-maintena
 
 A separate VPS `AGENTS.md` will be created later in the actual VPS checkout.
 
-### VPS inventory location
+### Authorized VPS interaction
 
-VPS host identity, SSH access, workload map, current capacity evidence, and read-only inspection procedures are documented privately at:
+Before any VPS work, read these files in order:
 
-`_internal/vps-inventory-and-runbook.md`
+1. `agents/VPS_ORCHESTRATION.md` — interaction-mode model, approval boundaries, what each mode allows
+2. `_internal/vps-inventory-and-runbook.md` — private host identity, SSH access, workload map, capacity evidence, exact read-only commands, protected workload rules
 
-Before any VPS inspection work, read this file. It consolidates operational details from the authoritative `ivy-control/vps/` old-tree documents and provides safe read-only commands. Do not rely on old-tree documents alone for discovery — the private inventory is the intended entry point for VPS operational work from this repository.
+"Check the VPS" always means Mode 2 (read-only SSH inspection). It never authorizes cleanup, deployment, restart, migration, or service activation. See `agents/VPS_ORCHESTRATION.md` §1a for the complete mode model.

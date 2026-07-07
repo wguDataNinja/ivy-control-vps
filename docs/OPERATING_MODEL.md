@@ -8,6 +8,20 @@ IvyControlVPS is the operational control plane for the VPS portfolio. The manage
 
 Shared standards documented here are baselines, not blind templates. Every repository must be reviewed against its actual contents, runtime environment, data flows, workflows, and public presentation. Templates are starting points; they must evolve when new repositories, workflows, incidents, or operational needs expose gaps.
 
+## Workflow classification
+
+Workflows are classified by VPS readiness. Every roadmap must classify each meaningful workflow into exactly one category:
+
+| # | Category | Meaning |
+|---|----------|---------|
+| 1 | **VPS-ready now** | Deterministic, script exists, no credential/browser/quota barrier |
+| 2 | **VPS-ready after shadow/parity** | Needs dual-write validation window before cutover |
+| 3 | **VPS-ready after gate design** | Needs approval-gate process before automation |
+| 4 | **VPS-ready after hardening** | Needs extraction script, credential isolation, or quota management |
+| 5 | **Local/manual long term** | Requires human judgment, legal sensitivity, or paid LLM budget gate |
+| 6 | **Deferred** | Not yet scoped; explicitly parked |
+| 7 | **Unclear** | Architecture decision required before classification |
+
 ## Public and private documentation
 
 Content tracked in Git must be polished and safe for publication.
@@ -32,6 +46,17 @@ The following high-level direction is agreed:
 - Agents should not merge their own work.
 - Direct production edits are not the intended workflow.
 
+Development happens on Mac. GitHub distributes approved code. VPS checkouts are deployment targets only. No direct VPS code editing.
+
+VPS filesystem layout separates concerns:
+- **Code** in `apps/{project}/` — Git working trees, throwable and re-cloned from GitHub
+- **Persistent data** in `data/{project}/` — raw captures, exports, staging artifacts
+- **Configuration** in `config/` — per-project `.env` files outside Git
+- **Logs** in `logs/{project}/` — service-level runtime output
+- **Backups** in `backups/postgres/{project}/` — database dumps and manifests
+
+No mutable production data lives inside Git working trees. Working trees are disposable.
+
 An initial Git workflow is defined in `docs/GIT_WORKFLOW.md` (provisional). Repository protection settings, VPS deployment details, and Hermes permissions remain explicitly unresolved.
 
 ## Hermes and agents
@@ -45,6 +70,17 @@ The following high-level direction is agreed:
 Portfolio-level principles for designing LLM workflows are defined in `docs/LLM_TENETS.md`. These tenets establish the baseline for auditable interfaces, constrained workflows, model portability, minimal context, and deterministic preprocessing.
 
 A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHESTRATION.md`. The actual VPS path, deployment mechanism, credentials, destructive permissions, and private-context provisioning remain unresolved.
+
+## Work ownership
+
+| Owner | Work class | Examples |
+|---|---|---|
+| **Buddy** | Authority and risk decisions | License choice, publication scope, gate approvals, destructive-operation approval, cross-repo policy |
+| **Implementation agents** (OpenCode, Codex) | Bounded low-risk implementation | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation |
+| **Strong execution agents** (Codex) | Architecture and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, history rewrite planning, destructive cleanup design |
+| **Orchestration agents** (future Hermes) | Monitoring, drift detection, PR proposal | Scheduled scans, health checks, SHA drift detection, structured PR creation |
+
+Implementation agents receive bounded tasks with explicit scope, allowed files, and validation criteria. They do not invent architecture, mutate production state, or approve their own work. Strong execution agents resolve architecture-level contradictions and design fragile cross-repo boundaries. Orchestration agents observe and propose but never execute production changes directly.
 
 ## Documentation maintenance
 
