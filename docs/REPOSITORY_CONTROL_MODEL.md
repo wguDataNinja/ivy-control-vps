@@ -104,7 +104,7 @@ CONTROL.md must be reviewed or updated when:
 |----------|------|
 | `repos/<repo>/CONTROL.md` | Active governance authority. One-stop for current state. |
 | `repos/<repo>/RELEASE_GATES.md` | Detailed gate evidence. Referenced by CONTROL.md. |
-| `repos/<repo>/STATUS.md` | **Deprecated** once CONTROL.md exists. Retained as historical reference but not updated. |
-| `repos/<repo>/PHASE_B_CODEX_PACKET.md` (or similar) | Bounded execution instructions for the next authorized phase. |
+| `repos/<repo>/STATUS.md` | **Deprecated** once CONTROL.md exists. Retained as historical reference, not updated. |
+| `repos/<repo>/<phase-packet>.md` | Bounded execution instructions for the next authorized phase. Not a governance document. |
 | `docs/PORTFOLIO_CONVENTIONS.md` | Durable cross-repo conventions. Referenced by CONTROL.md applicability matrix. |
 | `docs/DATA_LIFECYCLE_STANDARD.md` | Portfolio data-lifecycle principles. Referenced by CONTROL.md. |

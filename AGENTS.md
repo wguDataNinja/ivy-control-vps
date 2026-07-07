@@ -14,9 +14,12 @@ Before acting:
 
 1. Run `pwd` and confirm the path.
 2. Read the current local `TODO.md` from disk.
-3. Inspect `git status --short --branch`.
-4. Identify the exact task, allowed files, and validation required.
-5. Stop and ask if the task or any destructive instruction is ambiguous.
+3. Read the repository standards that apply to the task, including `docs/OPERATING_MODEL.md`, `docs/LOGGING_STANDARD.md`, and any repository-control or portfolio-convention document referenced by the task.
+4. Inspect `git status --short --branch`.
+5. Identify the exact task, allowed files, applicable standards, control-sheet or gate implications, and validation required.
+6. If the task involves a managed repository, read its `repos/<repo>/CONTROL.md` before acting.
+7. Stop and ask if the task or any destructive instruction is ambiguous.
+6. Stop and ask if the task or any destructive instruction is ambiguous.
 
 A request to read a file authorizes no Git or filesystem mutation.
 
@@ -139,20 +142,24 @@ To perform Git write operations, invoke the global `git-steward` subagent. Do no
 
 ## Logging
 
-For meaningful work, create or update a concise private agent log only when the task explicitly requests it and the private path is available.
+Follow `docs/LOGGING_STANDARD.md`.
 
-Use:
+Before meaningful work, read the applicable portfolio standards (`docs/OPERATING_MODEL.md`, `docs/REPOSITORY_CONTROL_MODEL.md`, `docs/LOGGING_STANDARD.md`) and any repository control sheet (`repos/<repo>/CONTROL.md`) that the task affects.
 
-```markdown
-# <task>
+A concise private agent log is required whenever an agent performs meaningful work that:
 
-- Did:
-- Result:
-- Checked:
-- Next:
-```
+- changes repository state;
+- creates or changes a durable artifact;
+- changes configuration or policy;
+- performs deployment or operational work;
+- changes a repository control sheet, release gate, or portfolio status;
+- completes another substantive task with a durable result or decision.
 
-Do not duplicate Git history or long command transcripts.
+Read-only exploration, simple factual answers, and inspections that produce no durable result or decision normally do not require a log.
+
+Create or update the required log before declaring meaningful work complete. Use the organized private logging path defined by `docs/LOGGING_STANDARD.md`; do not use legacy `SESSION.md` or `LOG.md` as the primary record for new work.
+
+Use the concise format defined by the logging standard. Record the result, validation, unresolved issues, and next work. Reference commits where relevant, but do not duplicate Git history or long command transcripts.
 
 ## Validation
 
@@ -164,6 +171,7 @@ Before declaring completion:
 - verify links when editing Markdown;
 - confirm no secrets or private content are staged;
 - confirm `TODO.md` was not changed by the agent;
+- confirm any required private agent log was created or updated before completion;
 - report the final branch and working-tree status;
 - report anything that still truly requires Buddy.
 
@@ -175,6 +183,7 @@ Return only the information needed to understand the result:
 - files changed;
 - validation performed;
 - Git result, if authorized;
+- required private log path, when meaningful work required one;
 - unresolved issues;
 - process friction;
 - recommended next task;

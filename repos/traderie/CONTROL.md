@@ -52,7 +52,7 @@
 | Current product file size | ~529 KB (4 JSON files) | ✅ Trivial. |
 | Raw snapshot retention | 14 days after PG parity (per `docs/retention.md`) | ✅ Policy defined. Not yet enforced (no VPS continuous collection). |
 | Normalized snapshot retention | 30 days after PG parity | ✅ Policy defined. |
-| History JSONL retention | Indefinite compressed archive | ⚠️ "Indefinite" is acceptable for compressed cold archive but should have a review cadence. |
+| History JSONL retention | Indefinite compressed archive with 365-day review boundary | ⚠️ PASS WITH CONDITION — accept 365-day default review cycle. Archive age, size, growth, and prune evidence must be confirmed before Operational Activation (Gate 6). |
 | Backup retention (VPS) | 7 daily + 4 weekly | ✅ Per portfolio standard. |
 | Backup retention (Mac) | 14→7 daily + 4 weekly + monthly | ✅ Per portfolio standard. |
 | Prune behavior | Script exists (`scripts/traderie_prune.py`). Pilot prune executed — 50 prune_audit rows, 25 archive_audit rows. | ✅ Prune mechanism implemented and tested. Not configured for continuous scheduled execution (correct — VPS not deployed). |
@@ -64,10 +64,11 @@
 | UI data consumed | `data/products/*.json` (~529 KB total) — product prices, rune values. No database queries in current UI. | ✅ UI footprint is trivially small. |
 | High-resolution history beyond UI needs | Raw snapshots retained 14 days, normalized 30 days. Product JSONs are the UI surface. | ✅ Raw/normalized retention aligns with re-derivation window, not UI needs. |
 
-**Conclusion:** Traderie meets minimal-footprint expectations. No data-lifecycle issue blocks deployment readiness. The following should be resolved before operational activation (Gate 6), not before deployment (Gate 5):
-1. Add `database_size`, `data_directory_size`, and `growth_rate` to health export.
-2. Document repo-specific data-directory thresholds.
-3. Set a review cadence for the "indefinite" history JSONL archive.
+**Conclusion:** Traderie meets minimal-footprint expectations. No data-lifecycle issue blocks deployment readiness. Before operational activation (Gate 6), the following must be confirmed:
+1. Archive age, size, growth rate, and prune evidence for the history JSONL archive.
+2. `database_size`, `data_directory_size`, and `growth_rate` added to health export.
+3. Repo-specific data-directory thresholds documented.
+4. 365-day history JSONL review boundary observed (provisional default).
 
 ---
 

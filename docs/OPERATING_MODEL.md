@@ -63,7 +63,8 @@ The following areas are identified as requiring standards that have not yet been
 - **Git workflow** — initial standard defined in `docs/GIT_WORKFLOW.md` (provisional). Repository protection settings, VPS deployment details, and Hermes permissions remain pending.
 - **Logging standard** — initial three-layer model defined in `docs/LOGGING_STANDARD.md` (provisional). Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
 - **VPS/Hermes orchestration contract** — provisional contract defined in `agents/VPS_ORCHESTRATION.md`. The actual VPS path, deployment mechanism, credentials, destructive permissions, and private-context provisioning remain unresolved.
-- **Repository admission process** — criteria and gate for onboarding a new project.
+- **Repository admission process** — defined in `docs/REPOSITORY_CONTROL_MODEL.md`. The six-gate model (Portfolio Admission through Operational Activation) applies to every managed repository. Repository-specific gate evidence is recorded in `repos/<repo>/RELEASE_GATES.md`.
+- **Data lifecycle and storage** — foundational principles are defined in `docs/DATA_LIFECYCLE_STANDARD.md`. Repository-specific retention windows, pruning configurations, and growth thresholds are set in each repo's `CONTROL.md` or local retention policy.
 - **Portfolio-level LLM strategy** — foundational design tenets are defined in `docs/LLM_TENETS.md`. Operational adoption, benchmarking, provider interfaces, validation patterns, and repository-specific implementation remain pending.
 - **Repository-specific templates** — conventions for `README.md`, `AGENTS.md`, `.gitignore`, and other files tailored to project types.
 
