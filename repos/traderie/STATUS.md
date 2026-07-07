@@ -3,6 +3,8 @@
 **Purpose:** Single source of current operational state for ivy-control agents.
 **Canonical repo:** `github.com/wguDataNinja/d2-market-helper` (public)
 **Local path:** `/Users/buddy/projects/traderie`
+**Release gates:** `repos/traderie/RELEASE_GATES.md`
+**Approved SHA:** `b3b70a01426694d06d6c07a09f0c33427f530f0d`
 **Updated:** 2026-07-07
 
 ---
