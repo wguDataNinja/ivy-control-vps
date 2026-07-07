@@ -30,11 +30,8 @@ This context is for local implementation agents such as OpenCode or Codex perfor
 
 Local implementation agents must:
 
-- read `README.md`, `docs/README.md`, and applicable standards (`docs/LOGGING_STANDARD.md`, `docs/GIT_WORKFLOW.md`) before making changes;
+- read and follow the detailed contract in `agents/LOCAL_IMPLEMENTATION.md`;
 - inspect `internal/README_INTERNAL.md` when it is available locally;
-- keep public tracked files publication-safe;
-- keep private notes and session material under ignored `internal/` paths;
-- create or update a concise agent log for meaningful work as required by `docs/LOGGING_STANDARD.md`;
 - avoid VPS operational changes unless the task explicitly grants that authority;
 - report unresolved ambiguity, failed validation, and process friction rather than inventing policy.
 
@@ -53,7 +50,9 @@ This context is intended for Hermes and agents invoked by Hermes for:
 - deployment coordination;
 - bounded operational actions.
 
-The detailed Hermes contract, permissions, routing rules, approval boundaries, deployment authority, and VPS-private context model are not yet finalized.
+Read and follow the provisional orchestration contract in `agents/VPS_ORCHESTRATION.md`.
+
+The detailed Hermes permissions, approval boundaries, deployment authority, and VPS-private context model are not yet finalized.
 
 Until those standards are approved, an agent running in the VPS context must not assume unrestricted authority. It must stop before destructive, production-changing, policy-changing, credential-related, or self-merging actions unless the task and an approved standard explicitly authorize them.
 
@@ -68,6 +67,29 @@ All agents must:
 - keep logs concise and avoid duplicating Git history;
 - distinguish implemented behavior from planned or provisional behavior;
 - avoid creating new standards or policy where the repository still marks a decision as pending.
+- treat ignored and untracked files as possibly irreplaceable user data;
+- treat `TODO.md` as read-only task input — never restore, edit, stage, or commit it.
+
+## Destructive-action safety
+
+The following are prohibited unless a separately approved recovery procedure explicitly authorizes the exact command:
+
+- `rm -rf` or any broad deletion command;
+- `git clean`;
+- `git reset --hard`;
+- force-push;
+- history rewriting;
+- deleting or overwriting untracked files without knowing what they contain;
+- interpreting ambiguous phrases as authorization to delete files.
+
+Before any deletion or cleanup:
+
+1. Clarify ambiguous instructions.
+2. Inspect `git status` and confirm tracked/untracked/ignored boundaries.
+3. Confirm task authority explicitly covers the exact action.
+4. List exact files before acting.
+
+When asked only to read `TODO.md`, no Git or file mutation is authorized.
 
 ## Unrecognized path or role
 
