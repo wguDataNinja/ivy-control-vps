@@ -61,8 +61,10 @@ An agent log is required whenever an agent performs meaningful work that changes
 ### Provisional path convention
 
 ```
-internal/logs/agents/YYYY-MM-DD/<agent-or-task-slug>.md
+_internal/logs/agents/YYYY-MM-DD/<agent-or-task-slug>.md
 ```
+
+(The legacy path `internal/logs/` is preserved temporarily but should not be used for new logs.)
 
 Exact naming, retention, and later aggregation policy are provisional.
 
@@ -80,8 +82,10 @@ These preserve planning and design discussions that may contain:
 ### Provisional path convention
 
 ```
-internal/logs/gpt/YYYY-MM-DD/<session-slug>.md
+_internal/logs/gpt/YYYY-MM-DD/<session-slug>.md
 ```
+
+(The legacy path `internal/logs/` is preserved temporarily but should not be used for new logs.)
 
 ### Rules
 

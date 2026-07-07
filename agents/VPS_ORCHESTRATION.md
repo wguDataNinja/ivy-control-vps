@@ -181,6 +181,6 @@ Hermes and VPS-invoked agents must not:
 - discard unknown changes;
 - change credentials without approval;
 - expose secrets;
-- commit `internal/` content;
+- commit `_internal/` or `internal/` content;
 - claim monitoring, validation, deployment, rollback, or remediation that did not occur;
 - silently change policy or production state.
