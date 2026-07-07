@@ -1,96 +1,175 @@
+# AGENTS.md
 
+This repository is developed locally with OpenCode, Codex, or similar coding agents.
 
-# Agent Entry Point
+This file is the single agent instruction file for this repository. Do not look for or create nested `AGENTS.md` files. Do not rely on separate agent contracts unless the task explicitly names one.
 
-This repository supports two distinct agent execution contexts. The repository path is the primary routing signal.
+## Scope
 
-Before performing any write, deployment, maintenance, or operational action:
-
-1. Run `pwd`.
-2. Match the current repository path to one of the approved contexts below.
-3. Read the required context-specific instructions before continuing.
-4. Follow the repository logging standard in `docs/LOGGING_STANDARD.md`.
-5. Follow the repository Git workflow in `docs/GIT_WORKFLOW.md`.
-6. If the path or assigned role is ambiguous, stop and report the ambiguity.
-
-## Local implementation context
-
-Use this context when running in:
+Work only in:
 
 `/Users/buddy/projects/ivy-control-vps`
 
-This context is for local implementation agents such as OpenCode or Codex performing:
+Before acting:
 
-- documentation work;
-- code implementation;
-- tests and validation;
-- repository maintenance;
-- standards development;
-- branch and pull-request preparation.
+1. Run `pwd` and confirm the path.
+2. Read the current local `TODO.md` from disk.
+3. Inspect `git status --short --branch`.
+4. Identify the exact task, allowed files, and validation required.
+5. Stop and ask if the task or any destructive instruction is ambiguous.
 
-Local implementation agents must:
+A request to read a file authorizes no Git or filesystem mutation.
 
-- read and follow the detailed contract in `agents/LOCAL_IMPLEMENTATION.md`;
-- inspect `internal/README_INTERNAL.md` when it is available locally;
-- avoid VPS operational changes unless the task explicitly grants that authority;
-- report unresolved ambiguity, failed validation, and process friction rather than inventing policy.
+## TODO.md
 
-## VPS orchestration context
+`TODO.md` is task input written by Buddy or GPT.
 
-Use this context when running in:
+Agents must:
 
-`[future VPS repository path]`
+- read the local working-tree version;
+- never replace it with a Git version;
+- never edit, restore, stage, commit, stash, clear, or advance it;
+- report recommended next work in the final response instead of changing it.
 
-This context is intended for Hermes and agents invoked by Hermes for:
+## Development behavior
 
-- orchestration;
-- monitoring;
-- maintenance;
-- health checks;
-- deployment coordination;
-- bounded operational actions.
+Agents may perform ordinary development work explicitly required by the task, including:
 
-Read and follow the provisional orchestration contract in `agents/VPS_ORCHESTRATION.md`.
+- reading repository files;
+- editing approved files;
+- creating approved files;
+- running tests and validation;
+- using Git for task branches, commits, pushes, and task-specific integration when explicitly authorized.
 
-The detailed Hermes permissions, approval boundaries, deployment authority, and VPS-private context model are not yet finalized.
+Agents must:
 
-Until those standards are approved, an agent running in the VPS context must not assume unrestricted authority. It must stop before destructive, production-changing, policy-changing, credential-related, or self-merging actions unless the task and an approved standard explicitly authorize them.
-
-## Shared rules
-
-All agents must:
-
-- treat GitHub as the source of truth for tracked public material;
-- avoid committing anything under `internal/`;
-- avoid storing secrets in tracked or untracked documentation;
-- validate affected files before declaring work complete;
-- keep logs concise and avoid duplicating Git history;
+- keep changes within scope;
+- preserve unrelated work;
+- inspect existing instructions and current state before editing;
 - distinguish implemented behavior from planned or provisional behavior;
-- avoid creating new standards or policy where the repository still marks a decision as pending.
-- treat ignored and untracked files as possibly irreplaceable user data;
-- treat `TODO.md` as read-only task input — never restore, edit, stage, or commit it.
+- avoid inventing policy, permissions, paths, credentials, or production details;
+- report failed validation, ambiguity, missing prerequisites, and process friction;
+- verify claims with evidence before reporting completion.
 
-## Destructive-action safety
+## Protected data
 
-The following are prohibited unless a separately approved recovery procedure explicitly authorizes the exact command:
+Treat these as protected user data:
 
-- `rm -rf` or any broad deletion command;
+- `_internal/`;
+- `internal/` if present;
+- untracked files;
+- ignored files;
+- uncommitted changes;
+- `TODO.md`;
+- local-only notes and task history.
+
+Do not delete, overwrite, restore, move, clean, stage, commit, or expose protected data unless the task names the exact path and Buddy explicitly approves the exact action.
+
+Git does not protect ignored, untracked, or uncommitted content.
+
+## Destructive commands
+
+Do not run destructive commands without Buddy's explicit approval for the exact command and exact targets.
+
+Prohibited unless specifically approved:
+
+- `rm -rf`;
+- broad `rm` commands;
+- `find ... -delete`;
+- `find ... | xargs rm`;
 - `git clean`;
 - `git reset --hard`;
+- `git checkout ... -- .`;
+- `git restore .`;
 - force-push;
 - history rewriting;
-- deleting or overwriting untracked files without knowing what they contain;
-- interpreting ambiguous phrases as authorization to delete files.
+- deleting branches;
+- deleting or overwriting untracked or ignored files;
+- mass replacement of the working tree.
 
-Before any deletion or cleanup:
+Before any approved deletion or cleanup:
 
-1. Clarify ambiguous instructions.
-2. Inspect `git status` and confirm tracked/untracked/ignored boundaries.
-3. Confirm task authority explicitly covers the exact action.
-4. List exact files before acting.
+1. Show the exact target list.
+2. Confirm tracked, untracked, ignored, and modified status.
+3. Explain what is recoverable and what is not.
+4. Obtain explicit approval.
+5. Use exact-file operations only.
 
-When asked only to read `TODO.md`, no Git or file mutation is authorized.
+Ambiguous language is never authorization for deletion.
 
-## Unrecognized path or role
+## Git rules
 
-If the current repository path does not match an approved context, or the assigned role is unclear, do not perform write, deployment, or operational actions. Report the ambiguity and wait for direction.
+Git is for version control, not as a substitute for backups.
+
+Agents must:
+
+- inspect status before Git operations;
+- avoid touching unrelated changes;
+- use exact-file staging;
+- use task branches unless the task explicitly authorizes direct work on `main`;
+- never force-push;
+- never rewrite shared history;
+- never assume ignored or untracked files are recoverable;
+- never merge or delete branches unless the task explicitly authorizes it;
+- use `GIT_PAGER=cat` for review commands that might open a pager.
+
+When task-specific integration is authorized, validate first, then commit, push, integrate, and verify local and remote SHAs.
+
+## Public and private boundaries
+
+- Public tracked documentation may be pushed to GitHub.
+- Private material must not be included in public commits.
+- Do not store secrets in tracked or untracked documentation.
+- Do not assume all local Git history is safe to push.
+- Verify the exact diff before every commit and push.
+
+## Logging
+
+For meaningful work, create or update a concise private agent log only when the task explicitly requests it and the private path is available.
+
+Use:
+
+```markdown
+# <task>
+
+- Did:
+- Result:
+- Checked:
+- Next:
+```
+
+Do not duplicate Git history or long command transcripts.
+
+## Validation
+
+Before declaring completion:
+
+- review every changed file;
+- run relevant tests or checks;
+- run `git diff --check` for tracked changes;
+- verify links when editing Markdown;
+- confirm no secrets or private content are staged;
+- confirm `TODO.md` was not changed by the agent;
+- report the final branch and working-tree status;
+- report anything that still truly requires Buddy.
+
+## Final report
+
+Return only the information needed to understand the result:
+
+- work completed;
+- files changed;
+- validation performed;
+- Git result, if authorized;
+- unresolved issues;
+- process friction;
+- recommended next task;
+- any action that truly requires Buddy.
+
+## VPS work
+
+This file is for local development only.
+
+Do not perform VPS, Hermes, deployment, production, credential, or host-maintenance work from this repository unless Buddy gives a separate explicit task with the exact environment, permissions, and limits.
+
+A separate VPS `AGENTS.md` will be created later in the actual VPS checkout.

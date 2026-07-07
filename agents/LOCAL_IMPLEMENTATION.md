@@ -16,8 +16,8 @@ If the path or assigned role does not match, stop before write actions and repor
 2. `agents/LOCAL_IMPLEMENTATION.md` — this file
 3. `docs/README.md` — documentation index
 4. Task-relevant standards: `docs/GIT_WORKFLOW.md`, `docs/LOGGING_STANDARD.md`
-5. `internal/README_INTERNAL.md` when available locally
-6. Task-specific private logs under `internal/logs/` only when relevant
+5. `_internal/README_INTERNAL.md` (or legacy `internal/README_INTERNAL.md`) when available locally
+6. Task-specific private logs under `_internal/logs/` (or legacy `internal/logs/`) only when relevant
 
 Do not load every file for every task. Read enough context to understand authority, scope, validation, and logging obligations.
 
@@ -48,7 +48,7 @@ A separate planning artifact is not required for trivial edits unless the task a
 - Use existing repository structure and conventions.
 - Avoid unnecessary file creation.
 - Keep public tracked content publication-safe.
-- Keep private notes under ignored `internal/` paths.
+- Keep private notes under excluded `_internal/` paths (legacy `internal/` is also gitignored).
 - Never force-add ignored private files.
 - Never store secrets in tracked or private documentation.
 - Leave concise stubs where decisions are unresolved rather than inventing details.
@@ -132,7 +132,7 @@ Local implementation agents must not:
 - force-push;
 - discard unknown work;
 - invent missing standards;
-- commit `internal/` content;
+- commit `_internal/` or `internal/` content;
 - claim validation, commit, push, PR creation, or deployment that did not occur.
 - run `rm -rf`, `git clean`, or `git reset --hard` without explicit authorization from a separately approved recovery procedure;
 - interpret ambiguous phrases as authorization to delete files.

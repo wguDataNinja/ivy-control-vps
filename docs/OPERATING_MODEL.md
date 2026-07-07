@@ -12,12 +12,14 @@ Shared standards documented here are baselines, not blind templates. Every repos
 
 Content tracked in Git must be polished and safe for publication.
 
-Private working material belongs under `internal/`. This directory:
+Private working material belongs under `_internal/` (the canonical path). Legacy `internal/` exists and is preserved temporarily.
 
-- Is not tracked by Git.
+`_internal/`:
+- Is a separate local-only Git repository with no remote.
+- Is excluded from the public repository via local exclusion and pre-commit/pre-push hooks.
 - May contain private operating notes, draft decisions, publication notes, and session logs.
 - Is authoritative only according to the future private-note policy.
-- Must not contain secrets merely because it is untracked.
+- Must not contain secrets merely because it is private.
 - Is not synchronized by Git.
 
 ## GitHub and deployment model

@@ -21,4 +21,4 @@ This repository is in an early foundation stage. The initial structure, `.gitign
 - **Standards support, not bureaucracy.** Shared conventions exist to reduce friction across the portfolio. Every standard is a starting point that evolves when a real project, incident, or operational gap exposes a need.
 - **Iterative validation.** Workflows are drafted, tested against real project needs, and refined. No workflow is considered final until it has been exercised.
 - **Git-based source of truth.** Tracked material lives in Git. Proposed changes flow through branches and pull requests.
-- **Public by default.** All tracked content is intended to be publication-safe. Private working notes, session logs, and unresolved design drafts belong in the untracked `internal/` tree.
+- **Public by default.** All tracked content is intended to be publication-safe. Private working notes, session logs, and unresolved design drafts belong in the untracked `_internal/` tree (legacy `internal/` also exists and is preserved temporarily).
