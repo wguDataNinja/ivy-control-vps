@@ -115,6 +115,20 @@ Agents must:
 
 When task-specific integration is authorized, validate first, then commit, push, integrate, and verify local and remote SHAs.
 
+## Git write delegation
+
+To perform Git write operations, invoke the global `git-steward` subagent. Do not run those operations yourself.
+
+- Normal implementation agents may run read-only Git inspection commands (`git status`, `git diff`, `git log`, `git show`, `git rev-parse`, `git branch`, `git remote -v`, `git ls-files`, `git check-ignore`, `git submodule status`).
+- Normal agents must not stage, commit, push, merge, integrate, restore, clean, or alter Git state directly.
+- `git-steward` owns routine staging, commit, push, and bounded integration within the current task authority.
+- `git-steward` proceeds autonomously only after its mandatory internal certainty check passes.
+- `git-steward` is still bound by `AGENTS.md`, `docs/GIT_WORKFLOW.md`, protected paths, and current task authority.
+- Invoking `git-steward` does not create commit, push, merge, deletion, cleanup, or restore authority beyond what the current task already provides.
+- No agent, including `git-steward`, may delete files.
+- No agent may use Git to overwrite or discard `TODO.md`, `_internal/`, ignored, untracked, private, or unrelated work.
+- Buddy should only be involved for genuine ambiguity, policy, permission, or protected-data decisions.
+
 ## Public and private boundaries
 
 - Public tracked documentation may be pushed to GitHub.

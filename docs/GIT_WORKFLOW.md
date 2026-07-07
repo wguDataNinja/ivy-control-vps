@@ -143,6 +143,28 @@ OpenCode, Codex, and similar agents must:
 - never delete private history without explicit approval;
 - never assume GitHub is a backup for the private repository.
 
+Implementation agents edit and validate files. They must not stage, commit, push, merge, integrate, restore, clean, or alter Git state directly.
+
+For Git writes, invoke `git-steward`.
+
+## Git Steward handoff
+
+`git-steward` handles authorized Git packaging and closeout. It must not edit or delete files.
+
+- Implementation agents edit and validate files.
+- When Git write operations are needed, invoke the global `git-steward` subagent.
+- `git-steward` inspects the working tree, classifies changed paths, stages exact paths, commits, pushes, and performs bounded integration — all within the current task authority.
+- `git-steward` runs a mandatory internal certainty check before every write operation. It proceeds autonomously after the check passes.
+- `git-steward` does not require user confirmation for routine authorized Git work. It stops only for real ambiguity or missing authority.
+- No `LOG.md` requirement is introduced by this workflow.
+
+Existing safeguards remain unchanged:
+- Exact-path staging remains mandatory.
+- Public/private separation remains unchanged.
+- Local hooks (`pre-commit`, `pre-push`) remain active.
+- `TODO.md` remains read-only — never staged, committed, or modified.
+- No file deletion is permitted by any agent, including `git-steward`.
+
 ## Branch naming
 
 Public branches:
