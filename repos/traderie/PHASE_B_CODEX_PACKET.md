@@ -2,7 +2,7 @@
 
 **Prerequisite:** VPS Capacity Gate must pass before any deployment work.
 **Phase A status:** Complete — 17 migrations, 57 tests, pilot loaded, GitHub published, fresh-clone proven, PG adapter real (env-gated).
-**Current VPS:** 91% disk (3.3 GB free), no PostgreSQL, no traderie checkout, no passwordless sudo.
+**Current VPS:** 88% disk (4.4 GB free, refreshed 2026-07-07T23:09Z), no PostgreSQL, no traderie checkout, no passwordless sudo.
 
 ---
 
@@ -29,20 +29,26 @@ Bounded VPS capacity remediation and one-shot deployment proof. Stop before cont
 
 ## VPS cleanup (only with Buddy approval per target)
 
-### Low-risk (safe to reclaim)
+### Approved first-pass cleanup (proven disposable and inactive)
 
-| Target | Path | Expected recovery | Command |
-|--------|------|-------------------|---------|
-| Chromium cache | `/home/scraper/.cache/chromium/` | ~1.5 GB | `rm -rf ~/.cache/chromium/*` |
-| Camoufox profiles | `/home/scraper/camoufox-profiles/` | ~122 MB | `rm -rf ~/camoufox-profiles/*` |
-| Camoufox venv | `/home/scraper/camoufox-env/` | ~248 MB | `rm -rf ~/camoufox-env/` |
+| Target | Path | Size | Command |
+|--------|------|------|---------|
+| Camoufox cache | `/home/scraper/.cache/camoufox/` | 1.3 GB | `rm -rf /home/scraper/.cache/camoufox/*` |
+| Pip cache | `/home/scraper/.cache/pip` | 80 MB | `rm -rf /home/scraper/.cache/pip` |
+| Downloads | `/home/scraper/Downloads/*` | 112 KB | `rm -f /home/scraper/Downloads/*` |
+| Temp screenshots | `/tmp/*.png` | ~3 MB | `rm -f /tmp/*.png` |
 
-### Needs Buddy approval
+**Subtotal**: ~1.4 GB reclaimable. Expected post-cleanup: ~81% used.
 
-| Target | Path | Size | Check required |
-|--------|------|------|----------------|
-| mcstories-search | `/home/scraper/mcstories-search` | 1.8 GB | Verify if active / owned by another repo |
-| Private chat archive | `/home/scraper/data/private/chat` | 13 GB | **Do not touch without separate explicit approval** |
+### Not yet approved (deferred)
+
+| Target | Path | Size | Reason |
+|--------|------|------|--------|
+| Chrome cache | `/home/scraper/.cache/google-chrome/` | 706 MB | Chrome actively running (28 processes); defer to separate stop-clean-restart procedure |
+| Camoufox venv | `/home/scraper/camoufox-env/` | 248 MB | Verify pinned deps and recreation procedure |
+| Camoufox profiles | `/home/scraper/camoufox-profiles/` | 122 MB | Contains browser state; verify workflow dependency |
+| mcstories-search | `/home/scraper/mcstories-search` | 573 MB | PROTECTED — active crawl |
+| Private chat archive | `/home/scraper/data/private/chat` | 13 GB | PROTECTED — migration input |
 
 ### Requires sudo (currently unavailable — document for host resize planning)
 
@@ -59,7 +65,7 @@ Bounded VPS capacity remediation and one-shot deployment proof. Stop before cont
 3. Checkout exact SHA `b3b70a0` (or later reviewed SHA)
 4. Create `.env` from `/home/scraper/config/traderie.env` (secrets outside repo)
 5. Create `.venv` and `pip install -r requirements.txt`
-6. Set `TRADERIE_PG_URL` for Mac PG access (via reverse tunnel or direct SSH) — verify connectivity
+6. Set `TRADERIE_PG_URL` for VPS PostgreSQL access (`localhost:5432`) — VPS PG is operational authority; Mac is archive/backup/restore authority
 7. Run bounded manual collection (`scripts/run_traderie_snapshot.sh`)
 8. Run validation (`scripts/run_traderie_validate.sh`)
 9. Run health export (`scripts/traderie_health_export.py`)
@@ -70,7 +76,7 @@ Bounded VPS capacity remediation and one-shot deployment proof. Stop before cont
 ## One-shot smoke and rollback proof
 
 1. Run one full snapshot cycle
-2. Confirm new records appear in `app.completed_trades` (via Mac PG)
+2. Confirm new records appear in `app.completed_trades` (via VPS PG)
 3. Confirm health export succeeds
 4. Run rollback: delete the test-run records by observation_key set
 5. Confirm row counts return to pre-test baseline

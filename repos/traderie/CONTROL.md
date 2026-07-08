@@ -74,7 +74,7 @@
 
 ## Current blocker
 
-**VPS Capacity Gate** — `ih-market-vps` at 91% disk (3.3 GB free, 2026-07-07). No passwordless sudo. No PostgreSQL installed. No traderie checkout. Gates 4, 5, and 6 cannot proceed until this passes.
+**VPS Capacity Gate** — `ih-market-vps` at 88% disk (4.4 GB free, refreshed 2026-07-07T23:09Z). No passwordless sudo. No PostgreSQL installed. No traderie checkout. The gate remains BLOCKED — 88% exceeds the 85% deployment stop threshold. However, ~1.4 GB is safely reclaimable from disposable caches (camoufox cache, pip cache, temp files), which is expected to bring utilization to approximately 81% and unblock the gate. Gates 4, 5, and 6 cannot proceed until this passes.
 
 ---
 

@@ -83,7 +83,7 @@ Determines whether Traderie can be deployed to a VPS. Does not authorize deploym
 
 | Criterion | Standard | Traderie evidence | Result |
 |-----------|----------|-------------------|--------|
-| VPS Capacity Gate | PASS before any deployment | **FAILED** — 91% disk (3.3 GB free), no passwordless sudo, no PostgreSQL. | **BLOCKED** |
+| VPS Capacity Gate | PASS before any deployment | **FAILED** — 88% disk (4.4 GB free), no passwordless sudo, no PostgreSQL. ~1.4 GB safely reclaimable from disposable caches to reach ~81%. | **BLOCKED** |
 | Exact SHA recorded | Approved SHA documented | `b3b70a0` recorded in this file. | **PASS** |
 | Systemd units defined | Units follow naming convention | 6 service/timer pairs under `deploy/systemd/`. Names follow `{project}-{role}-{action}`. | **PASS** |
 | Wrapper scripts exist | All referenced scripts present | `run_traderie_snapshot.sh`, `run_traderie_backup.sh`, `run_traderie_validate.sh`, `regenerate_products.sh` all present. | **PASS** |
@@ -114,7 +114,7 @@ Authorizes the bounded Phase B deployment proof. Not reached because Deployment 
 
 | Criterion | Standard | Traderie | Result |
 |-----------|----------|----------|--------|
-| VPS Capacity Gate | ✅ PASS | ❌ FAIL | **BLOCKED** |
+| VPS Capacity Gate | ✅ PASS | ❌ FAIL — 88% disk (4.4 GB free) | **BLOCKED** |
 | Exact SHA verified on remote | ✅ PASS | `b3b70a0` confirmed | **PASS** |
 | Pre-deployment backup/restore | Fresh backup + restore drill | Must be run immediately before deployment | **NOT YET RUN** |
 | Scheduler Gate bypass | Not required for one-shot proof | Deployment proof is bounded — no timers enabled | **NOT APPLICABLE** |
@@ -145,7 +145,7 @@ Authorizes continuous collection and production authority transfer. Cannot be re
 
 ## Current blocker
 
-**VPS Capacity Gate** — `ih-market-vps` at 91% disk (3.3 GB free, 2026-07-07). No passwordless sudo. No PostgreSQL installed. Gates 4, 5, and 6 cannot proceed until this passes.
+**VPS Capacity Gate** — `ih-market-vps` at 88% disk (4.4 GB free, refreshed 2026-07-07T23:09Z). No passwordless sudo. No PostgreSQL installed. ~1.4 GB safely reclaimable from disposable caches. Gates 4, 5, and 6 cannot proceed until this passes.
 
 ---
 
