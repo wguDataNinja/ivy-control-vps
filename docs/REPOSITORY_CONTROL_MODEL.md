@@ -14,6 +14,7 @@ ivy-control-vps is the portfolio control plane. It owns:
 - approved SHA tracking
 - repository status aggregation
 - agent instruction model (`AGENTS.md`)
+- public roadmap conventions (when a `ROADMAP.md` exists for a workstream)
 
 Managed repositories remain separate codebases with their own code, data, tests, and local workflows.
 
@@ -180,6 +181,7 @@ CONTROL.md must be reviewed or updated when:
 | `repos/<repo>/CONTROL.md` | Active governance authority. One-stop for current state. |
 | `repos/<repo>/RELEASE_GATES.md` | Detailed gate evidence. Referenced by CONTROL.md. |
 | `repos/<repo>/STATUS.md` | **Deprecated** once CONTROL.md exists. Retained as historical reference, not updated. |
-| `repos/<repo>/<phase-packet>.md` | Bounded execution instructions for the next authorized phase. Not a governance document. |
+| `repos/<repo>/<phase-packet>.md` | Bounded execution instructions for the next authorized phase. Not a governance document. Public. |
+| `_internal/outbox/` and `_internal/tasks/` | Private gate-evidence packets and ad-hoc task artifacts. Not governance; evidence only. See `_internal/GPT_ORCHESTRATED_WORKFLOW.md`. |
 | `docs/PORTFOLIO_CONVENTIONS.md` | Durable cross-repo conventions. Referenced by CONTROL.md applicability matrix. |
 | `docs/DATA_LIFECYCLE_STANDARD.md` | Portfolio data-lifecycle principles. Referenced by CONTROL.md. |

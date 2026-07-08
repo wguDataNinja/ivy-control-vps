@@ -76,11 +76,11 @@ A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHES
 | Owner | Work class | Examples |
 |---|---|---|
 | **Buddy** | Authority and risk decisions | License choice, publication scope, gate approvals, destructive-operation approval, cross-repo policy |
-| **Implementation agents** (OpenCode, Codex) | Bounded low-risk implementation | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation |
-| **Strong execution agents** (Codex) | Architecture and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, history rewrite planning, destructive cleanup design |
+| **OpenCode** | Bounded low-risk implementation | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation |
+| **Strong Codex** | Architecture and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, history rewrite planning, destructive cleanup design |
 | **Orchestration agents** (future Hermes) | Monitoring, drift detection, PR proposal | Scheduled scans, health checks, SHA drift detection, structured PR creation |
 
-Implementation agents receive bounded tasks with explicit scope, allowed files, and validation criteria. They do not invent architecture, mutate production state, or approve their own work. Strong execution agents resolve architecture-level contradictions and design fragile cross-repo boundaries. Orchestration agents observe and propose but never execute production changes directly.
+OpenCode agents receive bounded tasks with explicit scope, allowed files, and validation criteria. They do not invent architecture, mutate production state, or approve their own work. Strong Codex resolves architecture-level contradictions and designs fragile cross-repo boundaries. Orchestration agents observe and propose but never execute production changes directly.
 
 ## Documentation maintenance
 
@@ -89,7 +89,7 @@ A daily documentation loop is planned but not yet implemented. The intended work
 1. Inspect changes from the prior period.
 2. Determine which documents are affected.
 3. Update only the affected documents.
-4. Propose changes in a pull request.
+4. Propose changes in a pull request (or commit directly when explicitly authorized).
 5. Do not merge automatically.
 
 ## Pending standards
@@ -103,5 +103,6 @@ The following areas are identified as requiring standards that have not yet been
 - **Data lifecycle and storage** — foundational principles are defined in `docs/DATA_LIFECYCLE_STANDARD.md`. Repository-specific retention windows, pruning configurations, and growth thresholds are set in each repo's `CONTROL.md` or local retention policy.
 - **Portfolio-level LLM strategy** — foundational design tenets are defined in `docs/LLM_TENETS.md`. Operational adoption, benchmarking, provider interfaces, validation patterns, and repository-specific implementation remain pending.
 - **Repository-specific templates** — conventions for `README.md`, `AGENTS.md`, `.gitignore`, and other files tailored to project types.
+- **Private orchestration workflow** — GPT-orchestrated roadmap work, numbered handoffs, high-reasoning gates, and session-close procedures are defined in `_internal/GPT_ORCHESTRATED_WORKFLOW.md`. That document is the private authority; this public document describes only the agent taxonomy.
 
 These items are explicitly pending and should not be treated as resolved until a standard is drafted, reviewed, and approved.

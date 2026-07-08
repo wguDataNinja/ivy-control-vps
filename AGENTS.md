@@ -19,7 +19,6 @@ Before acting:
 5. Identify the exact task, allowed files, applicable standards, control-sheet or gate implications, and validation required.
 6. If the task involves a managed repository, read its `repos/<repo>/CONTROL.md` before acting.
 7. Stop and ask if the task or any destructive instruction is ambiguous.
-6. Stop and ask if the task or any destructive instruction is ambiguous.
 
 A request to read a file authorizes no Git or filesystem mutation.
 
@@ -132,6 +131,12 @@ To perform Git write operations, invoke the global `git-steward` subagent. Do no
 - No agent may use Git to overwrite or discard `TODO.md`, `_internal/`, ignored, untracked, private, or unrelated work.
 - Buddy should only be involved for genuine ambiguity, policy, permission, or protected-data decisions.
 
+## Codex
+
+When a task is explicitly assigned to Strong Codex, Codex has authority to choose the execution strategy, inspect additional relevant context, and determine the safest command sequence within the task's stated boundaries.
+
+Do not delegate Codex work to subagents unless Buddy explicitly asks for delegation or the task clearly requires independent specialist work.
+
 ## Public and private boundaries
 
 - Public tracked documentation may be pushed to GitHub.
@@ -160,6 +165,8 @@ Read-only exploration, simple factual answers, and inspections that produce no d
 Create or update the required log before declaring meaningful work complete. Use the organized private logging path defined by `docs/LOGGING_STANDARD.md`; do not use legacy `SESSION.md` or `LOG.md` as the primary record for new work.
 
 Use the concise format defined by the logging standard. Record the result, validation, unresolved issues, and next work. Reference commits where relevant, but do not duplicate Git history or long command transcripts.
+
+If a bounded operational task forbids repository changes, the executing agent returns structured evidence only. A later OpenCode closeout task may record the private log.
 
 ## Validation
 
@@ -205,3 +212,11 @@ Before any VPS work, read these files in order:
 2. `_internal/vps-inventory-and-runbook.md` — private host identity, SSH access, workload map, capacity evidence, exact read-only commands, protected workload rules
 
 "Check the VPS" always means Mode 2 (read-only SSH inspection). It never authorizes cleanup, deployment, restart, migration, or service activation. See `agents/VPS_ORCHESTRATION.md` §1a for the complete mode model.
+
+## Private orchestration workflow
+
+For GPT-orchestrated roadmap work, numbered handoffs, high-reasoning gates, private outbox packets, ad-hoc task artifacts, GPT session logs, and session close, follow:
+
+`_internal/GPT_ORCHESTRATED_WORKFLOW.md`
+
+The public `ROADMAP.md` defines project direction and phase status when it exists. Private orchestration details remain under `_internal/`.

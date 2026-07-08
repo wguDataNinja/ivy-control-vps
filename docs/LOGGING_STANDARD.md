@@ -1,12 +1,12 @@
 # Logging Standard
 
-**Status:** Initial / provisional. This standard will be evaluated through actual use and revised when friction or gaps are discovered.
+**Status:** Current authority. Revised to clarify public/private boundaries per `_internal/GPT_ORCHESTRATED_WORKFLOW.md` §16.
 
-## Purpose
+## 1. Purpose
 
 Define the logging layers used across the IvyControlVPS portfolio and make the requirements discoverable to agents through the repository entry point. Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
 
-## Layer 1: Machine and runtime logs
+## 2. Machine and runtime logs
 
 These cover services, jobs, errors, retries, timing, record counts, health checks, backups, pruning, and storage or database growth.
 
@@ -20,45 +20,33 @@ Requirements:
 
 Exact tooling (systemd journal, file rotation, structured logging libraries, log aggregation) remains repository-specific.
 
-## Layer 2: Agent work logs
+## 3. Agent work logs
 
 Short records of meaningful agent work.
 
-### When a log is required
+### 3A. When a log is required
 
 An agent log is required whenever an agent performs meaningful work that changes repository state, creates a durable artifact, changes configuration, performs deployment work, or completes a substantive operational task.
 
-### When a log is normally not required
+### 3B. When a log is normally not required
 
 - Read-only exploration
 - Simple factual answers
 - Brief question answering
 - Inspection that produces no durable result or decision
 
-### Provisional format
-
-```markdown
-# <agent or task>
-
-- Did:
-- Result:
-- Checked:
-- Next:
-```
-
-### Rules
+### 3C. Rules
 
 - Remain concise. A few lines per entry is preferred.
 - Do not duplicate Git history. Reference commits by hash or message where relevant.
 - Record validation results and any unresolved issues.
 - Identify the task or agent clearly.
 - Create or update the log before the agent declares meaningful work complete.
-
 - `AGENTS.md` or the applicable agent contract should route agents to this standard before meaningful work begins.
 - When requested, include concise process feedback covering friction, unclear instructions, missing prerequisites, or possible improvements.
 - Do not treat a missing log as agent failure when the logging requirement was not yet written or discoverable at the time of the work.
 
-### Provisional path convention
+### 3D. Path convention
 
 ```
 _internal/logs/agents/YYYY-MM-DD/<agent-or-task-slug>.md
@@ -66,28 +54,21 @@ _internal/logs/agents/YYYY-MM-DD/<agent-or-task-slug>.md
 
 (The legacy path `internal/logs/` is preserved temporarily but should not be used for new logs.)
 
-Exact naming, retention, and later aggregation policy are provisional.
+### 3E. Format
 
-## Layer 3: GPT and planning-session logs
+A concise record covering what was done, the result, validation performed, and next steps. Full templates and detailed format guidance are in the private orchestration workflow.
 
-These preserve planning and design discussions that may contain:
+## 4. GPT and planning-session logs
 
-- Approved decisions not yet promoted into durable documentation
-- Rejected or superseded ideas
-- Unresolved questions
-- Future work
-- Private reasoning and context
-- Design and process observations
+These preserve planning and design discussions that may contain approved decisions, rejected ideas, unresolved questions, and private reasoning.
 
-### Provisional path convention
+### 4A. Path convention
 
 ```
-_internal/logs/gpt/YYYY-MM-DD/<session-slug>.md
+_internal/logs/sessions/GPT-<number>-<session-slug>.md
 ```
 
-(The legacy path `internal/logs/` is preserved temporarily but should not be used for new logs.)
-
-### Rules
+### 4B. Rules
 
 - These logs are private and ignored by Git.
 - They are not automatically synchronized to GitHub or the VPS.
@@ -95,15 +76,17 @@ _internal/logs/gpt/YYYY-MM-DD/<session-slug>.md
 - Durable approved decisions should be promoted into the correct public or private authority document.
 - Logs are evidence and source material, not automatically authoritative policy.
 - Secrets should not be stored in these logs merely because they are private.
-
-- Each session log should begin with a short meta section defining its purpose and structure.
-- A recommended structure is: Context, Approved decisions, Work completed, Process observations, Unresolved items, Items to promote later, and Next-session handoff.
+- Each session log should begin with metadata defining its purpose, session number, and related artifacts.
 - Keep session logs concise and avoid duplicating Git history, implementation reports, or public documentation unless an undocumented decision or process lesson is attached.
 - Flag uncertainty rather than guessing.
 - MacBook-private session logs are not automatically copied to the VPS; only material needed for VPS or Hermes operations should later be promoted or provisioned deliberately.
 
-### Session close review
+### 4C. Session close
 
-GPT planning sessions should normally be closed using the [session-close workflow](../workflows/session-close.md) before the resulting private record is saved.
+Session close follows a two-part model: repository-side closeout by an agent, then discussion-side capture by GPT. The detailed procedure is defined in the private orchestration workflow at `_internal/GPT_ORCHESTRATED_WORKFLOW.md` §13.
 
-The resulting record should be saved under the GPT/planning-session path above unless a more specific private location has been approved.
+### 4D. Templates and detailed mechanics
+
+Detailed GPT session-log templates, append behavior, and GPT-versus-agent responsibilities are defined in the private orchestration workflow:
+
+`_internal/GPT_ORCHESTRATED_WORKFLOW.md` §12

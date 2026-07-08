@@ -16,6 +16,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`DATA_LIFECYCLE_STANDARD.md`](DATA_LIFECYCLE_STANDARD.md) | Portfolio data-lifecycle principles — data classes, retention, growth measurement, disk thresholds, health metrics |
 | [`../agents/VPS_ORCHESTRATION.md`](../agents/VPS_ORCHESTRATION.md) | Provisional VPS/Hermes orchestration contract — role, delegation, approval boundaries, logging |
 | [`../workflows/session-close.md`](../workflows/session-close.md) | Workflow for closing a session without losing important decisions |
+| [`../_internal/GPT_ORCHESTRATED_WORKFLOW.md`](../_internal/GPT_ORCHESTRATED_WORKFLOW.md) | Private GPT-orchestrated workflow authority — numbered handoffs, gates, session logs, ad-hoc tasks, session close |
 | `repos/` | Per-project status files — current phase, gates, blockers, deployment state. Read by ivy-control agents before acting on a project. |
 
 ## Reading order for a new maintainer or agent
@@ -31,7 +32,8 @@ This index is the operational map for agents and maintainers working with IvyCon
    - `LLM_TENETS.md` — LLM system design principles
 5. Repository control sheet — `repos/<repo>/CONTROL.md` when working with a specific managed repository
 6. Detailed gate evidence or phase packet only when the task requires gate-specific detail
-7. For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures
+7. For GPT-orchestrated session work, read `_internal/GPT_ORCHESTRATED_WORKFLOW.md` (private) for numbered handoffs, gate packets, session logging, and session close
+8. For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures
 
 ## Predecessor tree
 

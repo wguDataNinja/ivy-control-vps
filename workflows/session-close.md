@@ -2,26 +2,18 @@
 
 Close a session without losing important decisions.
 
-## Steps
+## Two-part closeout
 
-1. Review the full session thread.
-2. Report only material items not already captured in Git, committed documents, reports, or completed implementation:
-   - Approved decisions not yet documented.
-   - Rejected or superseded ideas that future agents might repeat.
-   - Unresolved questions.
-   - Useful ideas discussed but not approved.
-   - Follow-up work agreed for later.
-   - Private notes that belong in the private `_internal/` area (legacy `internal/` is preserved temporarily).
-3. Do not repeat implementation already documented elsewhere unless an undocumented decision is attached.
-4. Flag uncertainty instead of guessing.
+Session close follows two sequential parts:
 
-## Output
+1. **Repository-side closeout** — An agent inspects Git state, checks agent logs, verifies gate packets, confirms `_internal/` remains excluded, identifies unresolved ad-hoc tasks, and creates or populates the GPT session-log file with metadata and links.
 
-The closeout report is expected to be stored privately (in `_internal/logs/` or another agreed location) unless Buddy decides otherwise.
+2. **Discussion-side capture** — GPT fills or appends decisions, rationale, deferred ideas, open questions, gate outcomes, roadmap impact, and the next handoff.
 
-## Next-session handoff
+## Private workflow
 
-End the closeout with a short handoff covering:
-- What was accomplished.
-- What remains open.
-- What the next session should start with.
+The detailed closeout procedure, including the exact steps for each part, is defined in the private workflow:
+
+`_internal/GPT_ORCHESTRATED_WORKFLOW.md` §13
+
+That document governs the private orchestration mechanics and is the authoritative procedure for session close.
