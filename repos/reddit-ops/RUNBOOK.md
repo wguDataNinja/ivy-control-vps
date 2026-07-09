@@ -196,3 +196,35 @@ ssh ih-market-vps "sha256sum /home/scraper/apps/wgu-reddit/src/wgu_reddit_analyz
 ```
 
 ---
+
+## Backup Creation and Validation
+
+```bash
+# Manual backup:
+ssh ih-market-vps "
+set -a
+. /home/scraper/config/wgu-reddit-pg.env
+set +a
+pg_dump \"\$REDDIT_OPS_PG_BACKUP_URL\" -Fc -Z 9 -f /home/scraper/backups/reddit-ops/reddit_ops_\$(date -u +%Y%m%dT%H%M%SZ).dump
+sha256sum /home/scraper/backups/reddit-ops/reddit_ops_*.dump
+"
+
+# Automated backup runs via systemd timer at 08:00 UTC daily:
+#   wgu-reddit-backup.service
+#   wgu-reddit-backup.timer
+
+# Validate backup:
+ssh ih-market-vps "
+set -a
+. /home/scraper/config/wgu-reddit-pg.env
+set +a
+pg_restore --list /home/scraper/backups/reddit-ops/reddit_ops_*.dump 2>/dev/null | head -30
+"
+
+# Copy to Mac archive:
+scp ih-market-vps:/home/scraper/backups/reddit-ops/reddit_ops_*.dump /Users/buddy/projects/backups/postgres/reddit-ops/
+scp ih-market-vps:/home/scraper/backups/reddit-ops/reddit_ops_*.sha256 /Users/buddy/projects/backups/postgres/reddit-ops/
+sha256sum /Users/buddy/projects/backups/postgres/reddit-ops/reddit_ops_*.dump
+```
+
+---

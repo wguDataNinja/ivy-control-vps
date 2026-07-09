@@ -5,7 +5,7 @@
 **Producer repository:** `/Users/buddy/Desktop/WGU-Reddit` — `github.com/wguDataNinja/WGU-Reddit-Feedback-Analyzer.git`
 **Production database:** `reddit_ops` on VPS PostgreSQL 16
 **Schemas:** `reddit_core` (shared canonical data), `wgu_reddit` (WGU project state), `bsda_courses` (future project schema)
-**Lifecycle state:** `production-stabilizing` — production authority has moved, but scheduled-run, backup, restore, monitoring, and governance gates remain open.
+**Lifecycle state:** `production-stabilizing` — production authority is established, Git publication and reboot recovery remain open. Most closeout gates have passed.
 **Detailed gate evidence:** `repos/reddit-ops/RELEASE_GATES.md`
 **Cutover history:** `repos/reddit-ops/CUTOVER_HISTORY.md`
 **Stabilization checklist:** `repos/reddit-ops/STABILIZATION.md`
@@ -33,11 +33,10 @@
 
 | Item | Status |
 |------|--------|
-| Deployed SHA | Not tracked — VPS checkout is not a Git checkout |
-| Deployment path | Manual `scp` from Mac to VPS |
-| Drift detection | Not implemented |
-| Fresh-clone reproducible | No — untracked runtime files exist |
-| Last deployment | 2026-07-08 — frontier fix (`reddit_ops_pg.py`) |
+| Deployed SHA | `7047400` — local WGU-Reddit commit (approved-partial fix). Pending Git publication. |
+| Deployment path | Manual `scp` from Mac to VPS (Git publication blocked — secrets in early commit history) |
+| Drift detection | Checksum comparison via `sha256sum` / `git rev-parse HEAD` |
+| Last deployment | 2026-07-09 — approved-partial exit semantics fix + backup scripts |
 
 ---
 
@@ -59,7 +58,8 @@
 | Exit | systemd Result | Status |
 |------|----------------|--------|
 | `success` (0) | success | ✅ Implemented |
-| `partial` (1) | failed | ⚠️ Open — accepted partial runs (known 403/404 subreddits) produce systemd failure |
+| `approved partial` (0) | success | ✅ Implemented (2026-07-09) — all errors match known inaccessible set |
+| `unexpected partial` (1) | failed | ✅ Correct — unexpected errors still produce failure |
 | `cancelled` (1) | failed | ✅ Acceptable — cancellation is externally initiated |
 | `failed` (1) | failed | ✅ Correct — unexpected errors should produce failure |
 
