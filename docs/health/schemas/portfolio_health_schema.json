@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ivy-control.local/schemas/portfolio-health-v2.json",
+  "title": "Portfolio Health Payload — v2.0.0",
+  "description": "Canonical producer health payload for Ivy portfolio health contract v2",
+  "type": "object",
+  "properties": {
+    "contract_version": { "type": "integer", "minimum": 2, "maximum": 2, "description": "Contract version" },
+    "generated_at": { "type": "string", "format": "date-time", "description": "Payload generation timestamp (ISO 8601)" },
+    "project": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "Portfolio project slug" },
+    "workflow": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "Workflow name" },
+    "workflow_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]+/[a-z][a-z0-9_]*$", "description": "Stable workflow identifier: {project}/{workflow}" },
+    "run_id": { "type": "string", "format": "uuid", "description": "Unique run identifier (UUID v4)" },
+    "status": { "type": "string", "enum": ["ok", "warn", "fail", "skip", "stale", "running"], "description": "Run status" },
+    "started_at": { "type": ["string", "null"], "format": "date-time", "description": "Run start timestamp" },
+    "finished_at": { "type": ["string", "null"], "format": "date-time", "description": "Run finish timestamp; null if running" },
+    "last_success_at": { "type": ["string", "null"], "format": "date-time", "description": "Timestamp of last ok run" },
+    "expected_cadence_seconds": { "type": "integer", "minimum": 1, "description": "Expected interval between runs in seconds" },
+    "freshness_seconds": { "type": "integer", "minimum": 0, "description": "Seconds since last_success_at" },
+    "records_read": { "type": ["integer", "null"], "minimum": 0 },
+    "records_written": { "type": ["integer", "null"], "minimum": 0 },
+    "records_rejected": { "type": ["integer", "null"], "minimum": 0 },
+    "backlog": { "type": ["integer", "null"], "minimum": 0 },
+    "retry_count": { "type": ["integer", "null"], "minimum": 0 },
+    "error_class": { "type": ["string", "null"] },
+    "error_code": { "type": ["string", "null"], "description": "Operator-only: machine-readable error code" },
+    "error_message_private": { "type": ["string", "null"], "description": "Operator-only: raw error detail" },
+    "deployed_revision": { "type": ["string", "null"], "pattern": "^([a-f0-9]{7,40}|null|unknown)?$", "description": "Git commit SHA" },
+    "schema_version": { "type": ["integer", "null"], "minimum": 0 },
+    "migration_version": { "type": ["string", "null"] },
+    "scheduler_state": { "type": ["string", "null"], "enum": ["active", "paused", "unknown", "unmanaged", null] },
+    "backup_state": { "type": ["string", "null"], "enum": ["ok", "stale", "fail", "not_applicable", null] },
+    "backup_age_seconds": { "type": ["integer", "null"], "minimum": 0 },
+    "storage_bytes": { "type": ["integer", "null"], "minimum": 0 },
+    "storage_growth_bytes_24h": { "type": ["integer", "null"] },
+    "database_size_bytes": { "type": ["integer", "null"], "minimum": 0 },
+    "data_directory_size_bytes": { "type": ["integer", "null"], "minimum": 0 },
+    "prune_status": { "type": ["string", "null"], "enum": ["ok", "stale", "fail", "not_applicable", null] },
+    "incident_state": { "type": "string", "enum": ["none", "active", "resolved"], "description": "Current incident state" },
+    "degraded_reason_code": { "type": ["string", "null"], "description": "Aggregator-derived reason for non-ok effective status" },
+    "heartbeat_at": { "type": ["string", "null"], "format": "date-time" },
+    "heartbeat_age_seconds": { "type": ["integer", "null"], "minimum": 0, "description": "Aggregator-derived seconds since heartbeat_at" },
+    "volume_24h": { "type": ["integer", "null"], "minimum": 0, "description": "Aggregator-derived records written in the last 24 hours" },
+    "growth_rate_24h": { "type": ["integer", "null"], "description": "Aggregator-derived storage growth in the last 24 hours" },
+    "growth_rate_7d": { "type": ["integer", "null"], "description": "Aggregator-derived storage growth in the last 7 days" },
+    "retention_boundary_proximity": { "type": ["string", "null"], "enum": ["ok", "warning", "critical", null], "description": "Aggregator-derived retention pressure state" },
+    "last_failure_at": { "type": ["string", "null"], "format": "date-time", "description": "Aggregator-derived timestamp of latest non-ok run" },
+    "failure_count": { "type": ["integer", "null"], "minimum": 0, "description": "Aggregator-derived consecutive failure count" },
+    "drift_state": { "type": ["string", "null"], "enum": ["clean", "dirty", "unknown", null], "description": "Aggregator-derived deployed revision drift state" },
+    "disk_free_bytes": { "type": ["integer", "null"], "minimum": 0 },
+    "disk_usage_pct": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+    "producer_version": { "type": ["string", "null"] },
+    "project_environment": { "type": ["string", "null"], "enum": ["production", "staging", "development", null] },
+    "metadata": { "type": "object", "description": "Reserved for producer-specific extensions. Not validated beyond type." }
+  },
+  "required": [
+    "contract_version", "generated_at", "project", "workflow", "workflow_id",
+    "run_id", "status", "started_at", "finished_at", "last_success_at",
+    "expected_cadence_seconds", "freshness_seconds",
+    "deployed_revision", "scheduler_state", "backup_state", "incident_state"
+  ],
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "fail" } }, "required": ["status"] },
+      "then": { "required": ["error_class"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "running" } }, "required": ["status"] },
+      "then": { "required": ["started_at"] }
+    }
+  ],
+  "additionalProperties": true,
+  "prohibited": [
+    "error_message_private", "error_message", "raw_payload", "source_url",
+    "filesystem_path", "credential", "api_key", "token", "cookie",
+    "session_id", "browser_profile", "private_notes", "reviewer",
+    "approval_detail", "backlog_detail", "ip_address", "hostname",
+    "local_path", "stack_trace", "sql_error", "chat_body", "reddit_body",
+    "raw_html", "raw_response"
+  ]
+}

@@ -115,7 +115,7 @@ Bounded PostgreSQL foundation and one-shot deployment proof. Stop before continu
 - Clone SHA: `git rev-parse HEAD`
 - Test run: `pytest tests/ -q`
 - Snapshot: row counts from `app.completed_trades`, `app.price_entries`
-- Health: `python3 scripts/traderie_health_export.py --json`
+- Health: `python3 scripts/traderie_health_export.py --output /tmp/traderie.health.json` (default: fixture mode; `--pg` for real PG data)
 - Backup: dump path, SHA-256, manifest
 - Rollback: pre/post row counts for deleted observation_key set
 - Disk growth: one clean cycle delta

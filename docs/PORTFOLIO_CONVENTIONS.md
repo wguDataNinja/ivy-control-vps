@@ -213,7 +213,11 @@ VPS config files live at `/home/scraper/config/{project}.env` (outside Git). Rep
 
 ## Health contract
 
-Each project maintains a health schema with a per-run health table containing at minimum:
+The canonical portfolio health contract is now defined in `docs/HEALTH_CONTRACT.md` (v2.0.0).
+
+This section is superseded. The old 18-field model below is retained as historical context but is no longer authoritative. All new health work must follow `docs/HEALTH_CONTRACT.md`.
+
+### Historical field set (v1, superseded)
 
 | Field | Type | Description |
 |-------|------|-------------|
