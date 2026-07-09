@@ -74,13 +74,13 @@
 
 ## Current blocker
 
-**VPS Capacity Gate** — `ih-market-vps` at 88% disk (4.4 GB free, refreshed 2026-07-07T23:09Z). No passwordless sudo. No PostgreSQL installed. No traderie checkout. The gate remains BLOCKED — 88% exceeds the 85% deployment stop threshold. However, ~1.4 GB is safely reclaimable from disposable caches (camoufox cache, pip cache, temp files), which is expected to bring utilization to approximately 81% and unblock the gate. Gates 4, 5, and 6 cannot proceed until this passes.
+**VPS Capacity Gate** — `ih-market-vps` at **84% disk (5.8 GB free, refreshed 2026-07-08 Session A post-cleanup)**. VPS Capacity Gate now **PASSES** — 84% is below the 85% deployment stop threshold. ~1.4 GB reclaimed from disposable caches. No passwordless sudo. No PostgreSQL installed. No traderie checkout. Gates 5 and 6 remain blocked until PostgreSQL foundation and bounded deployment proof complete.
 
 ---
 
 ## Next authorized phase
 
-**Phase B — VPS capacity remediation and bounded deployment proof.** Scope defined in `repos/traderie/PHASE_B_CODEX_PACKET.md`. VPS Capacity Gate must pass before deployment work begins.
+**Pending: Portfolio roadmap —** Phase B execution (VPS capacity remediation and bounded deployment proof, per `repos/traderie/PHASE_B_CODEX_PACKET.md`) is sequenced after the portfolio roadmap session. The roadmap will define the full deployment sequence, dependencies, and gates. Phase B scope, boundaries, and completion criteria in the packet remain correct for the eventual execution task.
 
 ---
 

@@ -1,7 +1,121 @@
 # Portfolio Conventions
 
 **Status:** Current authority.
-**Purpose:** Durable cross-repo conventions for PostgreSQL, systemd, health, migration, environment variables, and deployment. Repository-specific deviations must be documented in the repo CONTROL.md.
+**Purpose:** Durable cross-repo conventions and VPS admission requirements for PostgreSQL, systemd, health, migration, environment variables, deployment, backup, restore, retention, and recovery. Repository-specific deviations must be documented in the repo CONTROL.md.
+
+---
+
+## VPS admission requirements
+
+A repository is eligible for production deployment to Ivy VPS only when the following requirements are satisfied or an explicit exception is recorded in `repos/<repo>/CONTROL.md`.
+
+### Repository and source authority
+
+- GitHub is the authoritative source for reviewed code and durable repository state.
+- The deployed revision is an approved commit, tag, or release identified by exact SHA.
+- The repository has a clear owner and production purpose.
+- The expected GitHub remote, branch policy, and deployment path are documented.
+- The deployed checkout is clean and drift can be detected.
+- Runtime data, generated files, secrets, logs, backups, and mutable state live outside the Git checkout.
+- The repository includes safe setup, deployment, health, rollback, and recovery instructions.
+
+### Runtime contract
+
+- Every production workload has one clear runtime owner.
+- Every recurring workload has one authoritative scheduler.
+- Duplicate schedulers and duplicate writers are disabled before activation.
+- Services use approved systemd naming and are disabled until Scheduler Gate approval.
+- The service entrypoint, working directory, environment files, user, restart policy, timeout, and resource expectations are documented.
+- Long-running work is bounded, observable, cancellable, and safe to retry.
+- Runs are idempotent or use explicit deduplication and checkpointing.
+- A failed, cancelled, partial, skipped, or successful run has unambiguous terminal semantics.
+- Process exit codes and systemd result semantics agree with the application health contract.
+
+### Configuration and secrets
+
+- Production secrets are outside Git.
+- A safe `.env.example` documents required variable names without live values.
+- Production environment files live under `/home/scraper/config/` with least-privilege ownership and permissions.
+- Required variables are validated at startup.
+- Missing or invalid configuration fails closed rather than silently selecting an unsafe fallback.
+- Logs, health exports, documentation, and reports do not expose credentials or connection strings.
+
+### Database readiness
+
+A repository that owns or writes PostgreSQL data must satisfy all of the following:
+
+- Database, schema, role, and ownership boundaries are documented.
+- Applications do not use the `postgres` superuser.
+- Separate owner, migrator, writer, reader, monitor, and backup roles exist where applicable.
+- Least-privilege positive and negative permission tests pass.
+- Forward migrations, rollback SQL or irreversibility statements, validation SQL, and migration-version tracking exist.
+- Migrations have been applied and validated in the target environment.
+- Canonical data, mutable observations, project-specific state, archive state, and derived outputs are separated where appropriate.
+- Import or backfill tooling is read-only against legacy sources and idempotent against the target.
+- Backup tooling works with the dedicated backup role.
+- A dump has been validated with `pg_restore --list`.
+- A full restore drill has passed before the database is considered production-complete.
+- Retention, archive, prune eligibility, and recovery authority are documented.
+
+### Health and observability
+
+- The repository implements the portfolio health contract or a documented compatible equivalent.
+- Health exposes current run state, last success, freshness, backlog, error class, deployed revision, schema version, and backup state.
+- A running job exposes heartbeat and stage or target progress when applicable.
+- Stale `running` work is detected and recovered safely.
+- Concurrent execution is prevented where duplicate work would be unsafe.
+- Expected partial or skipped conditions are explicitly enumerated and distinguishable from real failures.
+- Monitoring thresholds exist for service state, schedule freshness, run duration, heartbeat age, database health, backup age, disk growth, and resource use.
+- Sanitized public health output excludes sensitive operational detail.
+
+### Backup, restore, retention, and recovery
+
+- Automated backups exist for durable production state.
+- Backup artifacts are timestamped, checksummed, validated, and copied to the designated archive authority.
+- Backup age and archive lag are monitored.
+- Restore prerequisites, commands, validation steps, and ownership are documented.
+- At least one restore drill has been completed before the workload is considered fully stabilized.
+- Retention distinguishes operational data, archive data, application history, regenerable data, and rollback artifacts.
+- Destructive pruning occurs only after archive verification and explicit prune eligibility.
+- Host rebuild and emergency recovery procedures identify the required code revision, configuration, database state, services, and validation steps.
+
+### Deployment and rollback
+
+- Preflight checks pass.
+- The exact deployment artifact list is known.
+- Dependency and migration changes are identified before deployment.
+- Service impact and scheduler ownership are known.
+- A rollback SHA and rollback procedure exist.
+- Rollback preserves evidence and does not delete durable target data unless explicitly approved.
+- Production activation includes bounded validation, explicit success gates, explicit failure gates, and automatic rollback where practical.
+- A reboot or service-restart recovery check is completed during stabilization.
+
+### Documentation and control evidence
+
+The repository-specific control sheet at `repos/<repo>/CONTROL.md` must record:
+
+- current lifecycle state;
+- production authority;
+- deployed SHA;
+- database and schema ownership;
+- service and timer names;
+- environment-file locations;
+- backup and restore status;
+- health implementation status;
+- rollback readiness;
+- unresolved blockers;
+- approved exceptions;
+- evidence links under `_internal/` where applicable.
+
+Admission states are:
+
+| State | Meaning |
+|---|---|
+| `not-ready` | Required architecture, runtime, database, or operational work is incomplete. |
+| `ready-for-proof` | Implementation is complete enough for bounded VPS validation, but production authority has not moved. |
+| `ready-for-cutover` | Proof passed and scheduler, rollback, monitoring, backup, and authority gates are satisfied. |
+| `production-stabilizing` | Production authority has moved, but scheduled-run, backup, restore, reboot, or retention gates remain open. |
+| `production-complete` | The workload is authoritative, observable, recoverable, documented, and no longer dependent on a legacy runtime for normal recovery. |
 
 ---
 

@@ -1,7 +1,8 @@
 # Traderie — VPS Status
 
 > **DEPRECATED** — replaced by `repos/traderie/CONTROL.md` as the active governance authority.
-> Retained as historical reference. Not updated. See `CONTROL.md` for current state.
+> Retained as historical reference. Not updated for current state — values below are historical (2026-07-07) and may be stale.
+> See `CONTROL.md` and `RELEASE_GATES.md` for current gate and blocker state.
 
 **Purpose:** (Historical) Former single source of operational state.
 **Canonical repo:** `github.com/wguDataNinja/d2-market-helper` (public)

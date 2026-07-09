@@ -2,13 +2,15 @@
 
 **Prerequisite:** VPS Capacity Gate must pass before any deployment work.
 **Phase A status:** Complete — 17 migrations, 57 tests, pilot loaded, GitHub published, fresh-clone proven, PG adapter real (env-gated).
-**Current VPS:** 88% disk (4.4 GB free, refreshed 2026-07-07T23:09Z), no PostgreSQL, no traderie checkout, no passwordless sudo.
+**Current VPS:** 84% disk (5.8 GB free, refreshed 2026-07-08 Session A post-cleanup — ~1.4 GB reclaimed), no PostgreSQL, no traderie checkout, no passwordless sudo. VPS Capacity Gate now passes (below 85% threshold).
+
+> **Status note (2026-07-08):** This packet is pending the full portfolio roadmap session. Phase B execution should be sequenced through the roadmap rather than launched independently. The scope, boundaries, completion criteria, and evidence requirements in this packet remain correct for the eventual Phase B execution task.
 
 ---
 
 ## Scope
 
-Bounded VPS capacity remediation and one-shot deployment proof. Stop before continuous collection or production authority transfer.
+Bounded PostgreSQL foundation and one-shot deployment proof. Stop before continuous collection or production authority transfer.
 
 ## Hard boundaries
 
@@ -86,7 +88,7 @@ Bounded VPS capacity remediation and one-shot deployment proof. Stop before cont
 
 ## Stop conditions
 
-- VPS disk >85% after cleanup → stop, require resize
+- VPS disk >85% after PostgreSQL installation → stop, require resize
 - No passwordless sudo → cannot deploy dependency packages → stop
 - PG connectivity fails → stop
 - Snapshot script fails → stop
@@ -99,7 +101,7 @@ Bounded VPS capacity remediation and one-shot deployment proof. Stop before cont
 
 ## Completion criteria
 
-- VPS disk <80% or documented reason why cleanup is insufficient
+- VPS disk <85% after PostgreSQL installation or documented reason why installation is blocked
 - traderie checked out at exact reviewed SHA
 - One successful snapshot + validation + health + backup cycle proven
 - Rollback proven (row counts return to baseline)

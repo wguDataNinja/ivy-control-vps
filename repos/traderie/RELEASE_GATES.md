@@ -83,7 +83,7 @@ Determines whether Traderie can be deployed to a VPS. Does not authorize deploym
 
 | Criterion | Standard | Traderie evidence | Result |
 |-----------|----------|-------------------|--------|
-| VPS Capacity Gate | PASS before any deployment | **FAILED** — 88% disk (4.4 GB free), no passwordless sudo, no PostgreSQL. ~1.4 GB safely reclaimable from disposable caches to reach ~81%. | **BLOCKED** |
+| VPS Capacity Gate | PASS before any deployment | **PASS** — 84% disk (5.8 GB free), ~1.4 GB reclaimed from disposable caches. No passwordless sudo. No PostgreSQL. | **PASS** |
 | Exact SHA recorded | Approved SHA documented | `b3b70a0` recorded in this file. | **PASS** |
 | Systemd units defined | Units follow naming convention | 6 service/timer pairs under `deploy/systemd/`. Names follow `{project}-{role}-{action}`. | **PASS** |
 | Wrapper scripts exist | All referenced scripts present | `run_traderie_snapshot.sh`, `run_traderie_backup.sh`, `run_traderie_validate.sh`, `regenerate_products.sh` all present. | **PASS** |
@@ -102,7 +102,7 @@ Determines whether Traderie can be deployed to a VPS. Does not authorize deploym
 3. `deploy/env.example` `TRADERIE_SCHEMA_VERSION` should be updated from 9 to 17, and `TRADERIE_MIGRATION_VERSION` should be updated to `20260706_017_grant_reader_health_select`.
 4. Deploy docs reference architecture documents in old `ivy-control/vps/` — these should point to `docs/PORTFOLIO_CONVENTIONS.md` where promoted or noted as historical where not.
 
-**Blocking gap:** VPS Capacity Gate.
+**Previous blocker:** VPS Capacity Gate — now PASSED (84% disk). **Remaining blockers:** No PostgreSQL installed, no Traderie checkout on VPS, no passwordless sudo. Gates 4 conditions 2-4 require updated deploy docs (completed via Commit A). Gates 5 and 6 remain blocked until PostgreSQL foundation and deployment proof complete. **Sequencing note (2026-07-08):** Phase B execution is pending the portfolio roadmap session. The roadmap will define deployment order, gates, and dependencies before Phase B begins. Packet scope remains valid.
 
 ---
 
@@ -114,7 +114,7 @@ Authorizes the bounded Phase B deployment proof. Not reached because Deployment 
 
 | Criterion | Standard | Traderie | Result |
 |-----------|----------|----------|--------|
-| VPS Capacity Gate | ✅ PASS | ❌ FAIL — 88% disk (4.4 GB free) | **BLOCKED** |
+| VPS Capacity Gate | ✅ PASS | ✅ PASS — 84% disk (5.8 GB free) | **PASS** |
 | Exact SHA verified on remote | ✅ PASS | `b3b70a0` confirmed | **PASS** |
 | Pre-deployment backup/restore | Fresh backup + restore drill | Must be run immediately before deployment | **NOT YET RUN** |
 | Scheduler Gate bypass | Not required for one-shot proof | Deployment proof is bounded — no timers enabled | **NOT APPLICABLE** |
@@ -143,9 +143,14 @@ Authorizes continuous collection and production authority transfer. Cannot be re
 
 ---
 
-## Current blocker
+## Current blockers
 
-**VPS Capacity Gate** — `ih-market-vps` at 88% disk (4.4 GB free, refreshed 2026-07-07T23:09Z). No passwordless sudo. No PostgreSQL installed. ~1.4 GB safely reclaimable from disposable caches. Gates 4, 5, and 6 cannot proceed until this passes.
+1. **No PostgreSQL on VPS** — PostgreSQL must be installed and configured before deployment proof can begin.
+2. **No Traderie checkout on VPS** — Clone and checkout at approved SHA required.
+3. **No passwordless sudo** — Blocks non-interactive dependency package provisioning.
+4. **Portfolio roadmap pending** — Phase B execution will be sequenced through the roadmap session.
+
+VPS Capacity Gate passes at **84% disk (5.8 GB free)**.
 
 ---
 
