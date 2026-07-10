@@ -1,6 +1,6 @@
 # Ivy Control VPS Roadmap
 
-**Status:** Active roadmap, created 2026-07-08.
+**Status:** Active roadmap, created 2026-07-08; factual status reconciled near the end of Work Session 3 on 2026-07-09.
 **Scope:** Portfolio-wide VPS operating model with Traderie as the first detailed reference deployment.
 
 This roadmap defines the long-horizon path for moving the Ivy portfolio onto a governed VPS operating model. It is public, durable, and agent-neutral. Current repository facts are separated from intended future state, and repository sequencing after Traderie remains flexible unless a dependency requires a specific order.
@@ -150,7 +150,7 @@ Capacity is below the deployment stop threshold, or a resize/remediation decisio
 
 **Status**
 
-Current evidence: passing at about 84% disk usage with about 5.8 GB free. This must be rechecked immediately before any deployment.
+Passing during Work Session 3. Capacity was rechecked during Traderie readiness and cutover work and remained below the portfolio deployment stop threshold. Durable migration-phase operations access is now installed through `/usr/local/sbin/ivy-systemd-deploy` and `/etc/sudoers.d/ivy-migration`; the temporary unrestricted bootstrap grant was removed and unrestricted passwordless sudo is not present. Capacity must still be rechecked before each deployment or reboot-sensitive cutover step.
 
 ### §3B PostgreSQL Foundation
 
@@ -185,7 +185,7 @@ A non-application restore drill can be run against a test database without using
 
 **Status**
 
-Not started on VPS. Traderie has a validated Mac PostgreSQL baseline, but VPS PostgreSQL does not exist yet.
+Implemented on VPS during Work Session 3 for the current portfolio migration phase. PostgreSQL is installed and operational. Traderie project roles, database, credentials outside Git, migrations, validation, backup, and isolated restore paths are proven. Delegated PostgreSQL administration remains available through the durable operations model. Broader portfolio standardization remains ongoing.
 
 ### §3C Storage, Retention, Backup, Restore, and Recovery
 
@@ -221,7 +221,7 @@ The repository can be restored into an isolated database and validated before an
 
 **Status**
 
-Proven locally for Traderie. Not yet proven on VPS.
+Proven on VPS for Traderie during Work Session 3: production backup creation, checksum evidence, isolated restore, validation, and recovery evidence passed. Portfolio-wide retention automation, recurring restore drills, and multi-repository coverage remain future work.
 
 ## §4 Exact-SHA Deployment and Drift Control
 
@@ -258,7 +258,7 @@ The VPS checkout matches the approved SHA, has no tracked local modifications, a
 
 **Status**
 
-Traderie has a published approved SHA: `b3b70a01426694d06d6c07a09f0c33427f530f0d`. No Traderie checkout exists on VPS yet.
+Traderie has been deployed on the VPS by exact approved SHA and checked for cleanliness and drift. The earlier readiness deployment used `c789c1023835f7d333245230a1540eb1beef910d`. The corrected runtime SHA `6c374dd60176bd9f09bbe263acd458cc1b773798` is now deployed in the VPS checkout, and repository systemd verification passes. Cutover remains blocked before scheduler transfer because the Traderie health smoke cannot `SET ROLE traderie_reader` and the root-owned `ivy-systemd-deploy` helper is still pinned to the older SHA. No corrected unit reinstall, scheduler transfer, or reboot occurred. The prior roadmap SHA `b3b70a01426694d06d6c07a09f0c33427f530f0d` is historical and no longer the deployment authority.
 
 ### §4B Drift Detection
 
@@ -286,7 +286,7 @@ Drift is visible as a health or control-plane finding before operational activat
 
 **Status**
 
-Not started.
+Partially implemented for Traderie during Work Session 3. Exact SHA, clean checkout, schema version, installed unit hashes, scheduler state, and health revision are included in deployment and cutover validation. Portfolio-wide automated drift reporting remains future work.
 
 ## §5 Scheduler Ownership and Single-Writer Controls
 
@@ -325,7 +325,7 @@ The old and new paths are not both writing production data after cutover.
 
 **Status**
 
-Planned. Not complete for Traderie or WGU-Reddit.
+Exercised for Traderie during Work Session 3 but not yet complete. Mac launchd and VPS systemd authorities were inventoried; one-writer cutover was attempted; the first natural VPS health-timer failure triggered immediate rollback; Mac authority was restored. A later retry deployed corrected SHA `6c374dd60176bd9f09bbe263acd458cc1b773798` to the VPS checkout but stopped before scheduler transfer because the health-role gate and deployment-helper SHA gate failed. VPS Traderie timers and services remain disabled/inactive, `0 timers listed` was verified, no unit reinstall or reboot occurred, and Mac launchd remains the sole Traderie scheduler/writer authority. Reddit Ops authority inspection has advanced beyond initial discovery, but final repository and scheduler acceptance remains incomplete.
 
 ## §6 Monitoring, Health, Alerting, and Resource Management
 
@@ -360,7 +360,7 @@ A health report can distinguish healthy, stale, failed, skipped, backup-stale, a
 
 **Status**
 
-Traderie has a health export; growth metrics need confirmation before operational activation.
+Substantially implemented during Work Session 3. A canonical portfolio health contract was reconciled, Reddit Ops became the first canonical producer, and Traderie emits validated private and public health with environment, revision, database, scheduler, backup, freshness, and drift-related state. Traderie currently reports `ok` with `project_environment=production`. Central collector, historical storage, API, dashboard, alert delivery, and portfolio-wide growth reporting remain future work.
 
 ### §6B Resource and Incident Management
 
@@ -388,7 +388,7 @@ A failed or stale workflow produces a bounded, actionable signal without exposin
 
 **Status**
 
-Not started portfolio-wide.
+Partially implemented through deployment gates, health checks, backup-age checks, disk thresholds, service-state checks, one-writer rollback, and cutover incident handling. Portfolio-wide alert delivery, incident persistence, and standardized threshold enforcement remain future work.
 
 ## §7 Traderie Reference Deployment
 
@@ -398,22 +398,10 @@ Traderie is first because it currently has the strongest deployment foundation: 
 
 **Current facts**
 
-- Public GitHub repository: `github.com/wguDataNinja/d2-market-helper`.
-- Default branch: `master`.
-- Approved SHA: `b3b70a01426694d06d6c07a09f0c33427f530f0d`.
-- Phase A complete.
-- 17 PostgreSQL migrations.
-- 57 passing tests.
-- Real PostgreSQL adapter.
-- Bounded 25-record pilot.
-- Parity, rollback, delete/reimport, backup, checksum, and isolated restore evidence exist locally.
-- Health export exists.
-- 6 inert systemd service/timer pairs exist.
-- 3 VPS wrapper scripts exist.
-- VPS Capacity Gate currently passes at about 84% disk usage.
-- VPS has no PostgreSQL and no Traderie checkout.
-- No database-authority cutover is complete.
-- Services and timers are disabled pending deployment proof and Scheduler Gate.
+- Corrected SHA `6c374dd60176bd9f09bbe263acd458cc1b773798` is deployed in the VPS checkout and the checkout is clean.
+- Repository systemd static verification passes, the project venv interpreter is correct, and `psycopg2` imports successfully.
+- Final cutover is blocked before scheduler transfer because health smoke fails with `permission denied to set role "traderie_reader"` and `ivy-systemd-deploy` remains pinned to `c789c1023835f7d333245230a1540eb1beef910d`.
+- No corrected unit reinstall occurred, no VPS Traderie authority is enabled, and no reboot has yet completed as part of final Traderie cutover acceptance.
 
 ### §7B VPS PostgreSQL Foundation for Traderie
 
@@ -448,7 +436,7 @@ Validation passes on the VPS database and application scripts can connect using 
 
 **Status**
 
-Blocked until VPS PostgreSQL is installed and configured.
+Complete for Traderie during Work Session 3. PostgreSQL is installed; Traderie roles and database exist; migrations 1–17 are applied; role-specific validation, credential boundaries, backup, restore, and application connectivity passed.
 
 ### §7C Mac-to-VPS Data Transfer and Parity
 
@@ -482,7 +470,7 @@ Parity is either proven or explicit exceptions are accepted before any authority
 
 **Status**
 
-Not started on VPS.
+Complete for the approved Traderie operational baseline during Work Session 3. Mac source data was transferred to VPS PostgreSQL and parity evidence passed. The Mac remains the backup, archive, restore, and emergency-recovery environment.
 
 ### §7D Bounded Manual Deployment Proof
 
@@ -519,7 +507,7 @@ One clean manual cycle completes and produces validation, health, backup, checks
 
 **Status**
 
-Not started.
+Complete during Work Session 3. Traderie was deployed by exact SHA, dependencies and environment were validated, bounded PostgreSQL proof passed twice, health export passed, backup/checksum evidence passed, and the checkout remained clean.
 
 ### §7E Rollback and Restore Proof
 
@@ -554,7 +542,7 @@ Rollback returns counts to baseline and isolated restore validates.
 
 **Status**
 
-Not started on VPS.
+Complete for the current Traderie migration phase. Bounded rollback/idempotence proof passed, isolated restore validated, scheduler rollback was exercised during the first cutover attempt, and Mac authority was restored without duplicate writers.
 
 ### §7F One-Writer Cutover Preparation
 
@@ -589,7 +577,7 @@ Buddy can approve or reject cutover from a concrete evidence packet without furt
 
 **Status**
 
-Not started.
+Complete as a preparation packet and exercised twice. Current and future authorities, disable and fallback commands, parity, freshness, backup/restore, and one-writer criteria are documented. The first cutover attempt rolled back safely after a natural health-timer failure. The second attempt deployed the corrected SHA but stopped before scheduler transfer because the health-role and deployment-helper SHA gates failed. Mac launchd remains authoritative and VPS Traderie units remain disabled/inactive.
 
 ### §7G Scheduler Activation
 
@@ -623,7 +611,7 @@ Scheduled collection runs successfully, health remains current, backups run, and
 
 **Status**
 
-Not started. Timers remain disabled.
+Blocked safely at the end of Work Session 3. The first activation attempt reached a natural health-timer run, failed because two units used `/usr/bin/python3` instead of the project venv, and rolled back immediately. The two unit paths were corrected, two regression tests were added, 59 tests passed, and corrected SHA `6c374dd60176bd9f09bbe263acd458cc1b773798` was published and deployed to the VPS checkout. Repository systemd verification, venv verification, and `psycopg2` import validation pass. Cutover stopped before scheduler transfer because health smoke fails with `permission denied to set role "traderie_reader"` and the root-owned deployment helper remains pinned to the older SHA. Mac launchd is authoritative; VPS Traderie timers and services are disabled/inactive; `0 timers listed` was verified; no corrected unit reinstall or reboot occurred. Work Session 4 begins with OpenCode-prepared unblock analysis before any further Codex cutover attempt.
 
 ### §7H Operational Acceptance
 
@@ -656,7 +644,7 @@ Traderie is accepted as the first operational reference deployment, or condition
 
 **Status**
 
-Not started.
+Not yet started as a stabilization window. It begins only after Work Session 4 resolves the health-role and deployment-helper gates, completes scheduler activation, proves natural health and data-writing runs, verifies one-writer authority, and completes reboot/post-reboot validation.
 
 ## §8 Hermes Operating Model
 
@@ -829,7 +817,7 @@ The portfolio knows whether duplicate ingestion is real, what it affects, and wh
 
 **Status**
 
-High priority. Not started. Current local evidence shows both a fresh `WGU-Reddit` scaffold and a separate `wgu-reddit-intel` experimental workspace; the operational boundary must be resolved.
+Partially complete during Work Session 3. The operational WGU-Reddit path on VPS was identified, Reddit Ops is active under user systemd, and canonical health was implemented. Current evidence does not show an unresolved active duplicate-writer cutover in the same way as Traderie, but final repository-boundary acceptance, scheduler documentation, exporter correction, and publication/security cleanup remain open.
 
 ### §9B WGU-Reddit LLM Pipeline Admission
 
@@ -1320,7 +1308,7 @@ The roadmap and controls reflect current operating reality rather than historica
 
 **Status**
 
-Ongoing.
+Ongoing. Work Session 3 produced reusable patterns for exact-SHA deployment, root-owned allowlisted systemd deployment, scoped migration sudo, canonical health producers, health-timer-first activation, natural-run proof, one-writer rollback, unit-hash verification, and venv-path regression testing. The session-scoped three-artifact task lifecycle has now been formalized in `_internal/GPT_ORCHESTRATED_WORKFLOW.md`. Remaining lessons still need selective promotion into shared standards and repository controls during Work Session 4.
 
 ### §19B Self-Improvement Loop
 
@@ -1356,7 +1344,10 @@ Deferred until reference deployments and read-only inspection are proven.
 
 ## §20 Current Next Work
 
-1. Review and accept or revise this roadmap.
-2. Prepare the first executable gate packet for `§3A-G1`, `§3B-G1`, and `§7B-G1` so Traderie Phase B can start safely.
-3. Run the early read-only WGU-Reddit ingestion-authority inspection in `§9A`.
-4. After Traderie bounded deployment proof, decide whether the next detailed implementation plan should be SJC Intel, WGU Catalog, or the first LLM reference candidate.
+1. Execute Work Session 4 from `TODO.md` using the OpenCode-first, Codex-last model.
+2. Use OpenCode to resolve Traderie health-role intent, design the durable deployment-helper SHA update path, recheck disk and snapshot preconditions, and prepare an exact Codex execution packet.
+3. Use OpenCode to produce the portfolio ingestion-admission matrix, keeping ingestion readiness separate from deterministic processing, LLM processing, publication, and UI readiness.
+4. Normalize Reddit Ops operational evidence without conflating it with the downstream WGU-Reddit pipeline or BSDA Courses consumers.
+5. Preserve the existing WGU Catalog -> WGU Atlas dependency under roadmap §§11–13 while ranking future ingestion candidates.
+6. Call Codex only after OpenCode evidence removes broad discovery and leaves a bounded privileged execution packet.
+7. After the next Traderie cutover result, begin §7H operational acceptance or record another exact safe blocker.
