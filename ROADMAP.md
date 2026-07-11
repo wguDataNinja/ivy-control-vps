@@ -1,6 +1,6 @@
 # Ivy Control VPS Roadmap
 
-**Status:** Active roadmap, created 2026-07-08; factual status reconciled near the end of Work Session 3 on 2026-07-09.
+**Status:** Active roadmap, created 2026-07-08; factual status reconciled at Session 4 closeout on 2026-07-11.
 **Scope:** Portfolio-wide VPS operating model with Traderie as the first detailed reference deployment.
 
 This roadmap defines the long-horizon path for moving the Ivy portfolio onto a governed VPS operating model. It is public, durable, and agent-neutral. Current repository facts are separated from intended future state, and repository sequencing after Traderie remains flexible unless a dependency requires a specific order.
@@ -258,7 +258,7 @@ The VPS checkout matches the approved SHA, has no tracked local modifications, a
 
 **Status**
 
-Traderie has been deployed on the VPS by exact approved SHA and checked for cleanliness and drift. The earlier readiness deployment used `c789c1023835f7d333245230a1540eb1beef910d`. The corrected runtime SHA `6c374dd60176bd9f09bbe263acd458cc1b773798` is now deployed in the VPS checkout, and repository systemd verification passes. Cutover remains blocked before scheduler transfer because the Traderie health smoke cannot `SET ROLE traderie_reader` and the root-owned `ivy-systemd-deploy` helper is still pinned to the older SHA. No corrected unit reinstall, scheduler transfer, or reboot occurred. The prior roadmap SHA `b3b70a01426694d06d6c07a09f0c33427f530f0d` is historical and no longer the deployment authority.
+Traderie has been deployed on the VPS by exact approved SHA. The current production SHA is `e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40`. The VPS checkout is clean at that SHA, the root-owned deployment helper is pinned to it, and the deployed revision metadata matches. All six Traderie systemd services and the timer are installed from the reviewed source. The helper SHA pin uses a direct `sed` interim mechanism; a durable template-based mechanism is deferred. The prior roadmap SHA `b3b70a01426694d06d6c07a09f0c33427f530f0d` is historical.
 
 ### §4B Drift Detection
 
@@ -325,7 +325,7 @@ The old and new paths are not both writing production data after cutover.
 
 **Status**
 
-Exercised for Traderie during Work Session 3 but not yet complete. Mac launchd and VPS systemd authorities were inventoried; one-writer cutover was attempted; the first natural VPS health-timer failure triggered immediate rollback; Mac authority was restored. A later retry deployed corrected SHA `6c374dd60176bd9f09bbe263acd458cc1b773798` to the VPS checkout but stopped before scheduler transfer because the health-role gate and deployment-helper SHA gate failed. VPS Traderie timers and services remain disabled/inactive, `0 timers listed` was verified, no unit reinstall or reboot occurred, and Mac launchd remains the sole Traderie scheduler/writer authority. Reddit Ops authority inspection has advanced beyond initial discovery, but final repository and scheduler acceptance remains incomplete.
+Exercised for Traderie during Work Sessions 3 and 4. The authority transfer lifecycle was executed through 4 cutover attempts: one 300s timeout rollback (Codex 2), one 600s timeout rollback (Codex 3), one segmented premature-monitor rollback (Codex 4), and one successful segmented cutover (Codex 5). VPS systemd is now the sole Traderie scheduler and writer authority. Mac launchd is unloaded. The timer `traderie-ingest-snapshot.timer` is enabled and active. Reddit Ops authority transfer was completed earlier during Work Session 3; VPS systemd remains the sole Reddit Ops authority.
 
 ## §6 Monitoring, Health, Alerting, and Resource Management
 
@@ -398,10 +398,16 @@ Traderie is first because it currently has the strongest deployment foundation: 
 
 **Current facts**
 
-- Corrected SHA `6c374dd60176bd9f09bbe263acd458cc1b773798` is deployed in the VPS checkout and the checkout is clean.
-- Repository systemd static verification passes, the project venv interpreter is correct, and `psycopg2` imports successfully.
-- Final cutover is blocked before scheduler transfer because health smoke fails with `permission denied to set role "traderie_reader"` and `ivy-systemd-deploy` remains pinned to `c789c1023835f7d333245230a1540eb1beef910d`.
-- No corrected unit reinstall occurred, no VPS Traderie authority is enabled, and no reboot has yet completed as part of final Traderie cutover acceptance.
+- Production SHA is `e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40`.
+- VPS systemd is the sole scheduler and writer authority. Mac launchd is unloaded.
+- Segmented orchestrator (`run_traderie_generation.sh`) is installed with per-segment `timeout` bounds: pc_sc_nl=180s, pc_sc_l=240s, pc_hc_l=360s, pc_hc_nl=480s.
+- Bounded manual generation succeeded (all 4 segments, exit=0).
+- `traderie-ingest-snapshot.timer` is enabled and active.
+- A natural scheduled generation occurred (2026-07-11 18:01:46 UTC) but partially failed: pc_hc_nl reached its 480-second bound and timed out. Overall exit=1.
+- Current classification: **`PRODUCTION_DEGRADED`**.
+- Controlled reboot proof is deferred until natural-run success is restored.
+- DB-backed health records report `ok`. File-based health export is an empty directory.
+- Backup freshness lacks an explicit contract threshold.
 
 ### §7B VPS PostgreSQL Foundation for Traderie
 
@@ -611,7 +617,7 @@ Scheduled collection runs successfully, health remains current, backups run, and
 
 **Status**
 
-Blocked safely at the end of Work Session 3. The first activation attempt reached a natural health-timer run, failed because two units used `/usr/bin/python3` instead of the project venv, and rolled back immediately. The two unit paths were corrected, two regression tests were added, 59 tests passed, and corrected SHA `6c374dd60176bd9f09bbe263acd458cc1b773798` was published and deployed to the VPS checkout. Repository systemd verification, venv verification, and `psycopg2` import validation pass. Cutover stopped before scheduler transfer because health smoke fails with `permission denied to set role "traderie_reader"` and the root-owned deployment helper remains pinned to the older SHA. Mac launchd is authoritative; VPS Traderie timers and services are disabled/inactive; `0 timers listed` was verified; no corrected unit reinstall or reboot occurred. Work Session 4 begins with OpenCode-prepared unblock analysis before any further Codex cutover attempt.
+Activated during Work Session 4. After 4 cutover attempts (Codex 2–5) and two runtime remediation cycles (Agent 7, Agent 8), `traderie-ingest-snapshot.timer` is enabled, active, and the sole scheduler. The segmented runtime uses per-segment `timeout` with `TimeoutStartSec=infinity`. The first natural scheduled generation (2026-07-11 18:01:46 UTC) completed 3 of 4 segments; pc_hc_nl timed out at 480s. Restoration to `PRODUCTION_COMPLETE` is the first objective of Work Session 5.
 
 ### §7H Operational Acceptance
 
@@ -644,7 +650,7 @@ Traderie is accepted as the first operational reference deployment, or condition
 
 **Status**
 
-Not yet started as a stabilization window. It begins only after Work Session 4 resolves the health-role and deployment-helper gates, completes scheduler activation, proves natural health and data-writing runs, verifies one-writer authority, and completes reboot/post-reboot validation.
+Not yet started as a stabilization window. Scheduler activation is complete but the natural generation is partially failing (pc_hc_nl timeout). Operational acceptance begins after Session 5 resolves the segment timeout, restores healthy natural runs, proves controlled reboot recovery, verifies one-writer authority, and completes a documented stabilization period.
 
 ## §8 Hermes Operating Model
 
@@ -1308,7 +1314,7 @@ The roadmap and controls reflect current operating reality rather than historica
 
 **Status**
 
-Ongoing. Work Session 3 produced reusable patterns for exact-SHA deployment, root-owned allowlisted systemd deployment, scoped migration sudo, canonical health producers, health-timer-first activation, natural-run proof, one-writer rollback, unit-hash verification, and venv-path regression testing. The session-scoped three-artifact task lifecycle has now been formalized in `_internal/GPT_ORCHESTRATED_WORKFLOW.md`. Remaining lessons still need selective promotion into shared standards and repository controls during Work Session 4.
+Ongoing. Work Sessions 3 and 4 produced reusable patterns for exact-SHA deployment, root-owned allowlisted systemd deployment, scoped migration sudo, canonical health producers, segmented runtime with per-segment `timeout`, objective progress monitoring (file mtime/size in addition to journal), health-timer-first activation, natural-run proof, one-writer rollback, unit-hash verification, and venv-path regression testing. A streamlined onboarding model (admission → one publication → one Codex production task → natural-run check → closeout) was exercised during Session 4 and proposed for formalization in the private workflow appendix. GPT desktop write-tool success is explicitly not treated as proof that a local file changed.
 
 ### §19B Self-Improvement Loop
 
@@ -1344,10 +1350,9 @@ Deferred until reference deployments and read-only inspection are proven.
 
 ## §20 Current Next Work
 
-1. Execute Work Session 4 from `TODO.md` using the OpenCode-first, Codex-last model.
-2. Use OpenCode to resolve Traderie health-role intent, design the durable deployment-helper SHA update path, recheck disk and snapshot preconditions, and prepare an exact Codex execution packet.
-3. Use OpenCode to produce the portfolio ingestion-admission matrix, keeping ingestion readiness separate from deterministic processing, LLM processing, publication, and UI readiness.
-4. Normalize Reddit Ops operational evidence without conflating it with the downstream WGU-Reddit pipeline or BSDA Courses consumers.
-5. Preserve the existing WGU Catalog -> WGU Atlas dependency under roadmap §§11–13 while ranking future ingestion candidates.
-6. Call Codex only after OpenCode evidence removes broad discovery and leaves a bounded privileged execution packet.
-7. After the next Traderie cutover result, begin §7H operational acceptance or record another exact safe blocker.
+1. Execute Work Session 5 from `TODO.md` using the streamlined model: one combined OpenCode admission/source-readiness task per workstream, routine direct git-steward publication, one Codex production task per workstream, passive natural-run acceptance, closeout.
+2. Traderie production recovery — resolve pc_hc_nl timeout, restore healthy natural scheduled runs, perform controlled reboot proof.
+3. Reddit Ops sanitized publication — reconstruct clean history excluding credential-bearing commit, publish reviewed backup units.
+4. Reddit Ops production recovery — install reviewed backup units, create fresh backup, perform isolated restore drill, prove timer and reboot behavior.
+5. SJC Intel admission readiness — one combined task covering authority, runtime, database, health, backup, deploy, scheduler transfer, rollback. Do not require cutover in Session 5 unless stabilization completes cleanly.
+6. Documentation reconciliation and closeout.
