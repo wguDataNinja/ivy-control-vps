@@ -1,8 +1,10 @@
 # Traderie Phase B — Strong Codex Packet
 
+> **Superseded status (2026-07-12):** This packet is historical execution evidence and is not current authority. Traderie has since been deployed to the VPS at approved SHA `e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40`; current state and next work are governed by `repos/traderie/CONTROL.md`, `repos/traderie/RELEASE_GATES.md`, and `ROADMAP.md` `§7A`.
+
 **Prerequisite:** VPS Capacity Gate must pass before any deployment work.
 **Phase A status:** Complete — 17 migrations, 57 tests, pilot loaded, GitHub published, fresh-clone proven, PG adapter real (env-gated).
-**Current VPS:** 84% disk (5.8 GB free, refreshed 2026-07-08 Session A post-cleanup — ~1.4 GB reclaimed), no PostgreSQL, no traderie checkout, no passwordless sudo. VPS Capacity Gate now passes (below 85% threshold).
+**Historical VPS snapshot at packet creation:** 84% disk (5.8 GB free, refreshed 2026-07-08 Session A post-cleanup — ~1.4 GB reclaimed), no PostgreSQL, no traderie checkout, no passwordless sudo. This is not current state.
 
 > **Status note (2026-07-08):** This packet is pending the full portfolio roadmap session. Phase B execution should be sequenced through the roadmap rather than launched independently. The scope, boundaries, completion criteria, and evidence requirements in this packet remain correct for the eventual Phase B execution task.
 
@@ -89,7 +91,7 @@ Bounded PostgreSQL foundation and one-shot deployment proof. Stop before continu
 ## Stop conditions
 
 - VPS disk >85% after PostgreSQL installation → stop, require resize
-- No passwordless sudo → cannot deploy dependency packages → stop
+- Required privileged path unavailable for the approved task → stop
 - PG connectivity fails → stop
 - Snapshot script fails → stop
 - Validation fails → stop

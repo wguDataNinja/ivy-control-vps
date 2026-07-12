@@ -78,6 +78,41 @@ A later gate cannot pass until the previous gate has passed. Each requires expli
 
 Detailed gate evidence is recorded in `repos/<repo>/RELEASE_GATES.md`.
 
+### Canonical ingestion-admission subgate
+
+For repositories or workloads that own ingestion, Gate 4 includes the **Canonical Ingestion-Admission Gate**. It is narrower than full repository maturity and confirms the evidence required for a safe VPS authority-transfer review.
+
+The gate requires evidence for:
+
+- collector authority;
+- scheduler or trigger authority;
+- writer authority;
+- canonical data authority;
+- reviewed source and exact deployment SHA;
+- secrets and runtime configuration;
+- deterministic entry point;
+- locking or concurrent-run protection;
+- idempotency or duplicate prevention;
+- bounded runtime and timeout behavior;
+- retry and terminal failure behavior;
+- schema and migration state where applicable;
+- health output;
+- freshness;
+- counts, backlog, or output manifest where applicable;
+- backup;
+- checksum and manifest;
+- isolated restore or equivalent recovery proof;
+- rollback;
+- Mac fallback, archive, or recovery role;
+- legacy scheduler shutdown;
+- successful manual run;
+- successful natural scheduled or event-triggered run;
+- exactly one active production writer.
+
+Repository-specific gates may add requirements, but they must not silently omit the common gate unless a documented workload-specific exception is recorded in `repos/<repo>/CONTROL.md`.
+
+Passing this subgate does not imply full public maturity, LLM maturity, dashboard polish, cleanup authority, or production activation. Scheduler activation still requires Gate 6.
+
 ### Gate 1 — Portfolio Admission requirements
 
 A repository is admitted as managed when it satisfies:

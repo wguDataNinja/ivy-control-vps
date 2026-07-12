@@ -22,6 +22,16 @@ Workflows are classified by VPS readiness. Every roadmap must classify each mean
 | 6 | **Deferred** | Not yet scoped; explicitly parked |
 | 7 | **Unclear** | Architecture decision required before classification |
 
+## Ingestion-first admission
+
+Portfolio planning distinguishes ingestion operational readiness from full public repository maturity.
+
+**Ingestion operational readiness** is the minimum evidence required to move authoritative data collection to the VPS safely: one scheduler, one writer, deterministic entrypoints, visible health, backup/restore proof, rollback path, exact deployed revision, and documented cutover authority.
+
+**Full public repository maturity** remains required for long-term portfolio quality, but broader polish, UI/dashboard refinement, downstream LLM features, and presentation work should not block a safe ingestion cutover when the operational evidence is sufficient.
+
+Eligible ingestion repositories should be prepared in parallel where their source files and authority boundaries do not conflict. Production cutovers should still occur in controlled waves sized to the portfolio's monitoring maturity, rollback complexity, and review bandwidth.
+
 ## Public and private documentation
 
 Content tracked in Git must be polished and safe for publication.
@@ -76,8 +86,8 @@ A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHES
 | Owner | Work class | Examples |
 |---|---|---|
 | **Buddy** | Authority and risk decisions | License choice, publication scope, gate approvals, destructive-operation approval, cross-repo policy |
-| **OpenCode** | Bounded low-risk implementation | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation |
-| **Strong Codex** | Architecture and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, history rewrite planning, destructive cleanup design |
+| **OpenCode** | Bounded low-risk implementation | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation, readiness packets |
+| **Strong Codex** | Architecture, privileged execution, and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, production deployment, reboot proof, history rewrite planning, destructive cleanup design |
 | **Orchestration agents** (future Hermes) | Monitoring, drift detection, PR proposal | Scheduled scans, health checks, SHA drift detection, structured PR creation |
 
 OpenCode agents receive bounded tasks with explicit scope, allowed files, and validation criteria. They do not invent architecture, mutate production state, or approve their own work. Strong Codex resolves architecture-level contradictions and designs fragile cross-repo boundaries. Orchestration agents observe and propose but never execute production changes directly.

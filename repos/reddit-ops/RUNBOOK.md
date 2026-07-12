@@ -152,7 +152,7 @@ The lock ID `1464428100` corresponds to hex `0x574755_5244` ("WGURD"). If a row 
 
 ## Backup Creation and Validation
 
-Not yet automated. Manual backup:
+Manual backup:
 
 ```bash
 ssh ih-market-vps '
@@ -209,9 +209,13 @@ pg_dump \"\$REDDIT_OPS_PG_BACKUP_URL\" -Fc -Z 9 -f /home/scraper/backups/reddit-
 sha256sum /home/scraper/backups/reddit-ops/reddit_ops_*.dump
 "
 
-# Automated backup runs via systemd timer at 08:00 UTC daily:
+# Automated backup is intended to run via systemd timer at 08:00 UTC daily:
 #   wgu-reddit-backup.service
 #   wgu-reddit-backup.timer
+#
+# If the installed service references backup_reddit_ops.sh instead of
+# backup_reddit_ops_pg.sh, reinstall the reviewed unit source before relying on
+# the timer.
 
 # Validate backup:
 ssh ih-market-vps "

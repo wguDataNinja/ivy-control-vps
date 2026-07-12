@@ -1,1358 +1,890 @@
 # Ivy Control VPS Roadmap
 
-**Status:** Active roadmap, created 2026-07-08; factual status reconciled at Session 4 closeout on 2026-07-11.
-**Scope:** Portfolio-wide VPS operating model with Traderie as the first detailed reference deployment.
+**Status:** Active ingestion-first portfolio roadmap, refined 2026-07-12.
+**Scope:** Portfolio-wide ingestion admission, reusable VPS/PostgreSQL platform products, health visibility, repository readiness packets, and controlled cutover waves.
 
-This roadmap defines the long-horizon path for moving the Ivy portfolio onto a governed VPS operating model. It is public, durable, and agent-neutral. Current repository facts are separated from intended future state, and repository sequencing after Traderie remains flexible unless a dependency requires a specific order.
+This roadmap separates two goals:
 
-## §1 Program Authority and Baseline
+1. **Ingestion operational readiness** - the evidence required to move authoritative collection to the VPS safely.
+2. **Full public repository maturity** - broader documentation, CI, UI, LLM maturity, public polish, automation, and long-term hardening.
 
-**Current authority**
+The immediate goal is to get appropriate ingestion workloads under one VPS authority and visible health monitoring without forcing unrelated maturity work to block safe ingestion cutovers.
 
-- `README.md` defines IvyControlVPS as the operational control plane.
-- `docs/OPERATING_MODEL.md` defines the shared operating model and workflow readiness classes.
-- `docs/REPOSITORY_CONTROL_MODEL.md` defines the six-gate repository control framework.
-- `docs/PORTFOLIO_CONVENTIONS.md` defines PostgreSQL, systemd, health, migration, environment, and deployment conventions.
-- `docs/DATA_LIFECYCLE_STANDARD.md` defines retention, storage, backup, and recovery principles.
-- `docs/PORTFOLIO_BASELINE.md` defines the current portfolio inventory and repository baseline.
-- `repos/traderie/CONTROL.md` and `repos/traderie/RELEASE_GATES.md` are the current Traderie governance authority.
+## §1 Strategy and Authority
 
-**Current portfolio**
-
-| Repository | Runtime class | Planning depth now | Current roadmap posture |
-|------------|---------------|--------------------|-------------------------|
-| Traderie | Deterministic data pipeline | Full | First reference deployment |
-| SJC Intel | Deterministic data collection | Moderate | Likely early follow-on |
-| WGU-Reddit operations | LLM/data pipeline | Moderate | Early risk inspection, later LLM reference candidate |
-| WGU Catalog | Deterministic canonical data source | Moderate | Shared WGU data dependency |
-| BSDA Courses | LLM pipeline consumer | Light to moderate | Consumer of WGU-Reddit and WGU Catalog data |
-| WGU Atlas | Read-oriented public site and LLM QA layer | Light to moderate | Catalog consumer and possible mature LLM runtime reference |
-| Idle Hacking KB | LLM knowledge base | Light | Later sensitive LLM workflow candidate |
-| IH Market Companion | Deterministic browser/runtime pipeline | Light | Deterministic runtime and browser-supervision candidate |
-| Reckless Ben | Restricted evidence workspace | Light | `NO_LAUNCH`; patterns only unless separately authorized |
-
-**Settled target architecture**
-
-- The Ivy VPS is the long-term production platform.
-- One PostgreSQL instance runs on the VPS.
-- Each repository receives isolated project data boundaries according to portfolio conventions.
-- The VPS stores only operational data needed for live workflows, health, UI/API use, bounded aggregates, and continuity.
-- The VPS is not the long-term archive.
-- The Mac remains the primary development, backup, archive, restore, and emergency-recovery environment.
-- Production operation must not depend on the Mac being online.
-- GitHub is the reviewed code authority.
-- Deployments use exact approved SHAs.
-- Initial deployment is simple and manual; broader automation comes later.
-- Hermes starts with read-only inspection and gains execution authority only through explicit gates.
-
-**Transitional assumptions**
-
-Historical Mac-authoritative PostgreSQL and reverse-tunnel designs are transitional evidence. They may inform migration and rollback but are not the target production topology.
-
-## §2 Repository Admission and Public Readiness
-
-### §2A Admission Standard
+### §1A Operating Strategy
 
 **Outcome**
 
-Every managed repository has a control sheet, gate evidence, publication posture, runtime classification, data boundary, and next authorized phase.
+The portfolio moves from repeated one-off discovery to reusable admission packets and bounded privileged execution.
 
-**Dependencies**
+**Principles**
 
-Portfolio standards in `docs/` remain the shared baseline. Repository-specific deviations are recorded in each repository control sheet.
+- Treat Traderie and Reddit Ops as evidence for reusable platform products.
+- Prepare eligible repositories in parallel where file ownership and authority do not conflict.
+- Cut over in small waves after a narrow Platform Confidence Gate passes.
+- Reserve Strong Codex for privileged VPS/PostgreSQL execution, production cutovers, rollback/recovery, cross-repository architecture, and stateful gate reviews.
+- Use medium OpenCode agents for source readiness, documentation, tests, local validation, health adapters, backup scripts, runbooks, control sheets, and handoff packets.
+- Keep one authoritative scheduler and one authoritative writer per production workflow.
+- Make Phase 0 health visibility a prerequisite for new waves; do not make polished dashboard UI a prerequisite.
 
-**Work**
+**Authority set**
 
-- Create `repos/<repo>/CONTROL.md` for each admitted repository.
-- Create `repos/<repo>/RELEASE_GATES.md` for detailed gate evidence.
-- Classify each workflow using the `docs/OPERATING_MODEL.md` readiness categories.
-- Identify public/private boundaries, dependency manifests, `.env.example` coverage, license posture, CI/test posture, generated-data boundaries, and local-machine path risks.
-- Identify the current collector, scheduler, writer, database, runtime data, backup path, and rollback path.
+- `docs/OPERATING_MODEL.md` - operating model and execution classes.
+- `docs/REPOSITORY_CONTROL_MODEL.md` - repository gates and control-sheet authority.
+- `docs/PORTFOLIO_CONVENTIONS.md` - deployment, PostgreSQL, systemd, backup, rollback, and admission conventions.
+- `docs/HEALTH_CONTRACT.md` - canonical health payloads and health storage/API boundaries.
+- `docs/DATA_LIFECYCLE_STANDARD.md` - retention, backup, restore, archive, and deletion rules.
+- `docs/DATABASE.md` - consolidated database architecture and operations reference.
+- `docs/PORTFOLIO_BASELINE.md` - roster and baseline classification; current operational status is reconciled here and in `repos/<repo>/CONTROL.md`.
 
-**High-reasoning gates**
+### §1B Execution Classes
 
-- `§2A-G1` Repository Admission Gate.
-- `§2A-G2` Public Repository Readiness Gate.
+| Class | Owner | Examples |
+|---|---|---|
+| Medium OpenCode | Low-risk implementation and evidence | Admission audits, source fixes, docs, tests, unit templates, health adapters, backup scripts, runbooks, gate packets |
+| Strong Codex | Privileged or broad-context execution | VPS provisioning, PostgreSQL roles, production deployment, migration, scheduler cutover, rollback, reboot proof, cross-repo architecture |
+| git-steward | Authorized Git writes | Exact-file staging, commits, pushes, branch publication, clean-tree verification |
+| Buddy | Risk and authority decisions | Publication strategy approval, destructive approval, license choices, privileged/reboot timing, sensitive review |
 
-**Required evidence**
+## §2 Current Portfolio State
 
-Repository status, remotes, branches, dirty state, dependency manifests, tracked-data scan, secret/history scan where publication is planned, `.env.example`, license decision, README quality, tests, CI, runtime-data boundaries, and documented exceptions.
+### §2A Repository and Workload Roster
 
-**Completion proof**
+| Repository or workload | Owns ingestion? | Current state | Intended VPS ingestion scope | Next gate |
+|---|---:|---|---|---|
+| Traderie | Yes | `PRODUCTION_DEGRADED`: VPS sole scheduler/writer; natural run timed out in `pc_hc_nl` | Restore healthy scheduled generation, health/export clarity, backup freshness, reboot proof | `§7A-G1` Traderie Recovery Gate |
+| Reddit Ops | Yes | `production-stabilizing`: VPS systemd user timer is sole collector; publication/drift/reboot remain open | Publish clean source, repair backup unit source/deploy, prove backup freshness and recovery | `§7B-G1` Publication Strategy Gate |
+| SJC Intel | Yes | Mac development; inert systemd units and migrations exist | Early deterministic Wave 1 candidate | `§4C-G1` Readiness Packet Gate |
+| IH Market Companion | Yes | Mixed Mac/VPS helper context; public/private and browser/runtime boundary need normalization | Later deterministic/browser runtime candidate | `§4D-G1` Authority Normalization Gate |
+| WGU Catalog | Yes, low-frequency batch | Mac CLI/file-export workflow; no daemon required by current evidence | Event-driven or monthly-check catalog ingestion/export | `§4E-G1` Batch Source Authority Gate |
+| WGU-derived Reddit workloads | Unclear | Reddit Ops is the collector authority; WGU-Reddit/catalog/analysis/LLM ownership split is unresolved | Deferred behind boundary reconciliation | `§4F-G1` WGU Boundary Reconciliation Gate |
+| BSDA Courses | No, consumer | Mac development; consumes Reddit/WGU data | Consumer-only LLM pipeline after upstream contracts | `§4G-G1` Consumer Boundary Gate |
+| WGU Atlas | No, downstream/static | GitHub Pages/static site; catalog dependency active | Catalog consumer and later LLM QA reference | `§4H-G1` Catalog Contract Gate |
+| Idle Hacking KB | Yes, sensitive | Mac development; complex LLM and Discord capture | Only a safe ingestion subset may be prepared near term | `§4I-G1` Sensitive Ingestion Boundary Gate |
+| Reckless Ben | Restricted | `NO_LAUNCH` | No production ingestion unless reclassified | `§4J-G1` Restricted Repository Gate |
+| ivy-control-vps | Platform | Local control plane | Standards, health view, templates, readiness review | `§3` platform gates |
 
-Each repository has a current control sheet and release-gate file, or is explicitly marked deferred/restricted with the reason.
+### §2B Reconciled Current Facts
 
-**Status**
+**Traderie**
 
-Active for Traderie. Not started for most other repositories.
+- Deployed production SHA: `e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40`.
+- VPS systemd is sole scheduler and writer. Mac launchd is inactive.
+- Segmented runtime is deployed with per-segment bounds: `pc_sc_nl=180s`, `pc_sc_l=240s`, `pc_hc_l=360s`, `pc_hc_nl=480s`.
+- Manual bounded generation and Persistent catch-up generation passed.
+- The first genuine natural scheduled generation on 2026-07-11 18:01:46 UTC partially failed because `pc_hc_nl` hit the 480s bound.
+- DB-backed health records exist; file-export behavior is unresolved.
+- Backup freshness now has a portfolio default in `docs/HEALTH_CONTRACT.md`; Traderie still needs evidence that the threshold is applied correctly.
+- Controlled reboot proof is deferred until natural scheduled generation succeeds.
 
-### §2B Repository Polish Track
+**Reddit Ops**
 
-**Outcome**
+- VPS systemd user timer `wgu-reddit-postgres-run.timer` is the sole ingestion scheduler.
+- Database `reddit_ops` runs on VPS PostgreSQL 16 with migrations `0001` through `0006`.
+- Approved-partial exit semantics and three systemd-triggered runs are proven.
+- Backup source is reviewed, but the installed backup service has referenced the wrong script name in prior evidence; publication and deployment of reviewed source are still required.
+- Backup/restore evidence exists with remaining exact-SHA, drift, alerting, and reboot gaps.
+- Git publication is blocked because local unpublished history contains credential-bearing commit `e4acae0`; normal push is forbidden.
 
-Repository polish becomes a deployment prerequisite rather than optional cleanup.
+### §2C WGU-Derived Boundary Status
 
-**Dependencies**
+**Known from current evidence**
 
-`§2A` admission evidence.
+- `repos/reddit-ops/CONTROL.md` governs Reddit Ops as the WGU subreddit PostgreSQL collector.
+- `_internal/outbox/session4/agent-3-portfolio-ingestion-admission-matrix.md` identifies `/Users/buddy/Desktop/WGU-Reddit` as the Reddit Ops producer code and `/Users/buddy/projects/WGU-Reddit` as an empty placeholder.
+- Reddit Ops currently owns production ingestion into `reddit_ops`.
+- BSDA Courses is a downstream consumer in current planning.
+- WGU Catalog is a separate WGU course catalog source authority, not proven to be the same boundary as Reddit Ops.
 
-**Work**
+**Unresolved ownership questions**
 
-- Cleanly separate source, generated artifacts, runtime data, logs, private state, and backups.
-- Add or update setup, operation, troubleshooting, deployment, backup, recovery, and retention docs.
-- Ensure tests and CI match repository risk.
-- Remove or parameterize hardcoded local-machine paths.
-- Document license decisions, including explicit no-license choices.
-- Preserve project-specific strengths as patterns for later repositories.
+- Which repository owns future Reddit catalog, catalog-like exports, or shared Reddit data contracts.
+- Which WGU-Reddit code paths are ingestion, catalog, analysis, LLM, benchmark, or historical tools.
+- Which future roadmap sections belong under Reddit Ops versus WGU-Reddit Operations versus consumer repositories.
+- Which publication strategy safely represents production collector code without credential-bearing history.
 
-**Required evidence**
+**Planning rule**
 
-Documentation index, test output, CI definition, `.gitignore`, tracked-file scan, generated-data scan, and exception log.
+Do not plan production LLM, downstream WGU-Reddit, Reddit catalog, or derived Reddit workload admission until `§4F-G1` passes. This ambiguity does not block unrelated deterministic ingestion work such as SJC Intel or WGU Catalog batch readiness.
 
-**Completion proof**
+### §2D Ingestion Readiness Versus Full Maturity
 
-Publication readiness can be evaluated without relying on private notes or personal memory.
+| Dimension | Required for ingestion cutover | Can wait for full maturity |
+|---|---|---|
+| Source authority | Reviewed source and exact deployment SHA, or explicit temporary exception | Branch protection, release automation |
+| Scheduler/trigger | Exactly one production scheduler or trigger | Scheduler UI and long-term automation |
+| Writer | Exactly one production writer | Legacy cleanup after stabilization |
+| Health | Phase 0 visibility plus contract-compatible producer or adapter | Polished dashboard and alert delivery |
+| Backup/recovery | Backup, checksum, manifest, restore or equivalent recovery proof | Monthly restore automation |
+| Documentation | Operator procedure, rollback, control/gate evidence | Public tutorials and presentation polish |
+| Tests | Focused validation for changed operational paths | Broad CI expansion |
 
-**Status**
+## §3 Shared Platform Workstreams
 
-Active and ongoing.
-
-## §3 VPS Platform Foundation
-
-### §3A Host Capacity and Access Baseline
-
-**Outcome**
-
-The VPS has enough headroom and known access limits for the first bounded deployment proof.
-
-**Dependencies**
-
-No deployment or cleanup occurs without the applicable approval gates.
-
-**Work**
-
-- Confirm disk, memory, failed units, timers, running processes, and current app checkouts.
-- Confirm exact SSH/user model and sudo limits.
-- Preserve protected workloads and data.
-- Keep deployment blocked if root filesystem usage exceeds the portfolio stop threshold.
-
-**High-reasoning gates**
-
-- `§3A-G1` VPS Capacity Gate.
-
-**Required evidence**
-
-Disk usage, free space, memory, failed units, timers, process inventory, app checkout inventory, protected-data list, and approved cleanup or resize path if needed.
-
-**Completion proof**
-
-Capacity is below the deployment stop threshold, or a resize/remediation decision is recorded before deployment continues.
-
-**Status**
-
-Passing during Work Session 3. Capacity was rechecked during Traderie readiness and cutover work and remained below the portfolio deployment stop threshold. Durable migration-phase operations access is now installed through `/usr/local/sbin/ivy-systemd-deploy` and `/etc/sudoers.d/ivy-migration`; the temporary unrestricted bootstrap grant was removed and unrestricted passwordless sudo is not present. Capacity must still be rechecked before each deployment or reboot-sensitive cutover step.
-
-### §3B PostgreSQL Foundation
-
-**Outcome**
-
-The VPS has a production PostgreSQL foundation suitable for project-isolated databases, bounded backups, restore drills, and monitored operation.
-
-**Dependencies**
-
-`§3A` capacity remains passing.
-
-**Work**
-
-- Install and configure PostgreSQL on the VPS when authorized.
-- Define project database, roles, schemas, backup role, monitor role, and migration role according to portfolio conventions.
-- Keep credentials outside Git checkouts.
-- Define backup destination on VPS and Mac.
-- Define restore-test naming, checksum, and manifest conventions.
-
-**High-reasoning gates**
-
-- `§3B-G1` PostgreSQL Foundation Gate.
-- `§3B-G2` Credential Boundary Gate.
-
-**Required evidence**
-
-PostgreSQL version, role list, database list, grants, schema ownership, connection checks by role, credential file location, backup path, restore-test procedure, and disk impact.
-
-**Completion proof**
-
-A non-application restore drill can be run against a test database without using application superuser access.
-
-**Status**
-
-Implemented on VPS during Work Session 3 for the current portfolio migration phase. PostgreSQL is installed and operational. Traderie project roles, database, credentials outside Git, migrations, validation, backup, and isolated restore paths are proven. Delegated PostgreSQL administration remains available through the durable operations model. Broader portfolio standardization remains ongoing.
-
-### §3C Storage, Retention, Backup, Restore, and Recovery
+### §3A Canonical Ingestion-Admission Gate
 
 **Outcome**
 
-All production repositories have bounded storage, documented retention, automated backup candidates, and restore proof before authority transfer.
+Every ingestion workload satisfies one reusable gate before production authority can move, unless a documented workload-specific exception is recorded in its control sheet.
 
-**Dependencies**
+**Gate ID**
 
-`§3B` PostgreSQL foundation and repository-specific retention policy.
-
-**Work**
-
-- Define data classes per repository.
-- Keep mutable production data outside Git working trees.
-- Store backups outside working trees.
-- Prove `pg_dump -Fc -Z 9`, checksum, manifest, restore, validation, and cleanup.
-- Record Mac backup/archive responsibilities separately from VPS live retention.
-
-**High-reasoning gates**
-
-- `§3C-G1` Backup/Restore Gate.
-- `§3C-G2` Retention and Pruning Gate.
-- `§3C-G3` Disaster Recovery Gate.
+`§3A-G1` Canonical Ingestion-Admission Gate.
 
 **Required evidence**
 
-Backup manifest, checksum, restore output, validation SQL output, row counts, data directory size, database size, retention windows, dry-run prune report, and rollback path.
+- Collector authority.
+- Scheduler or trigger authority.
+- Writer authority.
+- Canonical data authority.
+- Reviewed source and exact deployment SHA.
+- Secrets and runtime configuration.
+- Deterministic entry point.
+- Locking or concurrent-run protection.
+- Idempotency or duplicate prevention.
+- Bounded runtime and timeout behavior.
+- Retry and terminal failure behavior.
+- Schema and migration state where applicable.
+- Health output.
+- Freshness.
+- Counts, backlog, or output manifest where applicable.
+- Backup.
+- Checksum and manifest.
+- Isolated restore or equivalent recovery proof.
+- Rollback.
+- Mac fallback, archive, or recovery role.
+- Legacy scheduler shutdown.
+- Successful manual run.
+- Successful natural scheduled or event-triggered run.
+- Exactly one active production writer.
 
-**Completion proof**
+Repository-specific gates may add requirements, but they must not silently omit this common gate.
 
-The repository can be restored into an isolated database and validated before any production cutover.
-
-**Status**
-
-Proven on VPS for Traderie during Work Session 3: production backup creation, checksum evidence, isolated restore, validation, and recovery evidence passed. Portfolio-wide retention automation, recurring restore drills, and multi-repository coverage remain future work.
-
-## §4 Exact-SHA Deployment and Drift Control
-
-### §4A Deployment Contract
+### §3B PostgreSQL Reusable Products
 
 **Outcome**
 
-Every deployable repository can be checked out on the VPS at an exact approved SHA and verified against GitHub.
+PostgreSQL onboarding becomes a set of reusable products prepared mostly by medium agents, with Strong Codex performing bounded privileged execution.
 
-**Dependencies**
+**Current bounded-privilege evidence**
 
-Repository publication gate passes or repository is explicitly private and approved for local-only deployment.
+Session evidence shows the workflow changed from repeated interactive password entry to a migration-phase scoped model:
 
-**Work**
+- Earlier state: `_internal/vps-inventory-and-runbook.md` and early Session 3 evidence recorded no broad passwordless sudo and interactive sudo requirements.
+- Session 3 evidence: `_internal/outbox/session3/agent-6-portfolio-vps-operations-discovery.md` found PostgreSQL admin already worked through `sudo -n -u postgres` for `psql`, `createdb`, and `dropdb`.
+- Session 3 Codex evidence: `_internal/outbox/session3/codex-7-operations-access-and-traderie-cutover.md` recorded durable migration-phase policy at `/usr/local/sbin/ivy-systemd-deploy`, `/etc/sudoers.d/ivy-migration`, and `/var/log/ivy-systemd-deploy.log`.
+- Session 4 evidence: `_internal/outbox/session4/agent-1-traderie-cutover-unblock-audit.md` recorded the current boundary as allowlisted `ivy-systemd-deploy` actions for Traderie, `/usr/sbin/reboot`, PostgreSQL `psql/createdb/dropdb` as `postgres`, and password-required broad sudo.
+- The helper is root-owned, not version-controlled, and cannot update itself through the current NOPASSWD boundary. A repository-hosted helper template plus scoped update command is still planned, not complete.
 
-- Record canonical remote, default branch, approved SHA, and rollback SHA.
-- Confirm clean checkout before deployment.
-- Keep runtime data and secrets outside checkout.
-- Run dependency install only after capacity and credential boundaries are known.
-- Record deployment revision in health output.
+**Current authority assessment**
 
-**High-reasoning gates**
+This is current session evidence and current deployment practice, not yet a fully promoted public platform standard. It is safe to reuse only through explicit Strong Codex packets that cite the helper and sudo boundary. Promotion and hardening are required before treating it as a general-purpose platform product.
 
-- `§4A-G1` Publication or Private-Deployment Authority Gate.
-- `§4A-G2` Exact-SHA Deployment Gate.
+**Reusable product plan**
 
-**Required evidence**
+| Product | Status | Current location or evidence | Prepare | Execute | Completion evidence |
+|---|---|---|---|---|---|
+| Project database provisioning packet | Existing as task evidence; needs promotion | Traderie/Reddit Ops Codex packets; `docs/DATABASE.md` | Medium OpenCode | Strong Codex | DB exists, roles exist, grants verified |
+| Role and privilege matrix | Existing but dispersed | `docs/PORTFOLIO_CONVENTIONS.md`, `docs/DATABASE.md`, repo migrations | Medium OpenCode | Strong Codex validates | Positive and negative role tests |
+| Standard role naming with conditional applicability | Existing | `docs/PORTFOLIO_CONVENTIONS.md` | Medium OpenCode | Strong Codex validates | Control sheet records applicable roles |
+| Database onboarding manifest | Planned and required | New template under future `docs/templates/` or `repos/<repo>/` packet | Medium OpenCode | Strong Codex consumes | Manifest lists DB, schemas, roles, env vars, migrations, validation |
+| Environment/configuration template | Existing per repo, inconsistent | `.env.example`, deploy env examples | Medium OpenCode | Strong Codex installs live config | Safe example exists; live env outside Git |
+| Migration execution and validation packet | Existing per repo, needs standardization | Traderie migrations/validation; Reddit Ops migrations | Medium OpenCode | Strong Codex | Migration ledger and validation SQL pass |
+| Negative privilege-test procedure | Existing as evidence, needs template | Traderie role tests; Reddit Ops gates | Medium OpenCode | Strong Codex | Writer cannot read/alter outside scope; reader cannot write |
+| Isolated restore helper or packet | Existing as packets, needs helper | Traderie/Reddit Ops restore evidence | Medium OpenCode | Strong Codex | Restore DB validated and cleaned up |
+| Backup/checksum/manifest wrapper | Existing per repo, needs common wrapper | Traderie and Reddit Ops scripts | Medium OpenCode | Strong Codex or scheduler | Dump, SHA-256, manifest, `pg_restore --list` |
+| Health registration procedure | Planned and required | `docs/HEALTH_CONTRACT.md`, `docs/health/producer-registry.md` | Medium OpenCode | Strong Codex for production registration | Producer listed, Phase 0 view shows it |
+| Temporary restore cleanup procedure | Existing in packets, needs template | Traderie/Reddit Ops restore packets | Medium OpenCode | Strong Codex | No restore DB remains after proof |
+| Bounded privileged execution workflow | Existing but needs promotion/hardening | `ivy-systemd-deploy`, `/etc/sudoers.d/ivy-migration`, session logs | Strong Codex designs, Medium documents | Strong Codex | Helper actions logged; no broad sudo used |
+| PostgreSQL admission evidence template | Planned and required | This roadmap `§3B`, `§3A` | Medium OpenCode | Review by Strong Codex | Packet sufficient for execution without rediscovery |
 
-Remote URL, branch, SHA, clean checkout status, dependency-change flag, migration-change flag, rollback SHA, health revision field, and drift check command.
+**Deliberate non-capabilities**
 
-**Completion proof**
+- The current helper is not a general shell.
+- It does not permit arbitrary root file edits.
+- It does not manage secrets.
+- It does not update itself.
+- It does not authorize destructive data deletion.
+- It does not replace Buddy approval for reboot timing, publication strategy, or destructive cleanup.
 
-The VPS checkout matches the approved SHA, has no tracked local modifications, and can report its revision through health.
+**Gate**
 
-**Status**
+`§3B-G1` PostgreSQL Productization Gate.
 
-Traderie has been deployed on the VPS by exact approved SHA. The current production SHA is `e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40`. The VPS checkout is clean at that SHA, the root-owned deployment helper is pinned to it, and the deployed revision metadata matches. All six Traderie systemd services and the timer are installed from the reviewed source. The helper SHA pin uses a direct `sed` interim mechanism; a durable template-based mechanism is deferred. The prior roadmap SHA `b3b70a01426694d06d6c07a09f0c33427f530f0d` is historical.
-
-### §4B Drift Detection
-
-**Outcome**
-
-The control plane can detect stale deployments, unexpected local changes, unapproved SHAs, and missing health revisions.
-
-**Dependencies**
-
-`§4A` deployment contract.
-
-**Work**
-
-- Define drift checks for Git SHA, database schema version, deployed health revision, service unit revision, and expected scheduler state.
-- Report drift without automatically changing production.
-- Require review before redeployment or rollback.
-
-**Required evidence**
-
-Drift report with expected SHA, actual SHA, dirty status, schema version, health revision, service state, and timer state.
-
-**Completion proof**
-
-Drift is visible as a health or control-plane finding before operational activation.
-
-**Status**
-
-Partially implemented for Traderie during Work Session 3. Exact SHA, clean checkout, schema version, installed unit hashes, scheduler state, and health revision are included in deployment and cutover validation. Portfolio-wide automated drift reporting remains future work.
-
-## §5 Scheduler Ownership and Single-Writer Controls
-
-### §5A Authority-Transfer Lifecycle
+### §3C Deployment and Exact-SHA Tooling
 
 **Outcome**
 
-Each workflow has one authoritative collector, scheduler, and writer unless a separately approved mirroring design exists.
+Every deployable repository can be installed and verified by exact SHA.
 
-**Dependencies**
+**Products**
 
-Repository control sheet identifies current and future authorities.
+- Exact-SHA deployment template - existing but needs promotion from Traderie packets.
+- Deployment registry entry - planned and required.
+- Drift checker - planned and required.
+- Helper update mechanism - planned and required because current `ivy-systemd-deploy` hardcodes a SHA.
 
-**Work**
+**Gate**
 
-- Document current collector, scheduler, writer, data store, downstream consumers, and disable point.
-- Run shadow mode where needed.
-- Prove parity, freshness, reject handling, and rollback.
-- Obtain cutover approval before switching authority.
-- Retire or archive legacy paths only after stabilization and destructive-operation approval.
+`§3C-G1` Exact-SHA Deployment Gate.
 
-**High-reasoning gates**
-
-- `§5A-G1` Database Authority Gate.
-- `§5A-G2` Scheduler Gate.
-- `§5A-G3` Cutover Gate.
-- `§5A-G4` Destructive Operation Gate, only for deletion or retirement.
-
-**Required evidence**
-
-Authority map, scheduler inventory, write-path inventory, parity report, freshness report, backup/restore proof, rollback proof, disable plan, and stabilization report.
-
-**Completion proof**
-
-The old and new paths are not both writing production data after cutover.
-
-**Status**
-
-Exercised for Traderie during Work Sessions 3 and 4. The authority transfer lifecycle was executed through 4 cutover attempts: one 300s timeout rollback (Codex 2), one 600s timeout rollback (Codex 3), one segmented premature-monitor rollback (Codex 4), and one successful segmented cutover (Codex 5). VPS systemd is now the sole Traderie scheduler and writer authority. Mac launchd is unloaded. The timer `traderie-ingest-snapshot.timer` is enabled and active. Reddit Ops authority transfer was completed earlier during Work Session 3; VPS systemd remains the sole Reddit Ops authority.
-
-## §6 Monitoring, Health, Alerting, and Resource Management
-
-### §6A Health Contract
+### §3D Systemd and Scheduler Standards
 
 **Outcome**
 
-Every production workflow emits health records that identify status, freshness, records read/written/rejected, backlog, retries, schema version, deployed revision, backup state, and incident state.
+Schedulers are bounded, observable, and never duplicated.
 
-**Dependencies**
+**Products**
 
-Repository-specific health schema or safe file-mode export.
+- Systemd service/timer templates - existing per repo, need portfolio templates.
+- Unit validation procedure - existing through `systemd-analyze verify`, needs template.
+- Natural-run acceptance template - existing in Traderie evidence, needs promotion.
+- Rollback packet template - existing per repo, needs promotion.
 
-**Work**
+**Gate**
 
-- Implement health tables or exports.
-- Sanitize public health outputs.
-- Include database size, data directory size, growth rate, prune status, and backup state.
-- Route health failures into a reviewable incident path.
+`§3D-G1` Scheduler Gate.
 
-**High-reasoning gates**
-
-- `§6A-G1` Health Contract Gate.
-
-**Required evidence**
-
-Health schema/export sample, prohibited-field scan, stale-data sample, failed-run sample, and growth metrics.
-
-**Completion proof**
-
-A health report can distinguish healthy, stale, failed, skipped, backup-stale, and resource-pressure states.
-
-**Status**
-
-Substantially implemented during Work Session 3. A canonical portfolio health contract was reconciled, Reddit Ops became the first canonical producer, and Traderie emits validated private and public health with environment, revision, database, scheduler, backup, freshness, and drift-related state. Traderie currently reports `ok` with `project_environment=production`. Central collector, historical storage, API, dashboard, alert delivery, and portfolio-wide growth reporting remain future work.
-
-### §6B Resource and Incident Management
+### §3E Phase 0 Health View
 
 **Outcome**
 
-The VPS reports storage pressure, failed services, stale data, backup failure, and incident state before silent degradation.
+Buddy can inspect ingestion status through a quick read-only operator view before new cutovers.
 
-**Dependencies**
+**Product**
 
-`§6A` health contract and `§3C` backup/retention design.
+`Phase 0 operator view`: a CLI-generated table or simple internal HTML page. Initial implementation should be a CLI report because it can be validated fastest.
 
-**Work**
+**Planned command path**
 
-- Define warning/critical/emergency thresholds.
-- Add checks for disk usage, database size, data directory size, service failure, stale workflows, and backup age.
-- Define incident response and rollback paths.
+`tools/portfolio_phase0_status.py --format table`
 
-**Required evidence**
+**Source data**
 
-Threshold definitions, health output, simulated stale/failure samples, and recovery instructions.
+- Repository health exporters or adapters where available.
+- `repos/<repo>/CONTROL.md` for expected scheduler/writer authority and approved SHA.
+- Read-only systemd state for local/VPS jobs where a producer is not yet registered.
+- Backup artifact age from repo health or documented backup path.
+- Drift evidence from Git SHA, health `deployed_revision`, and unit hash where available.
+
+**Required output columns**
+
+- Repository or workload.
+- Ingestion workflow.
+- Last attempt.
+- Last successful run.
+- Freshness.
+- Scheduler or trigger state.
+- Current writer authority.
+- Deployed revision.
+- Backup age.
+- Current failure.
+- Drift.
+- Active incident or approval requirement.
 
 **Completion proof**
 
-A failed or stale workflow produces a bounded, actionable signal without exposing secrets or private paths.
+One generated report includes Traderie, Reddit Ops, SJC Intel readiness placeholder, and WGU Catalog batch placeholder without exposing secrets, connection strings, private paths, raw error bodies, or credentials.
 
-**Status**
+**Gate**
 
-Partially implemented through deployment gates, health checks, backup-age checks, disk thresholds, service-state checks, one-writer rollback, and cutover incident handling. Portfolio-wide alert delivery, incident persistence, and standardized threshold enforcement remain future work.
+`§3E-G1` Phase 0 Health Visibility Gate.
 
-## §7 Traderie Reference Deployment
-
-Traderie is first because it currently has the strongest deployment foundation: public GitHub repository, 17 PostgreSQL migrations, 57 passing tests, real PostgreSQL adapter, bounded pilot, parity and rollback tooling, backup/checksum/restore evidence, health export, inert systemd units, wrapper scripts, and deterministic runtime. SJC Intel was previously considered first, but current evidence shows Traderie is the better complete reference deployment. SJC Intel remains a strong early follow-on.
-
-### §7A Traderie Current State
-
-**Current facts**
-
-- Production SHA is `e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40`.
-- VPS systemd is the sole scheduler and writer authority. Mac launchd is unloaded.
-- Segmented orchestrator (`run_traderie_generation.sh`) is installed with per-segment `timeout` bounds: pc_sc_nl=180s, pc_sc_l=240s, pc_hc_l=360s, pc_hc_nl=480s.
-- Bounded manual generation succeeded (all 4 segments, exit=0).
-- `traderie-ingest-snapshot.timer` is enabled and active.
-- A natural scheduled generation occurred (2026-07-11 18:01:46 UTC) but partially failed: pc_hc_nl reached its 480-second bound and timed out. Overall exit=1.
-- Current classification: **`PRODUCTION_DEGRADED`**.
-- Controlled reboot proof is deferred until natural-run success is restored.
-- DB-backed health records report `ok`. File-based health export is an empty directory.
-- Backup freshness lacks an explicit contract threshold.
-
-### §7B VPS PostgreSQL Foundation for Traderie
+### §3F Backup, Restore, and Retention
 
 **Outcome**
 
-Traderie has a VPS PostgreSQL database, roles, schemas, migrations, validation, backup role, monitor role, and credential boundary.
+Every authoritative data store has a verified recovery path before cutover.
 
-**Dependencies**
+**Products**
 
-`§3A` capacity recheck passes. `§3B` PostgreSQL foundation is authorized.
+- Backup/checksum/manifest wrapper - existing per repo, needs promotion.
+- Isolated restore packet - existing per repo, needs template.
+- File/export recovery equivalent - planned for WGU Catalog and other non-DB workloads.
+- Backup freshness threshold - default added in `docs/HEALTH_CONTRACT.md`, repo-specific thresholds still required where stricter.
 
-**Work**
+**Gate**
 
-- Create the `traderie` database and project roles on VPS.
-- Apply the 17 migrations in order.
-- Run validation SQL.
-- Confirm role permissions by connection type.
-- Keep secrets in VPS config outside Git.
-- Record schema version and database size.
+`§3F-G1` Backup/Restore Gate.
 
-**High-reasoning gates**
-
-- `§7B-G1` Traderie PostgreSQL Foundation Gate.
-
-**Required evidence**
-
-Role list, database list, migration table, validation output, role-specific connection checks, schema version, database size, and credential boundary confirmation.
-
-**Completion proof**
-
-Validation passes on the VPS database and application scripts can connect using the intended non-superuser role.
-
-**Status**
-
-Complete for Traderie during Work Session 3. PostgreSQL is installed; Traderie roles and database exist; migrations 1–17 are applied; role-specific validation, credential boundaries, backup, restore, and application connectivity passed.
-
-### §7C Mac-to-VPS Data Transfer and Parity
+### §3G Drift and Deployed-Revision Verification
 
 **Outcome**
 
-The VPS database contains the approved Traderie operational baseline, and the Mac copy is preserved for backup/archive/restore.
+Unapproved code, dirty checkouts, stale units, missing revision metadata, and schema drift are visible.
 
-**Dependencies**
+**Products**
 
-`§7B` complete. Fresh Mac backup and isolated restore drill pass.
+- Drift checker - planned and required.
+- Deployment registry - planned and required.
+- Unit hash verification - existing in Traderie evidence, needs template.
 
-**Work**
+**Gate**
 
-- Create a fresh Mac PostgreSQL backup and checksum.
-- Restore or import the approved operational baseline into VPS PostgreSQL.
-- Compare schemas, row counts, primary/natural keys, date ranges, segment coverage, completed trades, price entries, aggregates, duplicates, and reject records.
-- Identify records present only on Mac or only on VPS.
-- Define reject rules for unmappable data.
+`§3G-G1` Drift Detection Gate.
 
-**High-reasoning gates**
+### §3H Reusable Onboarding Artifacts
 
-- `§7C-G1` Traderie Data Transfer and Parity Gate.
+| Artifact | Status |
+|---|---|
+| PostgreSQL onboarding packet/helper | Existing but needing promotion |
+| Role matrix | Existing and reusable |
+| Exact-SHA deployment template | Existing but needing promotion |
+| Deployment registry entry | Planned and required |
+| Systemd service and timer templates | Existing but needing promotion |
+| Unit validation | Existing but needing promotion |
+| Health exporter or adapter template | Planned and required |
+| Health producer registration | Existing registry doc, needs operational procedure |
+| Backup and restore wrapper | Existing per repo, needs promotion |
+| Cutover packet template | Existing but needing promotion |
+| Rollback packet template | Existing but needing promotion |
+| Natural-run acceptance template | Existing but needing promotion |
+| Drift checker | Planned and required |
+| Readiness review template | Planned and required |
+| Platform-confidence checklist | Planned in `§6A`, required before Wave 1 |
 
-**Required evidence**
+**Gate**
 
-Backup manifest, checksum, restore drill output, row-count table, segment coverage, date ranges, duplicate report, reject report, and unmapped-field table.
+`§3H-G1` Reusable Artifact Gate.
 
-**Completion proof**
+### §3I Hermes Staged Authority
 
-Parity is either proven or explicit exceptions are accepted before any authority transfer.
+Hermes remains read-only until Phase 0 health and deterministic workflow contracts are proven.
 
-**Status**
+**Gate**
 
-Complete for the approved Traderie operational baseline during Work Session 3. Mac source data was transferred to VPS PostgreSQL and parity evidence passed. The Mac remains the backup, archive, restore, and emergency-recovery environment.
+`§3I-G1` Hermes Read-Only Gate.
 
-### §7D Bounded Manual Deployment Proof
+## §4 Repository Readiness Campaign
+
+### §4A Campaign Model
+
+Prepare eligible ingestion repositories in parallel, but cut over in controlled waves. WGU-derived downstream ambiguity is deferred behind `§4F-G1` and must not block SJC Intel, WGU Catalog batch readiness, or other unrelated deterministic readiness work.
+
+### §4B Common Medium-Agent Packet Shape
+
+Every readiness packet must specify:
+
+- roadmap section and gate;
+- exact repository scope;
+- required reading;
+- allowed writes and prohibited actions;
+- expected source or documentation outputs;
+- local validation;
+- dry-run or staging proof;
+- evidence files;
+- stop conditions;
+- escalation conditions;
+- privileged handoff requirements;
+- completion gate.
+
+### §4C SJC Intel Readiness Packet
+
+**Task artifact**
+
+`_internal/outbox/session5/agent-sjc-intel-ingestion-readiness.md`
+
+**Repository scope**
+
+`/Users/buddy/projects/sjc_intel`; control-plane outputs under `repos/sjc-intel/`.
+
+**Required reading**
+
+Root `AGENTS.md`, `TODO.md`, `docs/OPERATING_MODEL.md`, `docs/REPOSITORY_CONTROL_MODEL.md`, `docs/PORTFOLIO_CONVENTIONS.md`, `docs/DATA_LIFECYCLE_STANDARD.md`, `docs/HEALTH_CONTRACT.md`, `docs/DATABASE.md`, SJC Intel README/AGENTS/deploy/systemd/db/health docs.
+
+**Expected outputs**
+
+Create `repos/sjc-intel/CONTROL.md` and `repos/sjc-intel/RELEASE_GATES.md`; update only SJC Intel source/docs if required for readiness.
+
+**Local validation**
+
+Run repository tests, migration validation, health exporter dry run, unit static validation if systemd files exist, `.env.example` check, no-secret/path scan.
+
+**Dry-run or staging proof**
+
+No VPS mutation. Produce a bounded command plan for Strong Codex.
+
+**Stop conditions**
+
+Secrets, unclear writer authority, missing deterministic entrypoint, failed tests, destructive cleanup need, or private data exposure risk.
+
+**Escalation**
+
+Strong Codex for database provisioning, config installation, systemd installation, production deploy, and scheduler activation.
+
+**Completion gate**
+
+`§4C-G1` SJC Intel Readiness Packet Gate.
+
+### §4D IH Market Companion Readiness Packet
+
+**Task artifact**
+
+`_internal/outbox/session5/agent-ih-market-authority-readiness.md`
+
+**Repository scope**
+
+`/Users/buddy/projects/ih_market_companion`; control-plane outputs under `repos/ih-market-companion/`.
+
+**Required reading**
+
+Control-plane standards, IH Market README/AGENTS/deploy/systemd/db/health/runtime docs, and any public/private boundary document in the repo.
+
+**Expected outputs**
+
+Authority map, public/private boundary assessment, service/timer inventory, data-boundary scan, migration/health review, rollback packet, and control/gate drafts.
+
+**Local validation**
+
+Run tests or targeted validations available locally; verify unit source syntax; scan for private trading/chat paths in publishable docs.
+
+**Dry-run or staging proof**
+
+No live runtime or trading-adjacent action. Evidence only.
+
+**Stop conditions**
+
+Trading authority ambiguity, private data exposure, active dirty tree that prevents safe classification, or unclear VPS helper ownership.
+
+**Escalation**
+
+Strong Codex for any VPS helper change, browser/runtime service activation, PostgreSQL provisioning, or trading-adjacent authority.
+
+**Completion gate**
+
+`§4D-G1` IH Market Authority Normalization Gate.
+
+### §4E WGU Catalog Batch Readiness Packet
+
+**Classification**
+
+Low-frequency event-driven or scheduled batch ingestion workload. It is not a continuous collector.
+
+**Task artifact**
+
+`_internal/outbox/session5/agent-wgu-catalog-batch-readiness.md`
+
+**Repository scope**
+
+`/Users/buddy/projects/wgu-catalog`; control-plane outputs under `repos/wgu-catalog/`.
+
+**Required reading**
+
+Control-plane standards, WGU Catalog README/docs/scripts/export fixtures, and any current operator notes.
+
+**Expected outputs**
+
+Control/gate files that define source authority, deterministic commands, release-detection or monthly-check mechanism, output validation, archive/rollback, health/freshness visibility, exact source revision, and operator procedure.
+
+**Workload requirements**
+
+- Detect or confirm a new WGU catalog release.
+- Run established ingestion, parsing, validation, and export.
+- Record source version and acquisition date.
+- Validate outputs.
+- Publish checksums or manifests.
+- Expose freshness and last-success health.
+- Preserve prior catalog versions.
+- Notify when a new release requires review or ingestion.
+- Decide whether activation is automatic, approval-gated, or manually triggered.
+
+**Non-goals**
+
+Do not create unnecessary database, daemon, or continuous scheduler work if the existing file/export architecture is sufficient.
+
+**Local validation**
+
+Run existing ingest/parse/validate/export commands on fixtures or dry-run data; verify manifests/checksums and prior-version preservation.
+
+**Stop conditions**
+
+Unclear source authority, inability to validate output, missing archive/rollback, or release-detection ambiguity that cannot be resolved locally.
+
+**Escalation**
+
+Strong Codex only if VPS scheduling or production storage activation is selected.
+
+**Completion gate**
+
+`§4E-G1` WGU Catalog Batch Source Authority Gate.
+
+### §4F WGU-Derived Boundary Reconciliation
+
+**Task artifact**
+
+`_internal/outbox/session5/agent-wgu-reddit-boundary-reconciliation.md`
+
+**Scope**
+
+Read-only reconciliation across Reddit Ops controls, `/Users/buddy/Desktop/WGU-Reddit`, `/Users/buddy/projects/WGU-Reddit`, relevant Reddit catalog or derived workload evidence if present, BSDA consumer references, and `docs/DATABASE.md`.
 
 **Outcome**
 
-Traderie runs one bounded manual cycle on VPS without enabling services or timers.
-
-**Dependencies**
-
-`§7B` and `§7C` pass or have accepted conditions. Exact SHA checkout exists on VPS.
+Resolve enough repository/workload ownership to decide which future roadmap sections belong to Reddit Ops, WGU-Reddit, a Reddit catalog boundary, BSDA Courses, or another derived workload.
 
 **Work**
 
-- Clone Traderie to the approved VPS app path.
-- Check out the approved SHA.
-- Install dependencies.
-- Configure secrets outside the repo.
-- Run tests if practical in the VPS environment.
-- Run one snapshot, validation, health export, and backup cycle.
-- Verify backup checksum and manifest.
-- Measure disk growth from one cycle.
+- Identify current authorities.
+- Separate ingestion, catalog, analysis, LLM, benchmark, and historical-tool responsibilities.
+- Resolve publication blockers at the correct repository boundary.
+- Define future roadmap sections and control-sheet owners.
 
-**High-reasoning gates**
+**Deferred**
 
-- `§7D-G1` Bounded Deployment Proof Gate.
+No production LLM, downstream WGU-Reddit, Reddit catalog, or derived Reddit workload admission until this gate passes.
 
-**Required evidence**
+**Completion gate**
 
-Remote URL, SHA, clean checkout status, dependency install output, test output or reason tests could not run, snapshot row counts, validation output, health output, backup manifest, checksum, and disk-growth measurement.
+`§4F-G1` WGU Boundary Reconciliation Gate.
 
-**Completion proof**
+### §4G BSDA Courses Consumer Readiness
 
-One clean manual cycle completes and produces validation, health, backup, checksum, and growth evidence.
+Deferred until `§4F-G1` and WGU Catalog contract evidence are available. BSDA remains consumer-only and must not gain independent Reddit ingestion authority.
 
-**Status**
+### §4H WGU Atlas Readiness
 
-Complete during Work Session 3. Traderie was deployed by exact SHA, dependencies and environment were validated, bounded PostgreSQL proof passed twice, health export passed, backup/checksum evidence passed, and the checkout remained clean.
+Deferred until WGU Catalog contract evidence is available. Atlas remains downstream/static unless a later gate adds production LLM authority.
 
-### §7E Rollback and Restore Proof
+### §4I Idle Hacking Safe Ingestion Packet
+
+**Task artifact**
+
+`_internal/outbox/session5/agent-idlehacking-safe-ingestion-boundary.md`
+
+**Repository scope**
+
+`/Users/buddy/projects/idlehacking_kb`; control-plane outputs under `repos/idlehacking-kb/`.
+
+**Expected outputs**
+
+Define a safe ingestion subset if one exists; inventory Discord capture authority, migration/health status, credential coupling, and LLM exclusion boundary.
+
+**Local validation**
+
+Read-only/source-only checks; no Discord capture, no production LLM execution, no credential use.
+
+**Stop conditions**
+
+Sensitive-source ambiguity, cross-repo credential dependency, unclear capture authority, or any required live service interaction.
+
+**Escalation**
+
+Strong Codex for production database provisioning, Discord capture deployment, or LLM production authority.
+
+**Completion gate**
+
+`§4I-G1` Idle Hacking Sensitive Ingestion Boundary Gate.
+
+### §4J Reckless Ben Restricted Path
+
+Reckless Ben remains `NO_LAUNCH`. It contributes approval and evidence patterns only unless Buddy explicitly reclassifies it.
+
+## §5 Schedulable Execution Groups
+
+### §5A Shared Platform Foundation
+
+**Hard dependencies:** Current roadmap authority, no production mutation.
+**Concurrent work:** PostgreSQL product templates, deployment registry design, reusable packet templates.
+**Owner:** Medium OpenCode prepares; Strong Codex reviews privileged design.
+**Completion evidence:** Reusable artifact list reaches `existing reusable` or `planned with owner`; no ambiguous helper/sudo boundary remains.
+**Next gate:** `§3B-G1`, `§3H-G1`.
+
+### §5B Repository-Specific Medium-Agent Readiness Packets
+
+**Hard dependencies:** `§3A` gate model.
+**Concurrent work:** SJC Intel, WGU Catalog, IH Market, Idle Hacking safe subset. WGU-derived workloads wait for `§4F-G1`.
+**Owner:** Medium OpenCode.
+**Completion evidence:** Required outbox report, control/gate drafts, validation output, privileged handoff packet.
+**Next gate:** repository readiness gate.
+
+### §5C Minimum Health Visibility
+
+**Hard dependencies:** Phase 0 source list and control-sheet fields.
+**Concurrent work:** Health adapter review can run with readiness packets.
+**Owner:** Medium OpenCode; Strong Codex only for live health registration.
+**Completion evidence:** Phase 0 report shows required columns for existing and candidate workloads.
+**Next gate:** `§3E-G1`.
+
+### §5D Platform Confidence Review
+
+**Hard dependencies:** Existing workload status, Phase 0 health, capacity check, backup freshness.
+**Owner:** Strong Codex or high-reasoning review from a compact evidence packet.
+**Completion evidence:** `§6A-G1` pass/fail with conditions.
+**Next gate:** Wave 1 authorization.
+
+### §5E Wave 1 Privileged Cutover
+
+**Hard dependencies:** Platform Confidence Gate, repository readiness gate, exact approved SHA, backup/rollback packet.
+**Owner:** Strong Codex.
+**Completion evidence:** Bounded manual run, health, backup, restore/recovery proof, scheduler activation.
+**Next gate:** Natural-run acceptance.
+
+### §5F Natural-Run Acceptance
+
+**Hard dependencies:** Scheduler active and no manual start substituted for proof.
+**Owner:** OpenCode read-only evidence, Strong Codex only if remediation is needed.
+**Completion evidence:** Genuine scheduled or event-triggered run succeeds and is distinguished from manual or Persistent catch-up.
+**Next gate:** Stabilization.
+
+### §5G Stabilization
+
+**Hard dependencies:** Natural-run acceptance.
+**Owner:** OpenCode evidence review; Strong Codex for recovery/reboot if needed.
+**Completion evidence:** Health current, backup fresh, rollback available, drift clean, incidents absent or documented.
+**Next gate:** next readiness/cutover wave.
+
+### §5H Next Readiness and Cutover Wave
+
+**Hard dependencies:** Prior wave stabilized or explicitly accepted with conditions.
+**Owner:** Medium OpenCode prepares; Strong Codex executes.
+**Completion evidence:** Same as Wave 1, adjusted by workload risk.
+
+## §6 Cutover Strategy and Platform Confidence
+
+### §6A Platform Confidence Gate
+
+**Gate ID**
+
+`§6A-G1` Platform Confidence Gate.
+
+**Minimum conditions before first new ingestion cutover wave**
+
+- No unresolved critical production incident.
+- Traderie and Reddit Ops each have exactly one authoritative scheduler/trigger and writer, or any exception is documented and not relevant to the candidate wave.
+- Current health is visible in Phase 0 view or equivalent evidence.
+- Backup freshness is passing or explicitly waived for a non-database candidate with equivalent recovery proof.
+- Rollback is available for existing production workloads.
+- PostgreSQL service is healthy.
+- Disk/capacity is below stop thresholds.
+- No known duplicate-writer condition.
+- No active recovery operation would make another cutover unsafe.
+
+**Not required for this gate**
+
+- Full repository maturity.
+- Polished dashboard UI.
+- Every reboot proof.
+- Every remaining Traderie or Reddit Ops maturity task, unless the unresolved item is a genuine hard dependency for the candidate cutover.
+
+### §6B Recommended Batching
+
+| Wave | Scope | Rationale |
+|---|---|---|
+| Wave 0 | Traderie recovery and Reddit Ops recovery/publication as separate sessions | Existing workloads must not hide critical incidents |
+| Wave 1 | SJC Intel; WGU Catalog only if it selects VPS batch trigger | Low-risk deterministic and batch workloads |
+| Wave 2 | IH Market or Idle Hacking safe subset | Higher runtime/privacy complexity |
+| Wave 3 | LLM/downstream production stages | Requires boundary, budget, prompt, audit, and review gates |
+
+### §6C Rollback Rules
+
+- Bounded generation failure stops activation.
+- Natural scheduled or event-triggered run failure produces one focused remediation task.
+- Duplicate scheduler/writer risk triggers rollback to last known single authority.
+- Backup/restore failure blocks production-complete status.
+- Reboot failure requires documented fallback authority where applicable.
+
+## §7 Active Recovery Workstreams
+
+### §7A Traderie Production Recovery
 
 **Outcome**
 
-Traderie can roll back a bounded test run and restore from backup before production authority changes.
-
-**Dependencies**
-
-`§7D` bounded cycle.
+Traderie returns from `PRODUCTION_DEGRADED` to `production-complete` or a clearly narrower blocked state.
 
 **Work**
 
-- Capture pre-run row counts and observation keys.
-- Delete only test-run records by explicit key set.
-- Confirm row counts return to baseline.
-- Re-run snapshot and prove stable reinsertion.
-- Restore latest backup into an isolated database and run full validation.
-- Record rollback SHA and service disable path.
+- Investigate `pc_hc_nl` timeout using runtime, retry, volume, latency, progress, file mtime/size, and process evidence.
+- Verify DB-backed and file-based health behavior.
+- Apply backup freshness threshold to Traderie evidence.
+- Apply source correction and tests if needed.
+- Deploy exact published SHA, prove bounded generation, prove one genuine natural scheduled generation, then perform controlled reboot proof if the Platform Confidence Gate does not require deferral.
 
-**High-reasoning gates**
+**Gate**
 
-- `§7E-G1` Rollback and Restore Gate.
+`§7A-G1` Traderie Recovery Gate.
 
-**Required evidence**
-
-Pre/post row counts, exact key set, rollback command, validation output, isolated restore output, checksum, and rollback instruction review.
-
-**Completion proof**
-
-Rollback returns counts to baseline and isolated restore validates.
-
-**Status**
-
-Complete for the current Traderie migration phase. Bounded rollback/idempotence proof passed, isolated restore validated, scheduler rollback was exercised during the first cutover attempt, and Mac authority was restored without duplicate writers.
-
-### §7F One-Writer Cutover Preparation
+### §7B Reddit Ops Publication Strategy
 
 **Outcome**
 
-Traderie has an approved cutover plan from current Mac collection to VPS production collection.
-
-**Dependencies**
-
-`§7D` and `§7E` pass.
+Publishable Reddit Ops source path is approved without exposing credential-bearing history.
 
 **Work**
 
-- Inventory current Mac launchd collector and any other writer.
-- Define VPS writer and future scheduler.
-- Define shadow window, parity checks, freshness checks, and disable point.
-- Define fallback to Mac collection if VPS run fails.
-- Keep Mac as backup/archive/restore environment after cutover.
+- Reconstruct clean publishable history excluding `e4acae0`, or choose another Buddy-approved publication strategy.
+- Add reviewed backup unit source and tests.
+- Run secret scan and present strategy for Buddy approval before any push.
 
-**High-reasoning gates**
+**Gate**
 
-- `§7F-G1` Traderie Database Authority Gate.
-- `§7F-G2` Traderie Cutover Approval Gate.
+`§7B-G1` Reddit Ops Publication Strategy Gate.
 
-**Required evidence**
-
-Current scheduler inventory, current writer inventory, future scheduler plan, parity report, disable command, fallback command, backup/restore proof, and rollback criteria.
-
-**Completion proof**
-
-Buddy can approve or reject cutover from a concrete evidence packet without further rediscovery.
-
-**Status**
-
-Complete as a preparation packet and exercised twice. Current and future authorities, disable and fallback commands, parity, freshness, backup/restore, and one-writer criteria are documented. The first cutover attempt rolled back safely after a natural health-timer failure. The second attempt deployed the corrected SHA but stopped before scheduler transfer because the health-role and deployment-helper SHA gates failed. Mac launchd remains authoritative and VPS Traderie units remain disabled/inactive.
-
-### §7G Scheduler Activation
+### §7C Reddit Ops Production Recovery
 
 **Outcome**
 
-Traderie services and timers are enabled only after manual proof, rollback proof, and cutover approval.
+Backup service, backup freshness, exact-SHA deployment, restore evidence, drift, and reboot/persistence gaps are reconciled after publication or explicit rsync exception.
 
-**Dependencies**
+**Gate**
 
-`§7F` cutover approval.
+`§7C-G1` Reddit Ops Recovery Gate.
 
-**Work**
+## §8 Evidence and Completion Proofs
 
-- Install service/timer units.
-- Confirm all units map to approved scripts and config.
-- Start with a bounded schedule.
-- Monitor first scheduled runs.
-- Confirm no Mac collector duplicate write remains active.
+### §8A Standard Gate IDs
 
-**High-reasoning gates**
-
-- `§7G-G1` Scheduler Gate.
-
-**Required evidence**
-
-Unit files, timer schedule, service environment, first scheduled run output, health output, duplicate-writer check, and rollback/disable path.
-
-**Completion proof**
-
-Scheduled collection runs successfully, health remains current, backups run, and there is exactly one authoritative writer.
-
-**Status**
-
-Activated during Work Session 4. After 4 cutover attempts (Codex 2–5) and two runtime remediation cycles (Agent 7, Agent 8), `traderie-ingest-snapshot.timer` is enabled, active, and the sole scheduler. The segmented runtime uses per-segment `timeout` with `TimeoutStartSec=infinity`. The first natural scheduled generation (2026-07-11 18:01:46 UTC) completed 3 of 4 segments; pc_hc_nl timed out at 480s. Restoration to `PRODUCTION_COMPLETE` is the first objective of Work Session 5.
-
-### §7H Operational Acceptance
-
-**Outcome**
-
-Traderie becomes the reference deployment for the portfolio.
-
-**Dependencies**
-
-`§7G` Scheduler Gate passes and a stabilization window completes.
-
-**Work**
-
-- Review health, drift, backup age, growth, prune behavior, and service state over the stabilization window.
-- Confirm Mac backup/archive responsibilities.
-- Record lessons to update shared standards.
-- Identify reusable deployment patterns for SJC Intel and other follow-ons.
-
-**High-reasoning gates**
-
-- `§7H-G1` Operational Activation Gate.
-
-**Required evidence**
-
-Stabilization report, health history, backup manifests, restore proof, growth trend, prune evidence, drift report, incident log, and unresolved issue list.
-
-**Completion proof**
-
-Traderie is accepted as the first operational reference deployment, or conditions are recorded before broader reuse.
-
-**Status**
-
-Not yet started as a stabilization window. Scheduler activation is complete but the natural generation is partially failing (pc_hc_nl timeout). Operational acceptance begins after Session 5 resolves the segment timeout, restores healthy natural runs, proves controlled reboot recovery, verifies one-writer authority, and completes a documented stabilization period.
-
-## §8 Hermes Operating Model
-
-### §8A Read-Only Inspection
-
-**Outcome**
-
-Hermes can inspect approved health, drift, logs, deployment state, and repository status without changing production.
-
-**Dependencies**
-
-Public-safe health exports and configured read-only credentials.
-
-**Work**
-
-- Define read-only data sources.
-- Define allowed inspection commands.
-- Block secrets, private paths, and raw sensitive data from outputs.
-- Produce evidence packets for review without mutation.
-
-**High-reasoning gates**
-
-- `§8A-G1` Hermes Read-Only Gate.
-
-**Required evidence**
-
-Read-only credential check, allowed command list, sample health report, sample drift report, and prohibited-output scan.
-
-**Completion proof**
-
-Hermes can report status without write permissions or production mutation.
-
-**Status**
-
-Not started.
-
-### §8B Deterministic Workflow Execution
-
-**Outcome**
-
-Hermes can run approved deterministic workflows with bounded inputs, outputs, locks, timeouts, retries, and health reporting.
-
-**Dependencies**
-
-`§8A` read-only gate passes and at least one deterministic reference workflow is accepted.
-
-**Work**
-
-- Define command contracts for fetch, process, validate, export, backup, retain, and check workflows.
-- Require idempotency, locks, timeout/retry limits, and failure outputs.
-- Keep scheduler authority separate from workflow execution authority.
-
-**High-reasoning gates**
-
-- `§8B-G1` Deterministic Workflow Execution Gate.
-
-**Required evidence**
-
-Workflow contract, dry-run output, failure-mode output, lock behavior, timeout behavior, health output, and rollback path.
-
-**Completion proof**
-
-Hermes can execute a deterministic workflow without changing its contract or bypassing scheduler gates.
-
-**Status**
-
-Not started.
-
-### §8C LLM Workflow Execution
-
-**Outcome**
-
-Hermes can run approved LLM stages only when prompt version, model/provider, input contract, output schema, validation, cost accounting, audit artifact, and review boundary are defined.
-
-**Dependencies**
-
-`§8A` read-only gate and `§8B` deterministic workflow gate. A selected LLM reference repository has passed admission.
-
-**Work**
-
-- Define prompt versioning.
-- Externalize provider/model configuration.
-- Enforce structured inputs and outputs.
-- Record token and cost metadata.
-- Preserve audit artifacts.
-- Define human-review and production-write boundaries.
-
-**High-reasoning gates**
-
-- `§8C-G1` LLM Stage Authority Gate.
-- `§8C-G2` LLM Budget Gate.
-- `§8C-G3` Sensitive Review Gate, where applicable.
-
-**Required evidence**
-
-Prompt path, prompt version, model profile, provider config, input schema, output schema, validation results, token/cost estimate, audit sample, review trigger, and reprocessing rules.
-
-**Completion proof**
-
-An approved LLM stage can run reproducibly with budget, audit, validation, and review controls.
-
-**Status**
-
-Not started.
-
-### §8D Branch and Deployment Assistance
-
-**Outcome**
-
-Hermes may eventually prepare branches or deployment evidence, but does not merge, approve, silently redeploy, or alter production contracts.
-
-**Dependencies**
-
-`§8A` through `§8C` as applicable, repository-specific approval, and Git workflow controls.
-
-**Work**
-
-- Define branch preparation boundaries.
-- Define pull-request evidence requirements.
-- Define deployment-assistance limits.
-- Keep merge and production authority separate.
-
-**High-reasoning gates**
-
-- `§8D-G1` Branch Preparation Gate.
-- `§8D-G2` Approved Deployment Assistance Gate.
-
-**Required evidence**
-
-Diff summary, validation output, exact path list, no-secret proof, deployment SHA, rollback SHA, and approval record.
-
-**Completion proof**
-
-Hermes can assist without becoming the authority that approves its own changes.
-
-**Status**
-
-Deferred.
-
-## §9 WGU-Reddit Duplicate-Ingestion Risk
-
-### §9A Early Ingestion-Authority Inspection
-
-**Outcome**
-
-The WGU-Reddit operational boundary is factually understood before any LLM or scheduler migration depends on it.
-
-**Dependencies**
-
-Read-only inspection authority for the relevant Mac and VPS scheduler surfaces.
-
-**Work**
-
-- Determine which local repository or repositories represent WGU-Reddit operations.
-- Inspect current collectors, schedulers, source data, databases, downstream consumers, and duplicate execution risk.
-- Confirm or reject the hypothesis that both Mac and VPS are fetching.
-- Identify one authoritative fetcher plan and one disable/cutover plan.
-
-**High-reasoning gates**
-
-- `§9A-G1` WGU-Reddit Ingestion Authority Gate.
-
-**Required evidence**
-
-Repository map, launchd inventory, systemd timer inventory, running process inventory, database/source inventory, duplicate execution evidence, downstream consumer list, and proposed one-writer plan.
-
-**Completion proof**
-
-The portfolio knows whether duplicate ingestion is real, what it affects, and what decision is required to stop or preserve it.
-
-**Status**
-
-Partially complete during Work Session 3. The operational WGU-Reddit path on VPS was identified, Reddit Ops is active under user systemd, and canonical health was implemented. Current evidence does not show an unresolved active duplicate-writer cutover in the same way as Traderie, but final repository-boundary acceptance, scheduler documentation, exporter correction, and publication/security cleanup remain open.
-
-### §9B WGU-Reddit LLM Pipeline Admission
-
-**Outcome**
-
-WGU-Reddit is either admitted as the first LLM reference candidate or deferred with specific blockers.
-
-**Dependencies**
-
-`§9A` ingestion authority inspection.
-
-**Work**
-
-- Resolve publication blockers including reported history-secret risk.
-- Separate experimental, orphaned, QC, and production stages.
-- Define provider/model, prompt versioning, structured outputs, audit artifacts, budgets, retries, and human review.
-- Add tests, CI, `.env.example`, and repository control files.
-
-**High-reasoning gates**
-
-- `§9B-G1` WGU-Reddit Publication Readiness Gate.
-- `§9B-G2` WGU-Reddit LLM Reference Candidate Gate.
-
-**Required evidence**
-
-Secret/history scan, stage inventory, prompt inventory, model/provider inventory, benchmark fixtures, test output, CI, dependency manifest, data boundary, and cost estimate.
-
-**Completion proof**
-
-The repository can be safely published or explicitly deferred, and one LLM stage can be selected for a controlled reference plan.
-
-**Status**
-
-Not started.
-
-## §10 SJC Intel Early Follow-On Path
-
-### §10A Deterministic Repository Admission
-
-**Outcome**
-
-SJC Intel is admitted as an early deterministic follow-on or deferred with explicit blockers.
-
-**Dependencies**
-
-Traderie reference lessons through at least `§7D`; earlier admission work may proceed in parallel.
-
-**Work**
-
-- Create SJC Intel control sheet and gate evidence.
-- Verify deterministic workflows, migrations, retention, health, backup/restore, systemd units, tests, and generated-data boundaries.
-- Decide whether SJC Intel becomes the first Hermes deterministic execution candidate after Traderie.
-
-**High-reasoning gates**
-
-- `§10A-G1` SJC Intel Admission Gate.
-- `§10A-G2` Deterministic Follow-On Candidate Gate.
-
-**Required evidence**
-
-Repository status, migration list, validation output, test output, health export, retention docs, deploy docs, systemd units, backup/restore docs, source list, and scheduler plan.
-
-**Completion proof**
-
-SJC Intel has a bounded deployment plan that reuses Traderie-proven platform patterns.
-
-**Status**
-
-Moderate-detail planning. Current local evidence shows migrations, deploy docs, health export, retention tooling, and tests exist.
-
-### §10B SJC Intel Deployment and Hermes Readiness
-
-**Outcome**
-
-SJC Intel proves deterministic workflow execution beyond Traderie and contributes logging/run-report patterns.
-
-**Dependencies**
-
-`§10A` admission and applicable Traderie reference outcomes.
-
-**Work**
-
-- Port exact-SHA deployment, health, backup, restore, and scheduler controls.
-- Define deterministic source fetch contracts.
-- Define review queue and retention behavior.
-- Prove read-only then deterministic Hermes workflow execution if selected.
-
-**Required evidence**
-
-Workflow contracts, dry-run outputs, source fetch samples, health output, backup/restore proof, and scheduler disable/enable plan.
-
-**Completion proof**
-
-SJC Intel can run deterministically on the VPS without introducing duplicate schedulers or unbounded data growth.
-
-**Status**
-
-Not started.
-
-## §11 WGU Catalog and Shared WGU Data Dependencies
-
-### §11A Catalog Source Authority
-
-**Outcome**
-
-WGU Catalog becomes the clear canonical source for WGU catalog registry exports consumed by Atlas, WGU-Reddit, and BSDA Courses.
-
-**Dependencies**
-
-Repository admission and consumer contract review.
-
-**Work**
-
-- Admit WGU Catalog as a managed repository.
-- Confirm raw PDF/text artifact boundaries and export policy.
-- Define canonical export schemas, versioning, checksums, and consumer contracts.
-- Decide what remains in WGU Atlas and what moves to WGU Catalog.
-
-**High-reasoning gates**
-
-- `§11A-G1` WGU Catalog Authority Gate.
-- `§11A-G2` Consumer Contract Gate.
-
-**Required evidence**
-
-Export schemas, fixture tests, raw artifact policy, registry data inventory, consumer list, compatibility report, and rollback/export retention plan.
-
-**Completion proof**
-
-WGU data consumers can point to a versioned catalog export contract rather than hardcoded local paths.
-
-**Status**
-
-Moderate-detail planning. Current local evidence shows WGU Catalog is intended as the canonical catalog source and has export fixtures under development.
-
-### §11B Shared WGU Data Cutovers
-
-**Outcome**
-
-WGU Atlas, BSDA Courses, and WGU-Reddit consume WGU Catalog through approved contracts.
-
-**Dependencies**
-
-`§11A` authority and consumer contract gate.
-
-**Work**
-
-- Replace direct local-path dependencies with environment-driven or package/export contracts.
-- Add compatibility tests in consumers.
-- Record consumer rollback paths.
-
-**Required evidence**
-
-Consumer import tests, before/after data counts, path scan, contract version, and rollback command.
-
-**Completion proof**
-
-At least one consumer validates against the canonical export without local-machine paths.
-
-**Status**
-
-Not started.
-
-## §12 BSDA Courses Consumer Path
-
-### §12A Consumer-Only Admission
-
-**Outcome**
-
-BSDA Courses is admitted as a consumer of WGU-Reddit and WGU Catalog data, not as an independent fetch authority.
-
-**Dependencies**
-
-WGU-Reddit ingestion authority and WGU Catalog source authority are understood.
-
-**Work**
-
-- Inventory LLM stages, deterministic stages, data inputs, and publication outputs.
-- Remove hardcoded WGU-Reddit DB path fallbacks.
-- Externalize model/provider configuration.
-- Add cost accounting for LLM stages.
-- Define human-review boundaries for final Reddit publication.
-
-**High-reasoning gates**
-
-- `§12A-G1` Consumer-Only Authority Gate.
-- `§12A-G2` BSDA LLM Stage Gate.
-
-**Required evidence**
-
-Input contract, `.db` disposition, stage inventory, path scan, provider config, prompt versions, output schema, review gate, token/cost metadata, and tests.
-
-**Completion proof**
-
-BSDA Courses can consume approved upstream data without fetching or writing upstream authority.
-
-**Status**
-
-Light to moderate planning. Current local evidence includes a zero-byte ignored `data/reddit_wgu.db`; its intended disposition must be resolved before deployment planning.
-
-## §13 WGU Atlas Read-Oriented Service Path
-
-### §13A Atlas Admission and Catalog Boundary
-
-**Outcome**
-
-WGU Atlas is admitted as a public read-oriented site and possible mature LLM runtime reference after its catalog dependency is clarified.
-
-**Dependencies**
-
-`§11A` WGU Catalog authority or an accepted interim catalog mirror.
-
-**Work**
-
-- Confirm stable branch, deployment target, public data boundary, and site build process.
-- Replace hardcoded WGU catalog or Reddit paths with contracts.
-- Preserve provider-agnostic LLM runtime patterns where useful.
-- Define QA-stage budgets, audit artifacts, and public labeling rules.
-
-**High-reasoning gates**
-
-- `§13A-G1` Atlas Publication and Data Boundary Gate.
-- `§13A-G2` Atlas LLM Runtime Candidate Gate.
-
-**Required evidence**
-
-Branch/SHA status, build output, data inventory, catalog contract, path scan, LLM stage inventory, test output, and public labeling review.
-
-**Completion proof**
-
-Atlas can build from approved data contracts and has a bounded plan for any LLM-powered QA features.
-
-**Status**
-
-Light to moderate planning. Current local evidence shows active UI work on `homepage-redesign` and a catalog mirror tied to WGU Catalog transition.
-
-## §14 Idle Hacking KB Sensitive LLM Workflow Path
-
-### §14A Deferred Sensitive LLM Admission
-
-**Outcome**
-
-Idle Hacking KB is prepared for later admission after simpler deterministic and LLM patterns are proven.
-
-**Dependencies**
-
-Hermes LLM workflow model and sensitive-review gates.
-
-**Work**
-
-- Inventory live, historical, and draft LLM stages.
-- Decouple cross-repo credentials.
-- Decide whether draft prompt-only stages are implemented, archived, or deleted under approval.
-- Preserve content-safety rules and `llm_annotation_is_not_truth`-style boundaries.
-- Validate migrations, health, backup, restore, and deployment docs.
-
-**High-reasoning gates**
-
-- `§14A-G1` Idle Hacking Sensitive Review Gate.
-- `§14A-G2` Draft Stage Disposition Gate.
-
-**Required evidence**
-
-Stage registry, prompt registry, provider/credential inventory, content-safety tests, migration validation, health output, backup/restore proof, and draft-stage decision table.
-
-**Completion proof**
-
-Idle Hacking KB has a clear safe subset for deployment planning or remains deferred with explicit blockers.
-
-**Status**
-
-Light planning. Current local evidence shows new migrations, deploy docs, LLM docs, and tests are being developed, with substantial dirty state.
-
-## §15 IH Market Companion Deterministic Runtime Path
-
-### §15A Browser and Runtime Supervision
-
-**Outcome**
-
-IH Market Companion becomes a later deterministic runtime reference for browser/API supervision, public feed health, and runtime recovery.
-
-**Dependencies**
-
-Traderie reference deployment and deterministic workflow execution patterns.
-
-**Work**
-
-- Admit repository and clarify public/private split.
-- Define browser/runtime process supervision, restart behavior, health, backup, retention, and recovery.
-- Keep trade execution advisory or separately gated.
-- Prove public feed health and local/VPS parity.
-
-**High-reasoning gates**
-
-- `§15A-G1` Browser Runtime Gate.
-- `§15A-G2` Trading Authority Gate, only if any execution authority is proposed.
-
-**Required evidence**
-
-Runtime process inventory, deploy docs, systemd units, health output, public/private contract, tests, recovery docs, and trading authority boundary.
-
-**Completion proof**
-
-The project can run deterministic public-feed workflows without exposing private chat, credentials, orders, holdings, or unsafe trading automation.
-
-**Status**
-
-Light planning. Current local evidence shows substantial active work on deploy docs, tests, runtime DB migrations, and public/private contracts.
-
-## §16 Reckless Ben Restricted Path
-
-### §16A No-Launch Governance
-
-**Outcome**
-
-Reckless Ben remains restricted and contributes approval/evidence patterns without becoming a production workload.
-
-**Dependencies**
-
-No production launch unless explicit newer authority changes the classification.
-
-**Work**
-
-- Preserve evidence-first and approval-gate patterns.
-- Keep source material, legal/sensitive claims, and public outputs behind explicit review.
-- Do not deploy or activate production workflows by default.
-- Use its approval taxonomy as a reference for sensitive-review gates elsewhere.
-
-**High-reasoning gates**
-
-- `§16A-G1` Restricted Repository Gate.
-- `§16A-G2` Launch Reclassification Gate, only if requested later.
-
-**Required evidence**
-
-Current machine spec, claim discipline rules, source separation, approval taxonomy, credential inventory, and no-launch confirmation.
-
-**Completion proof**
-
-The roadmap preserves useful patterns without creating accidental production authority.
-
-**Status**
-
-Restricted. Current posture: `NO_LAUNCH`.
-
-## §17 Host Rebuild, Incident Response, and Disaster Recovery
-
-### §17A Rebuild Plan
-
-**Outcome**
-
-The portfolio can rebuild the VPS from GitHub, Mac backups, and documented configuration without relying on mutable checkout state.
-
-**Dependencies**
-
-Exact-SHA deployment, backup/restore, credential inventory, and project data boundaries.
-
-**Work**
-
-- Document host bootstrap order.
-- Record PostgreSQL install/configuration steps.
-- Restore project databases from Mac backups.
-- Recreate config files from safe examples and secure credential source.
-- Re-clone repositories by approved SHA.
-- Validate health and scheduler state before activation.
-
-**High-reasoning gates**
-
-- `§17A-G1` Host Rebuild Gate.
-
-**Required evidence**
-
-Backup inventory, restore drill, approved SHA registry, config variable inventory, service list, scheduler list, and validation checklist.
-
-**Completion proof**
-
-A documented rebuild procedure can recreate serviceable runtime state from non-VPS authorities.
-
-**Status**
-
-Not started.
-
-### §17B Incident Response
-
-**Outcome**
-
-Failures have bounded response paths: observe, stop writes if needed, preserve evidence, restore or rollback, then resume only through gates.
-
-**Dependencies**
-
-Health and drift checks.
-
-**Work**
-
-- Define incident severity levels.
-- Define stop-write and disable-timer procedures.
-- Define backup preservation and restore decision points.
-- Define post-incident review requirements.
-
-**Required evidence**
-
-Incident template, stop commands, rollback commands, restore commands, backup preservation evidence, and post-incident report.
-
-**Completion proof**
-
-An operator can respond to stale data, bad writes, backup failure, disk pressure, or deployment drift without improvising.
-
-**Status**
-
-Not started.
-
-## §18 Sequencing Model
-
-### §18A Hard Dependency Floor
-
-These ordering constraints are hard:
-
-1. VPS PostgreSQL foundation precedes PostgreSQL-backed production workloads.
-2. Backup/restore proof precedes cutover or destructive work.
-3. Exact approved SHA precedes deployment.
-4. Read-only Hermes inspection precedes Hermes workflow execution.
-5. Deterministic workflow execution precedes LLM workflow execution.
-6. Scheduler Gate precedes service/timer activation.
-7. Cutover approval precedes changing production authority.
-8. WGU Catalog authority precedes broad WGU consumer cutovers.
-9. WGU-Reddit ingestion authority inspection should precede any dependent BSDA or LLM production plan.
-10. Reckless Ben remains `NO_LAUNCH` unless explicitly reclassified.
-
-### §18B Recommended Default Order
-
-1. Traderie reference deployment through operational acceptance.
-2. WGU-Reddit duplicate-ingestion inspection in parallel as a risk task.
-3. SJC Intel deterministic follow-on.
-4. WGU Catalog authority and export contracts.
-5. First LLM workflow reference, likely WGU-Reddit if blockers are resolved or WGU Atlas if a cleaner read-oriented LLM candidate is preferred.
-6. BSDA Courses consumer-only path.
-7. IH Market Companion browser/runtime path.
-8. Idle Hacking KB sensitive LLM path.
-9. Reckless Ben remains restricted.
-
-### §18C Acceptable Alternative Orders
-
-- SJC Intel can move directly after Traderie manual deployment proof if deterministic breadth is more valuable than waiting for Traderie operational activation.
-- WGU Catalog can move earlier if WGU Atlas or BSDA Courses become the next priority.
-- WGU-Reddit ingestion inspection should happen early regardless of its deployment order because duplicate fetch risk is operationally important.
-- WGU Atlas may become the first LLM reference if read-oriented QA and provider abstraction are more useful than WGU-Reddit's operational risk.
-- BSDA Courses should not move ahead of upstream authority decisions unless scoped strictly to local refactoring and contract preparation.
-
-### §18D Selection Criteria for the Next Repository
-
-Choose the next detailed plan based on:
-
-- Operational risk reduction.
-- Readiness and existing test/deploy foundation.
-- Dependency leverage for other repositories.
-- Public portfolio value.
-- LLM budget and sensitive-review burden.
-- Amount of hardcoded local path or credential decoupling work.
-- Whether the work proves a new reusable portfolio pattern.
-
-## §19 Ongoing Maintenance and Portfolio Quality
-
-### §19A Continuous Standards Loop
-
-**Outcome**
-
-Portfolio standards evolve from real deployments without becoming stale templates.
-
-**Dependencies**
-
-Completed phase evidence and unresolved issue reports.
-
-**Work**
-
-- Promote lessons from deployments into shared standards.
-- Update repository controls when gates pass, blockers change, approved SHAs change, or deviations are accepted.
-- Keep public docs publication-safe.
-- Keep private/local-only material out of public history.
-- Review retention, backup, restore, health, CI, and public presentation periodically.
-
-**Required evidence**
-
-Changed standards, affected repositories, validation output, and unresolved issue list.
-
-**Completion proof**
-
-The roadmap and controls reflect current operating reality rather than historical plans.
-
-**Status**
-
-Ongoing. Work Sessions 3 and 4 produced reusable patterns for exact-SHA deployment, root-owned allowlisted systemd deployment, scoped migration sudo, canonical health producers, segmented runtime with per-segment `timeout`, objective progress monitoring (file mtime/size in addition to journal), health-timer-first activation, natural-run proof, one-writer rollback, unit-hash verification, and venv-path regression testing. A streamlined onboarding model (admission → one publication → one Codex production task → natural-run check → closeout) was exercised during Session 4 and proposed for formalization in the private workflow appendix. GPT desktop write-tool success is explicitly not treated as proof that a local file changed.
-
-### §19B Self-Improvement Loop
-
-**Outcome**
-
-The portfolio can inspect its own evidence, propose safe changes, and prepare reviewable updates without silent production changes.
-
-**Dependencies**
-
-Hermes read-only inspection and branch-preparation gates.
-
-**Work**
-
-- Generate periodic drift, stale-data, backup, and standards-gap reports.
-- Prepare bounded change proposals.
-- Require review for schema, prompt, threshold, credential, permission, scheduler, deployment, or production-behavior changes.
-
-**High-reasoning gates**
-
-- `§19B-G1` Self-Improvement Authority Gate.
-
-**Required evidence**
-
-Report samples, proposed diff samples, validation plan, and approval boundaries.
-
-**Completion proof**
-
-Self-improvement produces reviewable work, not unreviewed production mutation.
-
-**Status**
-
-Deferred until reference deployments and read-only inspection are proven.
-
-## §20 Current Next Work
-
-1. Execute Work Session 5 from `TODO.md` using the streamlined model: one combined OpenCode admission/source-readiness task per workstream, routine direct git-steward publication, one Codex production task per workstream, passive natural-run acceptance, closeout.
-2. Traderie production recovery — resolve pc_hc_nl timeout, restore healthy natural scheduled runs, perform controlled reboot proof.
-3. Reddit Ops sanitized publication — reconstruct clean history excluding credential-bearing commit, publish reviewed backup units.
-4. Reddit Ops production recovery — install reviewed backup units, create fresh backup, perform isolated restore drill, prove timer and reboot behavior.
-5. SJC Intel admission readiness — one combined task covering authority, runtime, database, health, backup, deploy, scheduler transfer, rollback. Do not require cutover in Session 5 unless stabilization completes cleanly.
-6. Documentation reconciliation and closeout.
+| Gate | Meaning |
+|---|---|
+| `ADMISSION` | Control sheet, gate file, source boundary, current authority, next phase |
+| `INGESTION` | Canonical ingestion-admission gate from `§3A` |
+| `SOURCE` | Publishable source, `.env.example`, tests, docs, no secret/private blockers |
+| `PG` | Database, roles, migrations, validation, privilege proof |
+| `HEALTH` | Contract-compatible health, freshness, backup state, deployed revision |
+| `BACKUP` | Dump or export, checksum, manifest, restore or equivalent recovery proof |
+| `DEPLOY` | Exact SHA deployed, config installed, checkout clean, smoke proof |
+| `SCHEDULER` | One scheduler/trigger active, duplicate writers disabled, exit semantics correct |
+| `NATURAL` | Genuine scheduled or event-triggered run passes |
+| `REBOOT` | Post-reboot service/timer/database recovery passes where required |
+| `MATURITY` | Broader CI, docs, dashboard polish, LLM budgets, public presentation |
+
+### §8B Required Evidence Per Ingestion Workload
+
+Every ingestion readiness review must answer:
+
+- What data is collected or acquired.
+- Current and future collector.
+- Current and future scheduler or trigger.
+- Current and future writer.
+- Canonical data store or export authority.
+- Exact source revision.
+- Health/freshness surface.
+- Backup/recovery surface.
+- Duplicate-writer risk.
+- Publication blocker.
+- Privileged execution requirements.
+- Deferred maturity work.
+- Next gate.
+
+## §9 Near-Term Session Sequence
+
+### §9A Roadmap and Authority Reconciliation
+
+**Scope:** This refinement pass.
+**Risk profile:** Documentation/control only.
+**Completion:** Roadmap, affected authority docs, private log, validation.
+
+### §9B Traderie Recovery Session
+
+**Scope:** `§7A` only.
+**Risk profile:** Existing production recovery.
+**Owner:** OpenCode evidence/source prep, git-steward if source changes, Strong Codex for production deployment/reboot.
+**Dependency:** None from WGU boundary work.
+
+### §9C Reddit Ops Publication Strategy Session
+
+**Scope:** `§7B` only.
+**Risk profile:** Git/history/publication.
+**Owner:** OpenCode prepares clean branch and scan; Buddy approves strategy; git-steward performs authorized writes.
+**Dependency:** No production mutation.
+
+### §9D Reddit Ops Production Recovery Session
+
+**Scope:** `§7C` only.
+**Risk profile:** Live backup/service/restore/reboot work.
+**Owner:** Strong Codex after publication or explicit rsync exception.
+**Dependency:** `§9C` or Buddy-approved deployment exception.
+
+### §9E PostgreSQL Platform Products Session
+
+**Scope:** `§3B`, `§3H`.
+**Risk profile:** Productization and bounded privilege design; no live changes unless separately authorized.
+**Owner:** Medium OpenCode prepares templates and packets; Strong Codex reviews privilege model and later executes only bounded privileged packets.
+**Current product outputs:** `docs/DATABASE.md` reusable PostgreSQL onboarding system, `docs/PORTFOLIO_CONVENTIONS.md` bounded privileged execution requirements, `_internal/templates/SESSION5_REUSABLE_TASK_TEMPLATES.md`, and Session 5 PostgreSQL/helper packets under `_internal/outbox/session5/`.
+
+### §9F Phase 0 Health Session
+
+**Scope:** `§3E`.
+**Risk profile:** Read-only status surface.
+**Owner:** Medium OpenCode; Strong Codex only if live health registration is needed.
+**Current product output:** `docs/HEALTH_CONTRACT.md` §4A and `_internal/outbox/session5/agent-phase0-health-implementation.md`.
+
+### §9G SJC Intel Readiness Session
+
+**Scope:** `§4C`.
+**Risk profile:** Source/readiness only.
+**Owner:** Medium OpenCode.
+**Dependency:** Canonical gate model.
+
+### §9H Platform Confidence Review
+
+**Scope:** `§6A`.
+**Risk profile:** Cross-workload readiness decision.
+**Owner:** Strong Codex or high-reasoning gate review.
+**Dependency:** Phase 0 health plus current production evidence.
+
+### §9I Wave 1 Privileged Cutover
+
+**Scope:** First candidate that passes readiness, likely SJC Intel.
+**Risk profile:** Live VPS/PostgreSQL/scheduler work.
+**Owner:** Strong Codex.
+**Dependency:** `§6A-G1` and repository readiness gate.
+
+## §10 Reference Migration
+
+Historical logs and outbox packets keep their old references. Current authority documents should use the new references below. `TODO.md` still contains old roadmap references but is protected task input and must not be edited by agents.
+
+| Old reference | New reference |
+|---|---|
+| Old `§2A` admission | `§3A`, `§4`, `§8` |
+| Old `§3A` VPS capacity | `§6A`, `§5D` |
+| Old `§3B` PostgreSQL foundation | `§3B`, `docs/DATABASE.md` |
+| Old `§3C` backup/restore | `§3F`, `§8A BACKUP` |
+| Old `§4A` deployment contract | `§3C`, `§3G`, `§8A DEPLOY` |
+| Old `§5A` authority transfer | `§3A`, `§6C`, `§8A SCHEDULER` |
+| Old `§6A` health | `§3E`, `docs/HEALTH_CONTRACT.md` |
+| Old `§7A` Traderie current state | `§2B`, `§7A` |
+| Old `§7G` Traderie scheduler | `§7A`, `§8A SCHEDULER` |
+| Old `§7H` Traderie acceptance | `§7A`, `§5G` |
+| Old `§8` Hermes | `§3I` |
+| Old `§9A` WGU-Reddit ingestion inspection | `§2C`, `§4F` |
+| Old `§9B` WGU-Reddit LLM | Deferred behind `§4F-G1` |
+| Old `§10A` SJC Intel | `§4C`, `§9G` |
+| Old `§11` WGU Catalog | `§4E`, `§9G` or later batch readiness session |
+| Old `§12` BSDA Courses | `§4G` |
+| Old `§13` WGU Atlas | `§4H` |
+| Old `§14` Idle Hacking KB | `§4I` |
+| Old `§15` IH Market Companion | `§4D` |
+| Old `§16` Reckless Ben | `§4J` |
+| Old `§17` rebuild/incident response | `§3F`, `§3G`, `§6C` |
+| Old `§18` sequencing | `§5`, `§6`, `§9` |
+| Old `§19` standards loop | `§3H`, `§9A` |
+| Old `§20` next work | `§11` |
+
+**Unmigrated safely**
+
+- `TODO.md` roadmap references: left unchanged because `TODO.md` is protected task input.
+- Historical `_internal/outbox/` and agent logs: left unchanged as evidence.
+- Private VPS runbook stale privilege statements: not edited in this task because `_internal/` is protected; later workflow maintenance should reconcile it with Session 3/4 evidence.
+- `repos/traderie/PHASE_B_CODEX_PACKET.md`: marked superseded because it is a historical phase packet, not current execution authority.
+- `repos/traderie/STATUS.md`: already marked deprecated and historical, so its old blocker list was left unchanged.
+
+## §11 Current Next Work
+
+1. Run the medium-agent packets prepared under `_internal/outbox/session5/` for `§9E`, `§9F`, `§9G`, and bounded repository readiness.
+2. Run `§9B` Traderie recovery as a separate production recovery session.
+3. Run `§9C` Reddit Ops publication strategy as a separate Git/history session.
+4. Implement `§9E` PostgreSQL reusable platform products and `§9F` Phase 0 health in parallel with source-only readiness work.
+5. Run `§9G` SJC Intel readiness after the reusable gate model is accepted.
+6. Run `§9H` Platform Confidence Review before any Wave 1 cutover.
+
+## §12 Decisions Requiring Buddy
+
+| Decision | Why Buddy is required |
+|---|---|
+| Reddit Ops publication strategy | Credential-bearing history blocks normal push |
+| Reboot timing and privilege path | Reboot affects production workloads |
+| WGU-derived repository/workload ownership | Current split is unresolved and should not be inferred |
+| WGU Catalog activation mode | Automatic monthly check, approval-gated trigger, or manual operator run |
+| License choices | Several repositories lack licenses |
+| Destructive cleanup or legacy data deletion | Requires exact target approval |

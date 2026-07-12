@@ -261,6 +261,213 @@ If the aggregator itself cannot write, it reports `aggregator_unreachable` throu
 
 A producer may set `scheduler_state: paused` during maintenance. The aggregator must not flag paused workflows as stale. Health dashboards show paused workflows with a distinct visual state.
 
+### 4.7 Backup freshness semantics
+
+Every workflow with `backup_state` other than `not_applicable` MUST document an expected backup cadence in its repository control sheet or producer registry entry.
+
+Default evaluation when a repository has not defined stricter thresholds:
+
+| Level | Condition |
+|---|---|
+| `ok` | `backup_age_seconds <= expected_backup_cadence_seconds * 1.5` |
+| `stale` | `expected_backup_cadence_seconds * 1.5 < backup_age_seconds <= expected_backup_cadence_seconds * 3` |
+| `fail` | latest backup attempt failed, no validated backup exists, or `backup_age_seconds > expected_backup_cadence_seconds * 3` |
+
+Daily backups therefore default to `ok` through 36 hours, `stale` after 36 hours, and `fail` after 72 hours or on explicit backup failure. Repository control sheets may set stricter thresholds when the data source or recovery objective requires it.
+
+---
+
+## 4A. Phase 0 Operator Status View
+
+Phase 0 is the first portfolio health deliverable. It is a small read-only CLI report, not a dashboard, API, alerting system, or production health aggregator.
+
+### Command
+
+Initial implementation:
+
+```bash
+python3 tools/portfolio_phase0_status.py --format table
+```
+
+Optional machine output:
+
+```bash
+python3 tools/portfolio_phase0_status.py --format json
+```
+
+### Initial workload coverage
+
+The first implementation must include:
+
+- Traderie production workload;
+- Reddit Ops production workload;
+- SJC Intel readiness placeholder;
+- WGU Catalog low-frequency batch placeholder.
+
+### Data sources
+
+The CLI reads only local files and explicitly supplied read-only evidence snapshots. It must not SSH to the VPS, query production databases, read live secrets, or modify any scheduler.
+
+Allowed sources:
+
+- `repos/<repo>/CONTROL.md` for lifecycle state, production authority, deployed SHA, scheduler/writer names, backup/restore status, blockers, and next authorized work;
+- `repos/<repo>/RELEASE_GATES.md` when present for gate-specific status;
+- repo-specific health JSON fixtures or sanitized evidence files produced by prior authorized tasks;
+- an optional local phase0 evidence directory supplied by `--evidence-dir`;
+- documented backup path classes, ages, or summaries from control sheets or sanitized evidence;
+- deployment registry or exact-SHA evidence when that artifact exists;
+- static placeholder metadata for readiness candidates.
+
+### Normalized internal model
+
+Each row normalizes to:
+
+| Field | Meaning |
+|---|---|
+| `workload_id` | Stable slug, usually `{repo}/{workflow}` |
+| `repository` | Managed repo or workload name |
+| `workflow` | Ingestion workflow or batch trigger |
+| `classification` | `production`, `production_degraded`, `readiness_placeholder`, or `batch_placeholder` |
+| `last_attempt_at` | Latest known attempt timestamp or `unknown` |
+| `last_success_at` | Latest known success timestamp or `unknown` |
+| `freshness_state` | `ok`, `stale`, `fail`, `not_applicable`, or `unknown` |
+| `scheduler_state` | `active`, `paused`, `unmanaged`, `not_applicable`, or `unknown` |
+| `writer_authority` | Current writer authority summarized without private paths |
+| `deployed_revision` | Exact SHA, short SHA, `pending-publication`, `not_applicable`, or `unknown` |
+| `backup_age` | Human-readable age, `not_applicable`, or `unknown` |
+| `current_failure` | Short sanitized failure code or `none` |
+| `drift_state` | `clean`, `dirty`, `not_evaluated`, or `unknown` |
+| `incident_or_approval` | Active incident, required approval, or `none` |
+| `source` | Control/evidence source used to populate the row |
+
+### Workload identity rules
+
+- Use existing `workflow_id` when a producer supplies one.
+- Otherwise use `{repo_slug}/{workflow_slug}`.
+- WGU Catalog uses `wgu_catalog/catalog_release_batch` until a repo-specific producer exists.
+- SJC Intel uses `sjc_intel/ingestion_readiness` until production workflow names are accepted.
+- WGU-derived Reddit workloads other than Reddit Ops are not added until the WGU-derived boundary reconciliation gate resolves ownership.
+
+### Control-sheet fields consumed
+
+The parser may consume headings and tables for:
+
+- lifecycle state;
+- approved production SHA or deployment status;
+- production authority;
+- active scheduler/timer;
+- active writer;
+- database and schema status;
+- health status;
+- backup status;
+- current blocker;
+- unresolved gates;
+- next authorized work.
+
+If a field is missing, the CLI reports `unknown` and records the missing field in JSON output.
+
+### Health producer and adapter interface
+
+The CLI may read canonical health JSON or adapter output that follows the v2 field names in this contract. Adapter functions should return the normalized model above and preserve a `source` pointer to the file or control sheet they used.
+
+Missing producers are allowed for placeholders. They must appear as `readiness_placeholder` or `batch_placeholder`, not as production failures.
+
+### Systemd inspection boundary
+
+Phase 0 must not inspect live systemd state by default. If a later task provides a sanitized `systemctl show` snapshot, the CLI may parse that snapshot from `--evidence-dir`. Live systemd inspection, SSH, timer activation, service restart, or daemon reload is outside Phase 0.
+
+### Deployed revision and drift
+
+Deployed revision priority:
+
+1. canonical health payload `deployed_revision`;
+2. repo control sheet deployed or approved SHA;
+3. sanitized deployment evidence file;
+4. `unknown`.
+
+Drift is `clean` only when a row has both expected and observed revision evidence and they match. It is `dirty` when both are present and differ. It is `not_evaluated` for placeholders and `unknown` when production evidence is incomplete.
+
+### Freshness and backup evaluation
+
+Freshness uses §4 semantics when `last_success_at` and `expected_cadence_seconds` are available. Otherwise it uses control-sheet status text. WGU Catalog freshness is evaluated against the latest known catalog release/check cadence once a release-detection packet defines it; before then it reports `unknown` with `approval_required` if activation mode is undecided.
+
+Backup age uses canonical health `backup_age_seconds` first, then sanitized evidence summaries, then control-sheet text. It must not scan private backup directories by default.
+
+### Incident and approval state
+
+Represent production issues and human approvals as short codes:
+
+- `incident:critical`;
+- `incident:degraded`;
+- `approval:publication`;
+- `approval:cutover`;
+- `approval:reboot`;
+- `approval:activation-mode`;
+- `none`.
+
+Do not include reviewer identities, private notes, full stack traces, hostnames, IP addresses, filesystem paths, credentials, or raw error bodies.
+
+### Missing and contradictory data
+
+- Missing non-critical data renders as `unknown`, not as a failure.
+- Missing required production authority data renders `current_failure=missing_authority`.
+- Contradictory current-authority data renders `current_failure=contradictory_authority` and `incident_or_approval=approval:review`.
+- Placeholder candidates must be visibly marked so they are not mistaken for live production health.
+
+### CLI options
+
+Required:
+
+- `--format table|json`
+
+Recommended:
+
+- `--repo <slug>` filter rows;
+- `--evidence-dir <path>` read sanitized local evidence snapshots;
+- `--include-placeholders` default true for Phase 0;
+- `--strict` exit non-zero on contradictory production authority;
+- `--no-color` deterministic output for tests.
+
+### Table output
+
+Table columns:
+
+```text
+WORKLOAD  WORKFLOW  LAST_ATTEMPT  LAST_SUCCESS  FRESHNESS  SCHEDULER  WRITER  REVISION  BACKUP_AGE  FAILURE  DRIFT  INCIDENT/APPROVAL
+```
+
+Sample:
+
+```text
+WORKLOAD     WORKFLOW                 LAST_ATTEMPT       LAST_SUCCESS       FRESHNESS  SCHEDULER  WRITER      REVISION      BACKUP_AGE  FAILURE              DRIFT          INCIDENT/APPROVAL
+traderie     ingest_snapshot          2026-07-11 18:01Z  2026-07-11 18:01Z  fail       active     vps         e5ebd0f      stale       pc_hc_nl_timeout     not_evaluated  incident:degraded
+reddit_ops   daily_wgu_collection     unknown            unknown            unknown    active     vps         pending-pub  unknown     publication_blocker  unknown        approval:publication
+sjc_intel    ingestion_readiness       not_applicable     not_applicable     unknown    unmanaged  none        unknown      unknown     readiness_pending    not_evaluated  approval:cutover
+wgu_catalog  catalog_release_batch     not_applicable     not_applicable     unknown    manual     file-export unknown      not_app     activation_mode     not_evaluated  approval:activation-mode
+```
+
+### Fixtures, tests, and validation
+
+The implementation packet must include:
+
+- fixtures for Traderie degraded production, Reddit Ops publication-blocked production, SJC readiness placeholder, and WGU Catalog batch placeholder;
+- parser tests for missing and contradictory fields;
+- table snapshot or golden-output test;
+- JSON schema or key-set test for machine output;
+- redaction tests for private paths, credentials, hostnames, IP addresses, and raw error messages.
+
+Validation commands:
+
+```bash
+python3 -m pytest tests/test_portfolio_phase0_status.py
+python3 tools/portfolio_phase0_status.py --format table --no-color
+python3 tools/portfolio_phase0_status.py --format json
+```
+
+### Completion proof
+
+`§3E-G1` passes when the command prints all four required rows, tests pass, no private or secret values are emitted, placeholder rows are clearly marked, and contradictory production authority is surfaced without making live changes.
+
 ---
 
 ## 5. Identifier and Versioning Model

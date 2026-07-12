@@ -1,6 +1,6 @@
 # Portfolio Baseline
 
-**Status:** Current authority for portfolio-wide repository inventory, classification, current state, and sequencing.
+**Status:** Current authority for portfolio-wide repository inventory and baseline classification. Current operational status is reconciled through `ROADMAP.md` and repository control sheets.
 **Purpose:** Compact reference for roadmap authoring and portfolio management. Derived from per-repository audits (2026-07-05), current-state inspection (2026-07-08), and the ivy-control-vps control documents.
 **Source audits:** `ivy-control/vps/archive/audits/` (historical — not current authority).
 
@@ -15,7 +15,7 @@
 | 1 | Traderie | Deterministic | Data pipeline | 0 | First reference |
 | 2 | SJC Intel | Deterministic | Data collection | 0 | Early follow-on |
 | 3 | IH Market Companion | Deterministic | Browser/API | 0 | After Traderie |
-| 4 | WGU-Reddit Operations | LLM pipeline | Multi-stage LLM | 18 (3 active) | After deployment pattern proven |
+| 4 | WGU-Reddit Operations | Boundary unclear | Reddit-derived ingestion/catalog/analysis/LLM split unresolved | 18 (3 active, baseline audit) | Deferred behind boundary reconciliation |
 | 5 | BSDA Courses | LLM pipeline | Multi-stage LLM | 9 (6 active) | After LLM workflow contract |
 | 6 | WGU Atlas | LLM pipeline | QA generation | 11 (8 live) | After LLM workflow contract |
 | 7 | Idle Hacking KB | LLM pipeline | Knowledge base | 34 (5 live) | After LLM workflow contract |
@@ -29,18 +29,19 @@
 
 #### Traderie
 
-**Phase A complete.** First reference-deployment candidate for the VPS portfolio.
+First reference deployment for the VPS portfolio; currently production-degraded pending Session 5 recovery.
 
 - GitHub: `github.com/wguDataNinja/d2-market-helper`
 - 17 PostgreSQL migrations (001–017), each with forward + rollback + validation
-- 57/57 tests pass
+- 57/57 tests passed at publication baseline; later runtime fixes added focused regression coverage
 - Real PostgreSQL adapter (`traderie_pg_adapter.py`), env-gated, writer-role-safe
 - Bounded 25-record pilot (`pc_sc_l`) — parity, rollback, delete/reimport, backup, checksum, isolated restore proven
 - Health export writes to `health.health_runs` with bounded insert/delete
 - 6 inert systemd service/timer pairs
 - 3 VPS wrapper scripts (snapshot, backup, validate)
-- VPS Capacity Gate passes at 84% disk (5.8 GB free)
-- VPS has no PostgreSQL and no Traderie checkout yet
+- VPS PostgreSQL, roles, migrations, backup/restore, exact-SHA checkout, systemd units, and scheduler activation have been proven
+- Current production SHA: `e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40`
+- Current state: VPS systemd is sole scheduler/writer; first natural scheduled generation partially failed when `pc_hc_nl` timed out at 480 seconds
 - No LLM stages — deterministic collection and analysis only
 - Repository control document: `repos/traderie/CONTROL.md`
 
@@ -65,15 +66,27 @@ Deterministic browser/VPS runtime. No LLM stages exist.
 
 #### WGU-Reddit Operations
 
-Active multi-stage LLM pipeline. Highest operational risk in portfolio.
+Reddit-derived workload family with unresolved repository and responsibility split. Highest operational ambiguity in portfolio.
 
 - 3 active pipeline stages (pain point classification, course-level clustering, NL query translation)
 - 10 experimental scripts, 2 orphaned, 2 QC stages — total 18 LLM stages
 - Best-in-portfolio benchmark/fixture pattern (DEV/TEST splits, artifact preservation)
-- **Critical:** Secrets in git history (commits `6881e0d`, `ae2961b`) — requires history rewrite before GitHub push
-- **Operational risk:** Suspected duplicate ingestion from both Mac launchd and VPS systemd
+- **Critical:** Credential-bearing local history exists; current Session 5 authority identifies commit `e4acae0` as the must-not-publish root commit. Clean publication must exclude it before any normal push.
+- **Operational status:** Reddit Ops collector authority is current for production ingestion. The final relationship among WGU-Reddit, Reddit Ops, Reddit catalog or catalog-like exports, analysis, and LLM workloads is not settled.
 - No `.env.example`, no LICENSE, no AGENTS.md
-- Requires ingestion-authority inspection, history cleanup, one authoritative scheduler, and Hermes-managed LLM workflow contracts
+- Requires boundary reconciliation before detailed downstream, catalog, or LLM admission planning.
+
+#### WGU Catalog
+
+Low-frequency event-driven or scheduled batch ingestion/source-authority workload.
+
+- Local path: `/Users/buddy/projects/wgu-catalog`
+- Purpose: canonical WGU catalog ingestion, parsing, validation, and versioned export
+- Runtime type: deterministic CLI/file-export workflow
+- Current scheduler: none; operator or future monthly/release-detection trigger
+- Database: none required by current evidence
+- Admission should be proportional: source version/acquisition date, deterministic command, validation, checksums/manifests, prior-version preservation, freshness/last-success health, and operator procedure
+- Do not force daemon, database, or continuous scheduler work unless new evidence requires it
 
 #### BSDA Courses
 
@@ -209,23 +222,20 @@ A repository is not ready for Ivy VPS merely because it can run. Admission requi
 
 ## §5 Cross-Repository Dependency and Sequencing
 
-### §5A Deployment sequence
+### §5A Ingestion-first sequence
 
-1. **Traderie** — First reference deployment. Proves VPS PostgreSQL installation, isolation, exact-SHA deployment, manual run, health reporting, backup to Mac, restore, rollback, and scheduler activation.
-2. **SJC Intel** — First Hermes deterministic workflow. Follows established VPS patterns and adds structured agent/run/conversation logging.
-3. **IH Market Companion** — Browser supervision, restart, resource isolation, and deterministic execution on VPS infrastructure.
-4. **WGU-Reddit Operations** — First Hermes-managed LLM workflow. Requires ingestion-authority resolution, history cleanup, and single-writer cutover first.
-5. **BSDA Courses** — Staged LLM design as Hermes workflow contract reference.
-6. **WGU Atlas** — Provider-agnostic LLM runtime as mature Hermes workflow pattern.
-7. **Idle Hacking KB** — Most complex LLM architecture; deferred until patterns proven on simpler repos.
-8. **Reckless Ben** — NO_LAUNCH; contributes approval patterns only.
+1. **Stabilize existing production workloads** — Traderie recovery and Reddit Ops publication/backup/reboot closure.
+2. **Prepare eligible ingestion systems in parallel** — SJC Intel, IH Market Companion, WGU Catalog batch readiness, and the safe subset of Idle Hacking KB where applicable.
+3. **Cut over in controlled waves** — start with low-risk deterministic repositories rather than simultaneous portfolio-wide activation.
+4. **Then mature downstream and LLM workflows** — WGU-derived workloads only after boundary reconciliation; BSDA Courses, WGU Atlas, and Idle Hacking KB LLM stages after deterministic health, backup, and Hermes read-only patterns are proven.
+5. **Keep Reckless Ben restricted** — `NO_LAUNCH` unless explicit newer authority reclassifies it.
 
 ### §5B Dependency relationships
 
-- VPS PostgreSQL installation is prerequisite for all database workloads
+- VPS PostgreSQL foundation is prerequisite for all database production workloads
 - Hermes read-only inspection authority must precede any workflow execution
 - Deterministic workflow contracts must precede LLM workflow contracts
-- WGU-Reddit ingestion-authority inspection is early operational risk — should not wait for deployment sequence
+- Reddit Ops ingestion authority is the current collector boundary; WGU-derived downstream/catalog/LLM ownership must be reconciled before production planning
 - Shared standards (prompt versioning, provider abstraction, cost tracking) should be defined before second LLM workflow deployment
 
 ---

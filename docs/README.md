@@ -7,7 +7,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | Document | Purpose |
 |----------|---------|
 | [`README.md`](../README.md) | Public repository overview — purpose, current stage, design principles |
-| [`ROADMAP.md`](../ROADMAP.md) | Portfolio-wide roadmap — long-horizon VPS operating model with Traderie as first detailed reference deployment |
+| [`ROADMAP.md`](../ROADMAP.md) | Portfolio-wide roadmap — ingestion-first readiness campaign, shared VPS platform workstreams, and controlled cutover waves |
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
 | [`LOGGING_STANDARD.md`](LOGGING_STANDARD.md) | Three-layer logging standard — machine/runtime, agent work, and GPT/planning logs |
 | [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Initial Git workflow — branch naming, commits, PRs, agents, VPS provisional rules |
@@ -15,6 +15,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`PORTFOLIO_CONVENTIONS.md`](PORTFOLIO_CONVENTIONS.md) | Cross-repo conventions and VPS admission requirements — PostgreSQL naming, backup/restore, systemd, health contract, deployment prerequisites, gates, and stop conditions |
 | [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md) | Portfolio repository-control model — governance mechanism, standards applicability, gate framework, approved SHA tracking |
 | [`DATA_LIFECYCLE_STANDARD.md`](DATA_LIFECYCLE_STANDARD.md) | Portfolio data-lifecycle principles — data classes, retention, growth measurement, disk thresholds, health metrics |
+| [`DATABASE.md`](DATABASE.md) | Database architecture and operations — PostgreSQL topology, schema ownership, migrations, backup/restore, and database operation history |
 | [`PORTFOLIO_BASELINE.md`](PORTFOLIO_BASELINE.md) | Portfolio-wide repository baseline — inventory, current state, LLM inventory, standards gaps, sequencing |
 | [`../agents/VPS_ORCHESTRATION.md`](../agents/VPS_ORCHESTRATION.md) | Provisional VPS/Hermes orchestration contract — role, delegation, approval boundaries, logging |
 | [`repos/reddit-ops/CONTROL.md`](../repos/reddit-ops/CONTROL.md) | Reddit Ops governance control sheet — production authority, lifecycle state, unresolved gates |

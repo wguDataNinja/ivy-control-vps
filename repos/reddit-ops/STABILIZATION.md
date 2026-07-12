@@ -78,11 +78,11 @@
 
 | Criterion | Status |
 |-----------|--------|
-| PostgreSQL restarts after reboot | ❌ Blocked — no passwordless sudo on VPS |
-| Collector service restarts after reboot | ❌ Blocked — no passwordless sudo on VPS |
-| Timer fires after reboot | ❌ Blocked — no passwordless sudo on VPS |
+| PostgreSQL restarts after reboot | ❌ Blocked — requires scoped helper/sudo policy review and Buddy-approved timing |
+| Collector service restarts after reboot | ❌ Blocked — requires scoped helper/sudo policy review and Buddy-approved timing |
+| Timer fires after reboot | ❌ Blocked — requires scoped helper/sudo policy review and Buddy-approved timing |
 
-**Blocker:** The `scraper` user has sudo but requires interactive password entry. Non-interactive reboot is not possible. Requires either sudoers configuration change or Buddy to run `sudo reboot` interactively.
+**Blocker:** Reboot is a production-affecting action. Later Session 3/4 evidence indicates a scoped migration-phase helper/sudo policy exists for bounded operations, but reboot still requires explicit task authority and Buddy-approved timing.
 
 ---
 
@@ -161,7 +161,7 @@
 | 4. Automated backup | ✅ Done |
 | 5. Mac archive | ✅ Done |
 | 6. Restore drill | ✅ Done |
-| 7. Reboot recovery | ❌ Blocked (no passwordless sudo) |
+| 7. Reboot recovery | ❌ Blocked (requires scoped helper/sudo review and Buddy-approved timing) |
 | 8. Post-reboot run | ❌ Blocked (gate 7 must pass) |
 | 9. Monitoring | ⚠️ Partial — checks exist, alerting not automated |
 | 10. SHA tracking | ❌ Blocked (WGU-Reddit Git publication blocked by secrets) |

@@ -121,7 +121,7 @@ Admission states are:
 
 ## PostgreSQL naming
 
-One PostgreSQL 16 server on Mac (`localhost:5432`). Database per project. Roles per project:
+One PostgreSQL 16 server on the Ivy VPS is the target production database platform. Mac PostgreSQL instances may be used for development, restore verification, backup/archive work, and emergency recovery, but they are not the target production authority. Database per project. Roles per project:
 
 | Role | Purpose | Permissions |
 |------|---------|-------------|
@@ -174,6 +174,73 @@ CREATE TABLE {schema}.{project}_migrations (
 ```
 
 Migration SQL files must NOT contain production credentials, data dumps, environment-specific paths, or secrets of any kind.
+
+---
+
+## Bounded privileged execution
+
+The portfolio uses bounded privileged execution for repeatable VPS deployment and database onboarding tasks. This is not a grant of broad shell authority.
+
+### Current implemented boundary
+
+Session evidence shows a migration-phase boundary currently exists:
+
+- `/usr/local/sbin/ivy-systemd-deploy` is a root-owned helper used for allowlisted systemd deployment actions.
+- `/etc/sudoers.d/ivy-migration` allows selected `ivy-systemd-deploy` actions as root, `/usr/sbin/reboot`, and PostgreSQL `psql`, `createdb`, and `dropdb` as the `postgres` user.
+- helper actions are logged to `/var/log/ivy-systemd-deploy.log`.
+- arbitrary shell access, arbitrary `systemctl`, arbitrary root file writes, unknown projects, unknown helper actions, and extra helper arguments were denied in Session 3 validation.
+- broad sudo still requires a password.
+- the installed helper is root-owned, is not yet version-controlled, and cannot update itself through the current NOPASSWD boundary.
+
+Supporting evidence is recorded in `_internal/outbox/session3/agent-6-portfolio-vps-operations-discovery.md`, `_internal/outbox/session3/codex-7-operations-access-and-traderie-cutover.md`, and `_internal/outbox/session4/agent-1-traderie-cutover-unblock-audit.md`.
+
+This boundary is current session evidence and current deployment practice. It is not yet a reusable platform product. Reuse requires an explicit Strong Codex packet until the productization gate passes.
+
+### Productization requirements
+
+Before the helper/sudo workflow becomes a reusable portfolio capability, it must have:
+
+- version-controlled helper source or template;
+- reviewed installation/update mechanism;
+- scoped sudo allowlist with exact commands and arguments;
+- command and argument validation inside the helper;
+- repository or workload allowlisting;
+- exact-SHA enforcement for deployable repositories;
+- action logging that records timestamp, actor, project, action, source SHA, and result without secrets;
+- validation that the installed root-owned helper hash matches reviewed source;
+- rollback procedure for helper and sudo-policy changes;
+- negative tests proving denied arbitrary shell access, secret management, destructive cleanup, non-allowlisted projects, non-allowlisted actions, and broad root commands;
+- explicit statement that reboot remains production-affecting and requires Buddy-approved timing.
+
+### Prohibited capabilities
+
+The reusable bounded helper must not:
+
+- provide arbitrary root shell access;
+- manage secrets or print live secret values;
+- edit arbitrary files;
+- perform destructive cleanup without a separate exact-target approval;
+- bypass Git publication or exact-SHA review;
+- deploy dirty or unapproved checkouts;
+- install packages unless a separate package-management packet is approved;
+- treat reboot authority as automatically approved.
+
+### Installation packet requirements
+
+A later privileged helper/sudo-policy installation packet must include:
+
+- reviewed helper source path and checksum;
+- reviewed sudoers policy text;
+- install paths, owners, and modes;
+- `visudo -c` validation plan;
+- current installed helper/policy backup or capture;
+- update and rollback commands;
+- allowlist matrix for each project/workload;
+- positive and negative validation commands;
+- log inspection command;
+- stop conditions for hash mismatch, denied expected command, allowed unexpected command, missing logs, or policy parse failure.
+
+Medium agents may prepare the source, packet, validation matrix, and evidence template. Strong Codex performs any root-owned installation or sudo-policy update only when separately authorized.
 
 ---
 

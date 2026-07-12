@@ -29,10 +29,176 @@ Projects use isolated databases and/or schemas according to their role and shari
 | Service | Database | Schemas | Production authority | Archive authority | Status |
 |---|---|---|---|---|---|
 | Reddit Ops | `reddit_ops` | `reddit_core`, `wgu_reddit`, `bsda_courses` | VPS PostgreSQL collector | Mac archive/PostgreSQL | PostgreSQL collector cutover complete; SQLite preserved as rollback |
-| Traderie | To be finalized | Project-isolated schema | VPS PostgreSQL | Mac backup/archive | First full deployment target |
+| Traderie | `traderie` | `app`, `archive`, `health` | VPS PostgreSQL | Mac backup/archive | Cutover complete but production-degraded pending natural-run recovery |
 | Idle Hacking KB | Existing migration design | Project-isolated schema | VPS PostgreSQL planned | Mac archive | Schema exists; ingestion design pending |
 | IH Market Companion | Existing migration design | Project-isolated schema | VPS PostgreSQL planned | Mac archive | Schema exists; pipeline design pending |
 
+## Reusable PostgreSQL onboarding system
+
+PostgreSQL onboarding is a portfolio product, not a repo-by-repo checklist. Medium agents prepare source, manifests, validation, and evidence. Strong Codex executes only the bounded privileged packet when Buddy authorizes live VPS work.
+
+### Current privilege evidence
+
+The current bounded workflow is supported by session evidence, not by a fully promoted platform helper:
+
+| Fact | Evidence |
+|---|---|
+| Earlier onboarding required repeated interactive sudo/password participation. | `_internal/vps-inventory-and-runbook.md`; `_internal/outbox/session3/agent-5-production-unblock-dossier.md` |
+| PostgreSQL admin operations later worked non-interactively through `sudo -n -u postgres` for `psql`, `createdb`, and `dropdb`. | `_internal/outbox/session3/agent-6-portfolio-vps-operations-discovery.md`; `_internal/outbox/session3/codex-7-operations-access-and-traderie-cutover.md` |
+| The migration-phase sudo policy lives at `/etc/sudoers.d/ivy-migration`. | `_internal/outbox/session3/codex-7-operations-access-and-traderie-cutover.md` |
+| The scoped systemd helper lives at `/usr/local/sbin/ivy-systemd-deploy`, is root-owned, logs to `/var/log/ivy-systemd-deploy.log`, and only allows listed project/actions. | `_internal/outbox/session3/codex-7-operations-access-and-traderie-cutover.md` |
+| Broad sudo still requires a password. Arbitrary `systemctl`, arbitrary file install, arbitrary helper arguments, unknown projects, and shell actions were denied. | `_internal/outbox/session3/codex-7-operations-access-and-traderie-cutover.md` |
+| The helper was not version-controlled and could not update its own pinned SHA through the current NOPASSWD boundary. | `_internal/outbox/session4/agent-1-traderie-cutover-unblock-audit.md` |
+| Reboot is allowlisted by the migration-phase policy but remains production-affecting and requires explicit Buddy timing/authorization. | `_internal/outbox/session3/codex-7-operations-access-and-traderie-cutover.md`; `repos/reddit-ops/STABILIZATION.md` |
+
+Until a version-controlled helper and reviewed installer exist, reuse this workflow only through an explicit Strong Codex packet that cites the exact current boundary.
+
+### Onboarding manifest schema
+
+Each PostgreSQL candidate must provide a private or repo-local manifest before privileged execution:
+
+```yaml
+project_slug: sjc_intel
+repository:
+  local_path: /Users/buddy/projects/sjc_intel
+  remote: null
+  branch: main
+  reviewed_sha: null
+database:
+  name: sjc_intel
+  owner_role: sjc_intel_owner
+  schemas:
+    - name: app
+      owner_role: sjc_intel_owner
+    - name: health
+      owner_role: sjc_intel_owner
+roles:
+  owner:
+    name: sjc_intel_owner
+    login: false
+    applies: true
+  migrator:
+    name: sjc_intel_migrator
+    login: true
+    applies: true
+  writer:
+    name: sjc_intel_writer
+    login: true
+    applies: true
+  reader:
+    name: sjc_intel_reader
+    login: true
+    applies: true
+  monitor:
+    name: sjc_intel_monitor
+    login: true
+    applies: true
+  backup:
+    name: sjc_intel_backup
+    login: true
+    applies: true
+environment:
+  env_example: deploy/env.example
+  vps_env_path: /home/scraper/config/sjc-intel.env
+  required_variables:
+    - SJC_INTEL_PG_URL
+    - SJC_INTEL_PG_MIGRATOR_URL
+    - SJC_INTEL_HEALTH_OUTPUT
+migrations:
+  directory: db/migrations
+  expected_count: 11
+  validation_directory: db/migrations/validation
+  rollback_directory: db/migrations/rollback
+backup:
+  command: scripts/run_sjc_intel_backup.sh
+  output_root: /home/scraper/backups/postgres/sjc-intel
+health:
+  workflow_id: sjc_intel/daily_ingest
+  producer_or_adapter: scripts/health_export.py
+rollback:
+  source_authority_fallback: documented in packet
+  database_rollback: rollback SQL or irreversible statement
+evidence:
+  output_dir: _internal/outbox/session5/<packet-evidence-dir>
+```
+
+### Naming rules
+
+- Database names use lowercase snake case and match the stable project slug unless a documented legacy exception exists.
+- Role names use `{project}_owner`, `{project}_migrator`, `{project}_writer`, `{project}_reader`, `{project}_monitor`, and `{project}_backup`.
+- Standard schemas are `app`, `archive`, and `health`. Additional schemas require a repository-specific reason in `CONTROL.md`.
+- Temporary restore databases use `{project}_restore_<operator>_<yyyymmddhhmmss>` and must be dropped only by an approved cleanup packet after validation is recorded.
+- File/export-only workloads, such as WGU Catalog when no database is needed, mark PostgreSQL roles `applies: false` and satisfy the backup/restore gate with manifest, checksum, archive, and rollback evidence instead.
+
+### Conditional role applicability
+
+| Role | Required when | May be omitted when |
+|---|---|---|
+| owner | Any PostgreSQL schema exists | No PostgreSQL database is used |
+| migrator | Migrations or schema changes are applied | Read-only consumer of another database |
+| writer | Workload writes database rows | File/export-only batch, static site, or read-only consumer |
+| reader | Human/reporting queries or local validation need read access | No read-only SQL surface exists |
+| monitor | Health producer reads DB-backed health or current-state views | Health is file/export-only |
+| backup | Database backups are required | Non-database workload with manifest/checksum archive |
+
+### Privilege matrix
+
+| Role | Positive permissions | Negative permissions to test |
+|---|---|---|
+| owner | Owns schemas and objects; no login | Cannot log in |
+| migrator | `CONNECT`; migration-time DDL; `SET ROLE` to owner when designed | Cannot run as superuser; cannot access unrelated databases |
+| writer | `CONNECT`; DML only on application write tables/sequences | Cannot alter schema; cannot read restricted views; cannot write outside project schema |
+| reader | `CONNECT`; `SELECT` on approved tables/views | Cannot insert/update/delete; cannot alter schema |
+| monitor | `CONNECT`; `SELECT` on health/current-state views | Cannot read raw sensitive tables; cannot write |
+| backup | `CONNECT`; read privileges needed for `pg_dump` | Cannot write; cannot alter; cannot create objects |
+
+### Environment-variable contract
+
+Use the naming rules in `docs/PORTFOLIO_CONVENTIONS.md`. A repo may expose role-specific URLs such as `{PROJECT}_PG_MIGRATOR_URL`, `{PROJECT}_PG_WRITER_URL`, `{PROJECT}_PG_READER_URL`, `{PROJECT}_PG_MONITOR_URL`, and `{PROJECT}_PG_BACKUP_URL` when one full `{PROJECT}_PG_URL` is too broad. Live values stay outside Git under `/home/scraper/config/`. `.env.example` files list variable names and safe placeholders only.
+
+### Execution packet contracts
+
+Every PostgreSQL privileged handoff must be split into packets with explicit stop gates:
+
+| Packet | Prepared by medium agent | Executed by Strong Codex | Completion proof |
+|---|---|---|---|
+| Provisioning | Manifest, exact SQL/commands, role matrix, stop gates | `sudo -n -u postgres psql/createdb/dropdb` only as authorized | DB, schemas, roles, and grants exist; no app uses `postgres` |
+| Migration execution | Ordered migrations, checksums, rollback/irreversible notes | Apply migrations with migrator role | Migration ledger and validation SQL pass |
+| Migration validation | Positive/negative SQL tests, expected row counts | Run validation in target env | Evidence bundle records pass/fail and exact revision |
+| Backup/checksum/manifest | Backup command, output root, expected manifest fields | Run or schedule approved backup | Non-zero dump/export, SHA-256, manifest, `pg_restore --list` where DB-backed |
+| Isolated restore | Restore DB name, restore command, validation queries | Create temp DB, restore, validate | Restore DB validates and cleanup packet is ready |
+| Restore cleanup | Exact temp DB name and proof it is not active | `dropdb` only for named temp restore DB | Temp DB absent; original DB unchanged |
+| Health registration | Workflow IDs, producer/adapter command, freshness/backup thresholds | Production registration only when authorized | Phase 0 view or producer registry shows current status |
+| Rollback | Rollback SHA, scheduler rollback, DB rollback or preservation plan | Execute only on failed gate or explicit approval | One writer remains; evidence preserved |
+
+### Required evidence bundle
+
+PostgreSQL admission evidence must include:
+
+- onboarding manifest;
+- exact reviewed source SHA or publication blocker statement;
+- migration file list and checksums;
+- role and privilege matrix;
+- positive and negative privilege-test output;
+- command transcript summaries with secrets redacted;
+- backup artifact path class, checksum, manifest, and validation;
+- isolated restore proof or documented non-DB recovery equivalent;
+- health producer or adapter output;
+- rollback procedure and stop gates;
+- cleanup evidence for temporary restore databases;
+- final single-writer/scheduler authority statement.
+
+### Product inventory
+
+| Product | Current status | Source or evidence | Durable destination | Medium prepares | Strong Codex executes | Validation | Stop conditions | Completion proof |
+|---|---|---|---|---|---|---|---|---|
+| Database onboarding manifest | Planned and required | Traderie/Reddit Ops packet patterns | This section plus private template | Fill manifest | Consume during execution | YAML fields complete | Missing authority/SHA/role data | Manifest accepted without rediscovery |
+| Provisioning packet | Existing evidence, needs promotion | Traderie/Reddit Ops Codex packets | `_internal/templates/SESSION5_REUSABLE_TASK_TEMPLATES.md` | Exact command packet | Bounded `postgres` sudo | Roles/schemas exist | Ambiguous destructive command | Provision evidence bundle |
+| Role matrix | Existing reusable | `docs/PORTFOLIO_CONVENTIONS.md`; this doc | This document | Mark applicability | Validate grants | Positive/negative tests | App role needs superuser | Matrix attached to gate |
+| Migration packet | Existing per repo, needs standardization | Repo `db/migrations` | Private PostgreSQL onboarding template | File list/checksums/tests | Apply as migrator | Ledger + validation SQL | Irreversible migration undocumented | Migration evidence |
+| Backup/restore wrapper | Existing per repo, needs promotion | Traderie/Reddit Ops scripts | Future shared helper or template | Identify command/manifest | Run when authorized | Dump/export validated | Missing checksum/restore path | Backup and restore proof |
+| Health registration | Planned | `docs/HEALTH_CONTRACT.md` | Health task template | Producer metadata | Production registration | Phase 0 row visible | Secrets/private paths in output | Registered/visible workflow |
+| Bounded privilege execution | Existing session evidence; productization required | `ivy-systemd-deploy`, `ivy-migration` | `docs/PORTFOLIO_CONVENTIONS.md` | Installation packet/source diff | Install/update only with approval | Helper hash/source match | Arbitrary shell or secret work | Logged allowlisted execution |
 ## Reddit Ops architecture
 
 Reddit Ops is a shared research-data platform rather than a database for only one repository.
@@ -793,7 +959,7 @@ still produce nonzero exit status.
 The following remain planned:
 
 - WGU-Reddit Git publication (blocked by secrets in early commit history);
-- reboot recovery and post-reboot scheduled-run validation (blocked by no passwordless sudo on VPS);
+- reboot recovery and post-reboot scheduled-run validation (requires current scoped helper/sudo policy review and Buddy-approved timing);
 - monitoring/alerting automation;
 - incremental archive automation;
 - WGU Course Reference Contract;

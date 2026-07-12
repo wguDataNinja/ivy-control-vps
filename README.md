@@ -11,7 +11,7 @@ The repository does not contain application code for any single project. Instead
 - **Shared standards** — conventions for deployment, logging, documentation, and repository structure that projects adopt as baselines, not templates to be copied blindly.
 - **Workflows** — reusable, iteratively validated processes for common operations such as deployment, session closeout, and health checks.
 - **Documentation** — the operating model, documentation index, and growing body of process guides that describe how the portfolio is governed.
-- **Per-project status** — `repos/<project>/STATUS.md` files track each project's current VPS readiness phase, gates, blockers, and deployment state.
+- **Per-project control** — `repos/<project>/CONTROL.md` and `RELEASE_GATES.md` files track each managed project's current VPS readiness phase, gates, blockers, and deployment state.
 
 ## Current stage
 

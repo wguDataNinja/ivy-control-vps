@@ -16,11 +16,11 @@ Each gate produces `PASS`, `PASS WITH CONDITIONS`, `BLOCKED`, or `NOT APPLICABLE
 | Criterion | Result | Evidence |
 |-----------|--------|----------|
 | Producer repository exists | ✅ PASS | WGU-Reddit-Feedback-Analyzer on GitHub |
-| Exact SHA deployed | ❌ FAIL | VPS checkout is not a Git checkout |
+| Exact SHA deployed | ❌ FAIL | VPS checkout is not a Git checkout and clean Git publication is blocked |
 | SHA recorded in health | ❌ FAIL | Not implemented |
 | Drift detectable | ❌ FAIL | No Git checkout to compare against |
 
-**Status: ❌ FAIL** — SHA tracking not yet implemented.
+**Status: ❌ FAIL** — SHA tracking requires clean publication that excludes credential-bearing commit `e4acae0`.
 
 ---
 
@@ -131,12 +131,12 @@ Each gate produces `PASS`, `PASS WITH CONDITIONS`, `BLOCKED`, or `NOT APPLICABLE
 | Criterion | Result | Evidence |
 |-----------|--------|----------|
 | Success (0) → systemd success | ✅ PASS | Implemented |
-| Partial (1) → systemd success | ❌ FAIL | Known open item |
+| Approved partial → systemd success | ✅ PASS | Implemented and verified in stabilization gates 1-3 |
 | Cancelled (1) → systemd failure | ✅ PASS | Acceptable |
 | Failure (1) → systemd failure | ✅ PASS | Correct |
 | Expected partial conditions documented | ✅ PASS | In CONTROL.md |
 
-**Status: ❌ FAIL** — approved-partial exit semantics not yet hardened.
+**Status: ✅ PASS** — approved-partial exit semantics are hardened for the known inaccessible target set.
 
 ---
 
@@ -144,11 +144,27 @@ Each gate produces `PASS`, `PASS WITH CONDITIONS`, `BLOCKED`, or `NOT APPLICABLE
 
 | Criterion | Result |
 |-----------|--------|
-| Three consecutive natural scheduled runs | ❌ NOT YET — PG timer recently enabled |
-| No unexpected failures | ❌ NOT YET |
-| Heartbeat observed per run | ❌ NOT YET |
+| Three consecutive systemd-triggered runs | ✅ PASS |
+| No unexpected failures | ✅ PASS |
+| Heartbeat observed per run | ✅ PASS |
 
-**Status: ❌ NOT YET** — timer was enabled after final cutover; natural runs pending.
+**Status: ✅ PASS** — three systemd-triggered runs were verified. Long-term daily observation continues through stabilization.
+
+---
+
+## Backup and Restore
+
+| Criterion | Result |
+|-----------|--------|
+| Backup script/source reviewed | ✅ PASS |
+| Backup artifact checksummed | ✅ PASS |
+| `pg_restore --list` validates dump | ✅ PASS |
+| Isolated restore drill completed | ✅ PASS WITH CONDITIONS |
+| Row counts validated | ✅ PASS |
+| Backup age alerting automated | ❌ NOT YET |
+| Installed backup unit source matches reviewed script name | ❌ NEEDS VERIFICATION/REMEDIATION |
+
+**Status: ⚠️ PASS WITH CONDITIONS** — backup/restore function is proven, but installed unit drift and backup-age alerting remain open.
 
 ---
 
@@ -195,10 +211,9 @@ Deployment, cutover, or timer activation must stop immediately if:
 
 ## Current Blockers
 
-1. SHA tracking not implemented — VPS checkout is not a Git checkout
-2. Approved-partial exit semantics not hardened
-3. Automated backups not implemented
-4. Restore drill not completed
-5. Reboot recovery not tested
-6. Scheduled-run stabilization pending (3 consecutive natural runs)
-7. SQLite retirement criteria not defined
+1. Clean Git publication is blocked by credential-bearing root commit `e4acae0`
+2. Exact-SHA deployment and health revision tracking not implemented
+3. Installed backup unit may reference the wrong script and requires reviewed-source remediation
+4. Reboot recovery not tested
+5. Backup age alerting not automated
+6. Drift detection remains manual/partial
