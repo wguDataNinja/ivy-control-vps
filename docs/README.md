@@ -9,6 +9,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`README.md`](../README.md) | Public repository overview — purpose, current stage, design principles |
 | [`ROADMAP.md`](../ROADMAP.md) | Portfolio-wide roadmap — ingestion-first readiness campaign, shared VPS platform workstreams, and controlled cutover waves |
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
+| [`RESIDENT_AGENT_MODEL.md`](RESIDENT_AGENT_MODEL.md) | Resident Agent Interface (RAI) architecture — why resident agents exist, file-backed bridge, verification principle, separation of interface from implementation |
 | [`LOGGING_STANDARD.md`](LOGGING_STANDARD.md) | Three-layer logging standard — machine/runtime, agent work, and GPT/planning logs |
 | [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Initial Git workflow — branch naming, commits, PRs, agents, VPS provisional rules |
 | [`LLM_TENETS.md`](LLM_TENETS.md) | Design tenets for auditable, constrained, portable, and data-efficient LLM systems |
@@ -31,17 +32,18 @@ This index is the operational map for agents and maintainers working with IvyCon
 
 1. `README.md` — what this repository is and is not
 2. `OPERATING_MODEL.md` — how the repository and portfolio are governed
-3. `REPOSITORY_CONTROL_MODEL.md` — how portfolio standards apply to each repository
-4. Applicable portfolio standards (read per task):
+3. `RESIDENT_AGENT_MODEL.md` — resident-agent architecture and interface (RAI)
+4. `REPOSITORY_CONTROL_MODEL.md` — how portfolio standards apply to each repository
+5. Applicable portfolio standards (read per task):
    - `PORTFOLIO_CONVENTIONS.md` — shared technical conventions and the requirements a repository must satisfy before production deployment to Ivy VPS
    - `DATA_LIFECYCLE_STANDARD.md` — retention, pruning, storage thresholds
    - `LOGGING_STANDARD.md` — logging for machine, agent, and planning work
    - `GIT_WORKFLOW.md` — Git branch naming, commits, agent rules
    - `LLM_TENETS.md` — LLM system design principles
-5. Repository control sheet — `repos/<repo>/CONTROL.md` for repo-specific evidence, exceptions, blockers, and current satisfaction of the VPS admission requirements
-6. Detailed gate evidence or phase packet only when the task requires gate-specific detail
-7. For GPT-orchestrated session work, read `_internal/GPT_ORCHESTRATED_WORKFLOW.md` (private) for numbered handoffs, gate packets, session logging, and session close
-8. For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures
+6. Repository control sheet — `repos/<repo>/CONTROL.md` for repo-specific evidence, exceptions, blockers, and current satisfaction of the VPS admission requirements
+7. Detailed gate evidence or phase packet only when the task requires gate-specific detail
+8. For GPT-orchestrated session work, read `_internal/GPT_ORCHESTRATED_WORKFLOW.md` (private) for numbered handoffs, gate packets, session logging, and session close
+9. For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures
 
 ## Predecessor tree
 

@@ -89,14 +89,14 @@
 
 | Criterion | Status | Notes |
 |---|---|---|
-| Health source | `docs/health-integration.md` | Architecture design only |
-| Health table | `health.private_status` | Inert migration, divergent schema |
-| Canonical field set | ≡ | Requires adapter: status mapping, field renames |
-| Exporter exists | ✗ | No exporter implemented |
+| Health source | Live natural-run health output (44 successful exports) | Health endpoint exists but reports incorrectly — treats cumulative historical failure count as current failure |
+| Health table | PostgreSQL metadata schema + filesystem generation state | No dedicated health table in PostgreSQL |
+| Canonical field set | ± | Health output exists but does not conform to v2 contract — needs adapter for status semantics correction |
+| Exporter exists | ± | Health reporting is live but semantically incorrect — cumulative failures treated as current failures |
 | Tests | ✗ | No health export tests |
-| **Conformance** | **Adapter-required** | Needs repository-local adapter |
+| **Conformance** | **Divergent — live but semantically incorrect** | Needs adapter + failure-semantics correction |
 
-**Recommended action:** Create `scripts/health_adapter.py` when IHK deployment begins.
+**Recommended action:** Correct the health reporter to distinguish consecutive from cumulative failures per HEALTH_CONTRACT.md §4.8. Then create a repository-local adapter that reads the private health output and produces canonical v2 JSON.
 
 ---
 
@@ -123,5 +123,5 @@
 | Traderie | Canonical-compatible | ✓ Existing (update) | ✓ Update | Update exporter fields, test, deploy |
 | SJC Intel | Canonical-compatible | ± Inert | ✓ | Activate when deploying |
 | IH Market Companion | Adapter-required | ± Divergent | ✗ | Create adapter when deploying |
-| Idle Hacking KB | Adapter-required | ✗ | ✗ | Create adapter when deploying |
+| Idle Hacking KB | Divergent — live but semantically incorrect | ± (live, wrong semantics) | ✗ | Correct failure semantics; then add adapter |
 | Reckless Ben | Adapter-compatible | ± Inert | ± | Update when deployment authorized |

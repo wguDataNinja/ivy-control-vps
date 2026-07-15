@@ -1,6 +1,6 @@
 # Ivy Control VPS Roadmap
 
-**Status:** Active ingestion-first portfolio roadmap, refined 2026-07-12.
+**Status:** Active ingestion-first portfolio roadmap. Current operational status reconciled through `docs/DATABASE.md`, `docs/PORTFOLIO_BASELINE.md`, and repository control sheets. Refined 2026-07-15.
 **Scope:** Portfolio-wide ingestion admission, reusable VPS/PostgreSQL platform products, health visibility, repository readiness packets, and controlled cutover waves.
 
 This roadmap separates two goals:
@@ -52,18 +52,19 @@ The portfolio moves from repeated one-off discovery to reusable admission packet
 ### §2A Repository and Workload Roster
 
 | Repository or workload | Owns ingestion? | Current state | Intended VPS ingestion scope | Next gate |
-|---|---:|---|---|---|
+|---|---|---|---|---|
 | Traderie | Yes | `PRODUCTION_DEGRADED`: VPS sole scheduler/writer; natural run timed out in `pc_hc_nl` | Restore healthy scheduled generation, health/export clarity, backup freshness, reboot proof | `§7A-G1` Traderie Recovery Gate |
 | Reddit Ops | Yes | `production-stabilizing`: VPS systemd user timer is sole collector; publication/drift/reboot remain open | Publish clean source, repair backup unit source/deploy, prove backup freshness and recovery | `§7B-G1` Publication Strategy Gate |
 | SJC Intel | Yes | Mac development; inert systemd units and migrations exist | Early deterministic Wave 1 candidate | `§4C-G1` Readiness Packet Gate |
-| IH Market Companion | Yes | Mixed Mac/VPS helper context; public/private and browser/runtime boundary need normalization | Later deterministic/browser runtime candidate | `§4D-G1` Authority Normalization Gate |
+| IH Market Companion | Yes | Ownership confirmed: public browser/runtime collector, market-book history, market snapshots, UI market history; Mac archive verified, bounded retention deployed, PostgreSQL schema design ready | PostgreSQL-backed public market history with collection/synchronization health, idempotent backfill, downstream research support; import pending | `§4D-G1` IH Market PostgreSQL and Continuity Gate |
 | WGU Catalog | Yes, low-frequency batch | Mac CLI/file-export workflow; no daemon required by current evidence | Event-driven or monthly-check catalog ingestion/export | `§4E-G1` Batch Source Authority Gate |
 | WGU-derived Reddit workloads | Unclear | Reddit Ops is the collector authority; WGU-Reddit/catalog/analysis/LLM ownership split is unresolved | Deferred behind boundary reconciliation | `§4F-G1` WGU Boundary Reconciliation Gate |
 | BSDA Courses | No, consumer | Mac development; consumes Reddit/WGU data | Consumer-only LLM pipeline after upstream contracts | `§4G-G1` Consumer Boundary Gate |
 | WGU Atlas | No, downstream/static | GitHub Pages/static site; catalog dependency active | Catalog consumer and later LLM QA reference | `§4H-G1` Catalog Contract Gate |
-| Idle Hacking KB | Yes, sensitive | Mac development; complex LLM and Discord capture | Only a safe ingestion subset may be prepared near term | `§4I-G1` Sensitive Ingestion Boundary Gate |
+| Idle Hacking KB | Yes, sensitive | Live PostgreSQL metadata onboarding (migration 011), idempotent reconciliation, backup/restore proof, verified archive, legacy cleanup reclaimed ~8.1 GB; root usage from ~95% to ~75%; publication blocked by privacy/history review | Private chat PostgreSQL metadata ingestion, lifecycle, health, backup; no production LLM activation in this phase | `§4I-G1` Idle Hacking KB Publication and Continuity Gate |
+| Palworld KB | Not yet (source-only) | Published repository; clean and validated; no VPS admission yet | Source-only admission under `~/workspace/palworld-kb`; no service/timer/database requirements | `§4K-G1` Palworld KB Source Admission Gate |
 | Reckless Ben | Restricted | `NO_LAUNCH` | No production ingestion unless reclassified | `§4J-G1` Restricted Repository Gate |
-| ivy-control-vps | Platform | Local control plane | Standards, health view, templates, readiness review | `§3` platform gates |
+| ivy-control-vps | Platform | Portfolio operational control plane | Standards, health view, templates, readiness review, Hermes governance, repository admission | `§3` platform gates |
 
 ### §2B Reconciled Current Facts
 
@@ -86,6 +87,16 @@ The portfolio moves from repeated one-off discovery to reusable admission packet
 - Backup source is reviewed, but the installed backup service has referenced the wrong script name in prior evidence; publication and deployment of reviewed source are still required.
 - Backup/restore evidence exists with remaining exact-SHA, drift, alerting, and reboot gaps.
 - Git publication is blocked because local unpublished history contains credential-bearing commit `e4acae0`; normal push is forbidden.
+
+**IH Market / Idle Hacker data estate**
+
+- PostgreSQL 16 is loopback-only on `127.0.0.1:5432`; `traderie`, `reddit_ops`, and `idlehacking_kb` are the live workload databases.
+- PostgreSQL storage is small relative to the legacy filesystem estate that preceded the cleanup campaigns.
+- IH Market Companion owns public browser/runtime collection, market-book snapshots, and UI-facing market history. The private personal-trade boundary is separate.
+- Idle Hacking KB owns private Discord/chat ingestion and KB/LLM processing; it is a separate implementation and cutover boundary.
+- A prior synchronization failure combined with the seven-day VPS remote retention caused an approximately 18-day permanent market-history gap. Future market architecture must independently monitor collection and synchronization freshness, detect missing intervals, and support idempotent backfill.
+- Storage recovery is no longer theoretical. Idle Hacking KB legacy cleanup (migration 011) reclaimed 8,134,330,994 bytes (47 files) and reduced root usage from approximately 95% to approximately 75% (free space: ~1.9 GB to ~9.9 GB). Bounded retention is proven through 44 post-cleanup natural exports with zero failures.
+- Palworld KB is published and structurally ready but not yet admitted to the VPS. No service, timer, database, or runtime dependency is expected.
 
 ### §2C WGU-Derived Boundary Status
 
@@ -260,6 +271,10 @@ Buddy can inspect ingestion status through a quick read-only operator view befor
 
 `tools/portfolio_phase0_status.py --format table`
 
+**Current implementation**
+
+A working Phase 0 CLI (`tools/portfolio_phase0_status.py`) exists and generates the operator table for Traderie and Reddit Ops from control-sheet data and health placeholders. It reads `repos/<repo>/CONTROL.md` for lifecycle state, scheduler/writer authority, and approved SHA, then renders a formatted table.
+
 **Source data**
 
 - Repository health exporters or adapters where available.
@@ -303,6 +318,16 @@ Every authoritative data store has a verified recovery path before cutover.
 - Isolated restore packet - existing per repo, needs template.
 - File/export recovery equivalent - planned for WGU Catalog and other non-DB workloads.
 - Backup freshness threshold - default added in `docs/HEALTH_CONTRACT.md`, repo-specific thresholds still required where stricter.
+
+**Legacy-ingestion migration and archive model**
+
+Legacy ingestion data that is not yet in PostgreSQL follows a three-tier model validated through the Idle Hacking KB cleanup:
+
+- Mac archive: canonical raw scraped source, transfer manifests, checksums, historical database dumps, rejected-record bundles, and import reconciliation evidence.
+- VPS PostgreSQL: authoritative operational and queryable state, including durable market-book history required for research and UI history.
+- VPS filesystem: bounded staging, recent rollback evidence, logs, caches, exports, and backup staging only.
+
+Migration acceptance requires: verified Mac archive, source manifest and checksums, idempotent import reconciliation, PostgreSQL backup, isolated restore proof, and explicit Buddy approval before legacy VPS data removal. Raw and derived copies must not coexist indefinitely unless the raw copy has a documented audit or re-derivation purpose and bounded retention.
 
 **Gate**
 
@@ -348,9 +373,17 @@ Unapproved code, dirty checkouts, stale units, missing revision metadata, and sc
 
 `§3H-G1` Reusable Artifact Gate.
 
-### §3I Hermes Staged Authority
+### §3I Hermes Operational Authority
 
-Hermes remains read-only until Phase 0 health and deterministic workflow contracts are proven.
+Hermes is installed and operational as a read-only resident VPS assistant:
+
+- Hermes Agent v0.18.2 installed; backend serves on loopback port; Desktop launches within the XFCE session on `DISPLAY=:10.0`.
+- Hermes file bridge exists at `/home/scraper/Desktop/hermes-bridge/` with inbox/outbox/archive protocol and documented filename conventions.
+- Hermes Bridge is documented in `docs/HERMES_OPERATOR_GUIDE.md`, `docs/VPS_ACCESS.md`, and `docs/RESIDENT_AGENT_MODEL.md`.
+- Authority remains strictly read-only: inspect, explain, navigate, search, summarize, review, recommend, and produce bridge files. No production write, systemd, database, network, destructive, Git, or authority-expansion permissions are granted.
+- Provider authentication is not configured; the default model (`deepseek-v4-flash`) suffices for bounded inspection.
+- Hermes Desktop remains blocked by the capacity gate (root storage after cleanup is approximately 75% used; Hermes requires known bounds on growth before permanent activation is authorized).
+- Future stages may add recurring portfolio-review loops, branch creation, and PR authority through a separate gate.
 
 **Gate**
 
@@ -417,43 +450,131 @@ Strong Codex for database provisioning, config installation, systemd installatio
 
 `§4C-G1` SJC Intel Readiness Packet Gate.
 
-### §4D IH Market Companion Readiness Packet
+### §4D IH Market Companion PostgreSQL and Continuity Implementation
 
 **Task artifact**
 
-`_internal/outbox/session5/agent-ih-market-authority-readiness.md`
+`_internal/outbox/session5/agent-ih-market-authority-readiness.md`, followed by repo-local implementation packets prepared in later sessions.
 
 **Repository scope**
 
 `/Users/buddy/projects/ih_market_companion`; control-plane outputs under `repos/ih-market-companion/`.
 
-**Required reading**
+**Confirmed ownership**
 
-Control-plane standards, IH Market README/AGENTS/deploy/systemd/db/health/runtime docs, and any public/private boundary document in the repo.
+IH Market Companion owns the public browser/runtime collector, public market-book history, market snapshots, and UI-facing market history. It does not own private personal-trade data. The transitional `collector_helper.py` / `ih-collector-helper.service` boundary must not be treated as shared production authority. The transitional shared helper does not create shared production authority between IH Market and Idle Hacking KB.
 
-**Expected outputs**
+**Current status**
 
-Authority map, public/private boundary assessment, service/timer inventory, data-boundary scan, migration/health review, rollback packet, and control/gate drafts.
+- GitHub repository published and clean at `https://github.com/wguDataNinja/ih-market-companion`; remote SHA `ae50fd47b49c13016a98034677e16151b337c871`.
+- Mac archive verified; bounded snapshot/receipt retention deployed on VPS.
+- Natural-run containment evidence exists.
+- PostgreSQL schema and migration design exists but import and reconciliation are still pending.
+- Backup/restore proof pending.
+- Shared-helper deployment authority remains transitional; one-repo-one-SHA normalization is still required.
+
+**Required implementation sequence**
+
+1. Repository-local PostgreSQL schema and migrations.
+2. Deterministic, idempotent, resumable legacy market importer for arbitrary historical ranges.
+3. Browser ingestion writes to PostgreSQL with bounded filesystem staging.
+4. Durable market snapshots and order-book history for UI and research consumers.
+5. Independent collection and synchronization health.
+6. Missing-interval detection and warning before remote retention expiry.
+7. Health-contract producer with ingest counts, freshness, backlog, deployed revision, backup age, and safe failures.
+8. Strong Codex provisioning, archive, migration, cutover, validation, rollback, and natural-run packet.
+9. Verified Mac archive and later legacy-file cleanup under explicit approval.
+
+**Market-data continuity requirements**
+
+The implementation must capture:
+
+- One owner for remote-to-local synchronization.
+- Separate freshness checks for remote collection and the local archive.
+- Sync-lag visibility.
+- Missing-interval detection.
+- Retention-window monitoring and warning before unrecovered data expires.
+- Idempotent backfill procedure.
+- Compatibility with the downstream `idle-hacker/market_strategy` research consumer.
+- Separation of public market history from private personal-trade data.
+
+The VPS retains market snapshots for only 7 rolling days; the design must explicitly address this retention boundary, including detection of intervals that could expire before import.
+
+**Market-history requirements**
+
+Each durable snapshot should preserve available market-book evidence including:
+
+- timestamp;
+- commodity;
+- best bid and best ask;
+- visible book depth and quantities;
+- spread;
+- additions;
+- cancellations;
+- fills or volume_changes;
+- source/run lineage;
+- any other stable order-book metadata available from the collector.
+
+Market history is a durable research asset, not a transient dashboard artifact. The design must preserve enough fidelity for statistically valid backtesting without look-ahead bias.
+
+**Continuity and health requirements**
+
+Collection and synchronization are separate health concerns. The system must expose:
+
+- newest remote snapshot;
+- newest PostgreSQL snapshot;
+- newest Mac-archived snapshot;
+- collection freshness;
+- synchronization freshness;
+- sync lag;
+- missing intervals;
+- oldest unrecovered interval;
+- warning before remote retention expiry;
+- last successful backfill;
+- staging backlog;
+- current writer;
+- deployed revision;
+- backup age;
+- current failure.
+
+Valid states include: collector healthy / synchronization healthy; collector healthy / synchronization failing; collector failing / synchronization healthy; collector failing / synchronization failing.
+
+**Recovery requirements**
+
+Backfill must be: idempotent, resumable, safe to repeat, capable of importing arbitrary historical ranges, able to reconcile source counts, accepted rows, duplicates, rejections, and time ranges, and able to detect and report missing source intervals.
+
+**Downstream research boundary**
+
+`idle-hacker/market_strategy` is an explicit downstream research consumer. It may combine public market snapshots, private personal trade history, private order lifecycle, and recorder exports. The public collector and public market database boundary must not contain private personal-trading information. These remain Rule 7, human-in-the-loop research systems. No automated trading authority is granted.
 
 **Local validation**
 
-Run tests or targeted validations available locally; verify unit source syntax; scan for private trading/chat paths in publishable docs.
-
-**Dry-run or staging proof**
-
-No live runtime or trading-adjacent action. Evidence only.
+- Run repository tests and focused migration/import tests.
+- Validate idempotent import and arbitrary-range backfill.
+- Verify snapshot continuity and missing-interval detection.
+- Verify collection and synchronization health independently.
+- Verify no private trade data enters the public collector boundary.
+- Verify UI/research queries can reconstruct historical market state without look-ahead bias.
+- Verify bounded staging and retention warnings.
 
 **Stop conditions**
 
-Trading authority ambiguity, private data exposure, active dirty tree that prevents safe classification, or unclear VPS helper ownership.
+- private trading data crosses into the public collector;
+- collector or synchronization ownership is unclear;
+- historical source formats cannot be reconciled deterministically;
+- missing intervals cannot be distinguished from true no-data periods;
+- staging can expire before recovery without warning;
+- active dirty tree prevents safe classification;
+- production mutation is required;
+- automated trading authority is implied.
 
 **Escalation**
 
-Strong Codex for any VPS helper change, browser/runtime service activation, PostgreSQL provisioning, or trading-adjacent authority.
+Strong Codex for VPS helper changes, PostgreSQL provisioning, source archival to Mac, production import, browser/runtime activation, writer cutover, service changes, backup/restore proof, and legacy-file cleanup.
 
 **Completion gate**
 
-`§4D-G1` IH Market Authority Normalization Gate.
+`§4D-G1` IH Market PostgreSQL and Continuity Gate.
 
 ### §4E WGU Catalog Batch Readiness Packet
 
@@ -546,27 +667,47 @@ Deferred until `§4F-G1` and WGU Catalog contract evidence are available. BSDA r
 
 Deferred until WGU Catalog contract evidence is available. Atlas remains downstream/static unless a later gate adds production LLM authority.
 
-### §4I Idle Hacking Safe Ingestion Packet
+### §4I Idle Hacking KB PostgreSQL Implementation and Publication
 
 **Task artifact**
 
-`_internal/outbox/session5/agent-idlehacking-safe-ingestion-boundary.md`
+`_internal/outbox/session5/agent-idlehacking-safe-ingestion-boundary.md`, followed by implementation packets for ongoing ingestion design.
 
 **Repository scope**
 
 `/Users/buddy/projects/idlehacking_kb`; control-plane outputs under `repos/idlehacking-kb/`.
 
-**Expected outputs**
+**Current status**
 
-Define a safe ingestion subset if one exists; inventory Discord capture authority, migration/health status, credential coupling, and LLM exclusion boundary.
+Idle Hacking KB has live PostgreSQL metadata onboarding. The following milestones are complete:
 
-**Local validation**
+- Repository published at `https://github.com/wguDataNinja/idlehacking-kb`; implementation commit `61379d38220d10196661c6ee0e58ecc32521385e` unpushed pending privacy/history review.
+- PostgreSQL metadata database `idlehacking_kb` established with migration `011`.
+- 49 historical cutoff identities reconciled; idempotent rerun passed (0 inserts / 49 duplicates).
+- Backup checksum verified; isolated restore passed.
+- No raw-body columns in PostgreSQL — metadata-only boundary.
+- Legacy cutoff cleanup: 47 files deleted, 8,134,330,994 bytes reclaimed; root usage from approximately 95% to approximately 75%.
+- 44 genuine post-cleanup natural exports succeeded with zero failures.
+- Current bounded runtime state: approximately 112 managed generations / 350 MB.
 
-Read-only/source-only checks; no Discord capture, no production LLM execution, no credential use.
+**Confirmed ownership and separation**
+
+- Idle Hacking KB owns private Discord/chat ingestion and KB/LLM processing.
+- It is a separate repository-local implementation and production cutover from IH Market Companion.
+- The transitional shared helper boundary does not create shared production authority.
+- Private chat ingestion may reuse PostgreSQL, health, backup, archive, and cutover products, but requires independent lifecycle, privacy, retention, credential, and acceptance evidence.
+- Production LLM execution remains excluded from this phase.
+
+**Remaining work**
+
+- Correct top-level health semantics: client currently treats cumulative historical failure count as current failure (should distinguish current active failure, consecutive failures, and recovery state).
+- Complete privacy/history review before GitHub publication.
+- Define reliable long-term Discord ingestion and incremental archive behavior.
+- Implement health-contract producer with ingest counts, freshness, backup age, and deployed revision.
 
 **Stop conditions**
 
-Sensitive-source ambiguity, cross-repo credential dependency, unclear capture authority, or any required live service interaction.
+Sensitive-source ambiguity, cross-repo credential dependency, unclear capture authority, or any required live service interaction without explicit authorization.
 
 **Escalation**
 
@@ -574,7 +715,7 @@ Strong Codex for production database provisioning, Discord capture deployment, o
 
 **Completion gate**
 
-`§4I-G1` Idle Hacking Sensitive Ingestion Boundary Gate.
+`§4I-G1` Idle Hacking KB Publication and Continuity Gate.
 
 ### §4J Reckless Ben Restricted Path
 
@@ -593,7 +734,7 @@ Reckless Ben remains `NO_LAUNCH`. It contributes approval and evidence patterns 
 ### §5B Repository-Specific Medium-Agent Readiness Packets
 
 **Hard dependencies:** `§3A` gate model.
-**Concurrent work:** SJC Intel, WGU Catalog, IH Market, Idle Hacking safe subset. WGU-derived workloads wait for `§4F-G1`.
+**Concurrent work:** SJC Intel and WGU Catalog readiness may proceed independently. IH Market ownership discovery is complete and moves next to repo-local PostgreSQL implementation. Idle Hacking KB metadata onboarding is live; next work is long-term Discord ingestion design and health correction. WGU-derived workloads wait for `§4F-G1`.
 **Owner:** Medium OpenCode.
 **Completion evidence:** Required outbox report, control/gate drafts, validation output, privileged handoff packet.
 **Next gate:** repository readiness gate.
@@ -659,6 +800,9 @@ Reckless Ben remains `NO_LAUNCH`. It contributes approval and evidence patterns 
 - Disk/capacity is below stop thresholds.
 - No known duplicate-writer condition.
 - No active recovery operation would make another cutover unsafe.
+- Unresolved legacy filesystem data estates do not threaten root capacity or recovery safety.
+- Every active ingestion candidate has bounded staging, known growth behavior, and independent collection/synchronization health where applicable.
+- Data is not removed merely to satisfy capacity thresholds without verified archive, import reconciliation, backup, restore, and explicit deletion approval.
 
 **Not required for this gate**
 
@@ -673,7 +817,8 @@ Reckless Ben remains `NO_LAUNCH`. It contributes approval and evidence patterns 
 |---|---|---|
 | Wave 0 | Traderie recovery and Reddit Ops recovery/publication as separate sessions | Existing workloads must not hide critical incidents |
 | Wave 1 | SJC Intel; WGU Catalog only if it selects VPS batch trigger | Low-risk deterministic and batch workloads |
-| Wave 2 | IH Market or Idle Hacking safe subset | Higher runtime/privacy complexity |
+| Wave 2A | IH Market PostgreSQL onboarding and browser-ingestion cutover | Public market-history continuity, PostgreSQL snapshots, independent sync health, Mac archive, and research-data requirements |
+| Wave 2B | Idle Hacking KB private chat-ingestion cutover | Separate sensitive-data, privacy, retention, backup, health, and credential boundary |
 | Wave 3 | LLM/downstream production stages | Requires boundary, budget, prompt, audit, and review gates |
 
 ### §6C Rollback Rules
@@ -768,7 +913,7 @@ Every ingestion readiness review must answer:
 
 ## §9 Near-Term Session Sequence
 
-### §9A Roadmap and Authority Reconciliation
+### §9A Roadmap Reconciliation and Authority Alignment
 
 **Scope:** This refinement pass.
 **Risk profile:** Documentation/control only.
@@ -807,7 +952,7 @@ Every ingestion readiness review must answer:
 **Scope:** `§3E`.
 **Risk profile:** Read-only status surface.
 **Owner:** Medium OpenCode; Strong Codex only if live health registration is needed.
-**Current product output:** `docs/HEALTH_CONTRACT.md` §4A and `_internal/outbox/session5/agent-phase0-health-implementation.md`.
+**Current product outputs:** `docs/HEALTH_CONTRACT.md` §4A, `tools/portfolio_phase0_status.py`, and `_internal/outbox/session5/agent-phase0-health-implementation.md`.
 
 ### §9G SJC Intel Readiness Session
 
@@ -816,19 +961,51 @@ Every ingestion readiness review must answer:
 **Owner:** Medium OpenCode.
 **Dependency:** Canonical gate model.
 
-### §9H Platform Confidence Review
+### §9H IH Market PostgreSQL Implementation Session
+
+**Scope:** `§4D-G1`, supported by `§3A`, `§3B`, `§3E`, `§3F`, and `§3G`.
+**Risk profile:** Repository-local source, migrations, importer, snapshots, continuity health, lifecycle, and tests; no live mutation.
+**Owner:** Medium OpenCode.
+**Dependency:** Ownership discovery complete.
+**Completion:** Validated schema, idempotent importer, browser-to-PostgreSQL path, market-history queries, independent collection/sync health, tests, and Strong Codex cutover packet.
+
+### §9I Idle Hacking KB PostgreSQL and Ingestion Session
+
+**Scope:** `§4I-G1`, supported by `§3A`, `§3B`, `§3E`, `§3F`, and `§3G`.
+**Risk profile:** Repository-local private chat schema, importer, ingestion, privacy boundary, lifecycle, health semantics correction, and tests; no production LLM activation.
+**Owner:** Medium OpenCode.
+**Dependency:** IH Market ownership boundary remains separate and explicit.
+**Completion:** Validated private chat schema, deterministic importer, corrected health semantics, health producer, lifecycle evidence, tests, and Strong Codex cutover packet.
+
+### §9J Idle Hacker Data Migration and Cutover Session
+
+**Scope:** Separate privileged cutovers for IH Market and Idle Hacking KB.
+**Risk profile:** Live VPS, PostgreSQL, Mac archive, migration, service and writer cutover, backup, restore, and natural-run proof.
+**Owner:** Strong Codex.
+**Dependency:** Relevant repository implementation gate, `§6A-G1`, exact approved SHA, archive packet, backup/restore packet, and explicit Buddy authorization.
+**Completion:** Verified Mac archive, reconciled PostgreSQL import, one writer, independent health, backup/restore proof, natural-run acceptance, and separately approved legacy-file cleanup.
+
+### §9K Platform Confidence Review
 
 **Scope:** `§6A`.
 **Risk profile:** Cross-workload readiness decision.
 **Owner:** Strong Codex or high-reasoning gate review.
 **Dependency:** Phase 0 health plus current production evidence.
 
-### §9I Wave 1 Privileged Cutover
+### §9L Wave 1 Privileged Cutover
 
 **Scope:** First candidate that passes readiness, likely SJC Intel.
 **Risk profile:** Live VPS/PostgreSQL/scheduler work.
 **Owner:** Strong Codex.
 **Dependency:** `§6A-G1` and repository readiness gate.
+
+### §9M Resident Operator Bootstrap
+
+**Completed milestone:** Session 7 established the resident-agent architecture on the VPS. Hermes Agent v0.18.2 installed read-only, file bridge bootstrapped, first orientation exchange validated.
+
+**Outcome:** `docs/RESIDENT_AGENT_MODEL.md` became the canonical architecture document defining the Resident Agent Interface (RAI). `docs/HERMES_OPERATOR_GUIDE.md` became the implementation reference. `docs/VPS_ACCESS.md` documents operational SSH/SCP/graphical access. The verification principle (independent verification before repository truth) is now permanent.
+
+**Remaining open items from session:** 11 TODO items on root disk, backup service, provider config, config migration, API-key compatibility, clipboard, bridge mode, health language.
 
 ## §10 Reference Migration
 
@@ -871,12 +1048,15 @@ Historical logs and outbox packets keep their old references. Current authority 
 
 ## §11 Current Next Work
 
-1. Run the medium-agent packets prepared under `_internal/outbox/session5/` for `§9E`, `§9F`, `§9G`, and bounded repository readiness.
-2. Run `§9B` Traderie recovery as a separate production recovery session.
-3. Run `§9C` Reddit Ops publication strategy as a separate Git/history session.
-4. Implement `§9E` PostgreSQL reusable platform products and `§9F` Phase 0 health in parallel with source-only readiness work.
-5. Run `§9G` SJC Intel readiness after the reusable gate model is accepted.
-6. Run `§9H` Platform Confidence Review before any Wave 1 cutover.
+1. Complete and reconcile the current Phase 0 health implementation without overwriting unrelated working-tree changes.
+2. Run the repo-local `ih_market_companion` PostgreSQL implementation packet under `§4D-G1` (schema, importer, snapshots, continuity health, tests).
+3. Run the separate repo-local `idlehacking_kb` PostgreSQL implementation and ingestion-design packet under `§4I-G1` (private chat schema, importer, health semantics correction, tests).
+4. Prepare Mac archive, manifest, checksum, import-reconciliation, backup, restore, rollback, and cleanup packets for each workload.
+5. Continue Traderie recovery (`§7A`) and Reddit Ops publication/recovery (`§7B`, `§7C`) as separate workstreams.
+6. Run `§6A-G1` Platform Confidence Review before either Idle Hacker production cutover.
+7. Execute IH Market and Idle Hacking KB cutovers separately through Strong Codex.
+8. Reassess root capacity after onboarding, archive verification, bounded retention, and approved legacy-file cleanup.
+9. Authorize Hermes Desktop installation only after the capacity gate passes.
 
 ## §12 Decisions Requiring Buddy
 

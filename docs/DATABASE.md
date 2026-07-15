@@ -30,8 +30,8 @@ Projects use isolated databases and/or schemas according to their role and shari
 |---|---|---|---|---|---|
 | Reddit Ops | `reddit_ops` | `reddit_core`, `wgu_reddit`, `bsda_courses` | VPS PostgreSQL collector | Mac archive/PostgreSQL | PostgreSQL collector cutover complete; SQLite preserved as rollback |
 | Traderie | `traderie` | `app`, `archive`, `health` | VPS PostgreSQL | Mac backup/archive | Cutover complete but production-degraded pending natural-run recovery |
-| Idle Hacking KB | Existing migration design | Project-isolated schema | VPS PostgreSQL planned | Mac archive | Schema exists; ingestion design pending |
-| IH Market Companion | Existing migration design | Project-isolated schema | VPS PostgreSQL planned | Mac archive | Schema exists; pipeline design pending |
+| Idle Hacking KB | `idlehacking_kb` | Project-isolated metadata schemas | VPS PostgreSQL for archive metadata; bounded filesystem state for current runtime | Private Mac archive | Live onboarding complete: migration `011`, 49 identities reconciled, idempotent rerun, backup and isolated restore passed, and legacy cutoff cleanup completed; raw chat bodies remain outside PostgreSQL |
+| IH Market Companion | Existing migration design | Project-isolated schema | VPS PostgreSQL planned | Mac archive | Mac archive verified; bounded snapshot/receipt retention deployed; PostgreSQL import and reconciliation still pending; backup/restore proof pending; shared-helper deployment authority still transitional |
 
 ## Reusable PostgreSQL onboarding system
 
@@ -577,6 +577,18 @@ Operational health should cover:
 - scheduler state;
 - deployed revision.
 
+#### Health semantics
+
+Current health must not remain down solely because a cumulative historical failure counter is nonzero. The contract should distinguish:
+
+- current active failure — is the most recent run in a terminal error state?
+- recent-run success — did the last N runs complete within policy?
+- consecutive failures — how many uninterrupted failures since the last success?
+- cumulative historical failures — total failures recorded since deployment or reset;
+- recovery state — is the workload actively recovering after a known failure?
+
+For this workload, 44 recent successful exports should produce a healthy current state even though old failures remain recorded.
+
 ### Collector requirements
 
 The collector must:
@@ -728,48 +740,50 @@ The VPS may retain only bounded current observations required for live health or
 
 ### Idle Hacking data
 
-Historical IH Market and Idle Hacking chat data were archived to the Mac and verified before approved VPS removal.
+The verified-cutoff cleanup produced these results:
 
-The active collector recreated both source paths, proving they remain operational outputs.
-
-Future work must define:
-
-- incremental archive cadence;
-- retention windows;
-- writer-aware pruning;
-- health monitoring;
-- growth alerts;
-- distinction between raw durable data and regenerable runtime data.
-
-Do not delete recreated active paths without a new archive and writer-aware approval.
+- 49 historical cutoff identities;
+- 2 already absent before cleanup;
+- 47 verified files deleted;
+- 8,134,330,994 bytes reclaimed;
+- 49 PostgreSQL metadata rows retained;
+- no raw-body columns;
+- backup checksum verified;
+- isolated restore passed;
+- 44 successful post-cleanup natural exports;
+- root usage improved from 95% to 75%;
+- free space increased from about 1.9 GB to about 9.9 GB;
+- current managed generations remain operational outputs and are not cleanup targets.
 
 ## Idle Hacking KB database direction
 
-Idle Hacking KB already has a real PostgreSQL migration set with rollback and validation support.
+Idle Hacking KB now has a live PostgreSQL-persistent metadata importer:
 
-Current major TODO:
+- migration `011` applied;
+- metadata-only boundary — no raw chat bodies in PostgreSQL;
+- archive lineage and checksum tracking;
+- live import completed with 49 historical identities reconciled;
+- idempotency proved through rerun;
+- backup and isolated restore proved;
+- legacy cutoff deleted (47 files, 8,134,330,994 bytes reclaimed);
+- bounded retention validated through 44 post-cleanup natural runs.
 
-- design and later implement reliable Discord ingestion on the VPS.
+Remaining TODOs:
 
-The design must cover:
+- correct top-level health semantics (see Health checks);
+- complete privacy/history review before GitHub publication;
+- define reliable long-term Discord ingestion and incremental archive behavior.
 
-- browser and Chrome extension runtime;
-- manual authentication and reauthentication;
-- bounded server/channel scope;
-- incremental export;
-- download detection;
-- immutable raw export preservation;
-- manifests and checksums;
-- normalized ingestion;
-- duplicate prevention;
-- edit/deletion reconciliation;
-- attachments and embeds;
-- browser watchdog and recovery;
-- privacy controls;
-- archive acknowledgment;
-- retention and pruning.
+### Publication status
 
-Automated Discord login remains deferred.
+The Idle Hacking KB implementation commit is `61379d38220d10196661c6ee0e58ecc32521385e` but remains unpushed because repository history requires privacy review.
+
+Status classification:
+
+- live implementation deployed and validated;
+- GitHub authority incomplete;
+- publication blocked by history/privacy review;
+- not a database or operational blocker.
 
 ## IH Market Companion database direction
 
@@ -839,6 +853,8 @@ Before import and cutover:
 - approved historical VPS copies were removed;
 - approximately 12.7 GB of free space was recovered;
 - active collectors later recreated bounded working paths, which were preserved.
+
+The later Idle Hacking KB verified-cutoff cleanup reclaimed an additional 8,134,330,994 bytes and reduced root usage from 95% to 75%.
 
 ### Migration execution
 

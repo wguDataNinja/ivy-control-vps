@@ -59,8 +59,14 @@ Deterministic file-based data collection and classification. Strong operational 
 
 Deterministic browser/VPS runtime. No LLM stages exist.
 
+- GitHub: `https://github.com/wguDataNinja/ih-market-companion`
+- Remote main SHA: `ae50fd47b49c13016a98034677e16151b337c871`
 - All execution paths deterministic: `nl_parser.py` (100% regex/string matching), 8 trading pipeline scripts
 - 5 prompt files under `prompts/` are planning artifacts only — no runtime consumes them
+- Mac archive verified; bounded snapshot/receipt retention deployed
+- Natural-run containment evidence exists
+- PostgreSQL import, reconciliation, backup, restore, and cleanup remain pending
+- Shared-helper deployment authority remains transitional
 - Useful for testing browser supervision, restart, resource isolation, and deterministic workflow execution
 - Future LLM trading features should remain advisory unless separately approved
 
@@ -116,14 +122,42 @@ Strongest implemented provider-agnostic LLM runtime.
 
 #### Idle Hacking KB
 
-Strong content-safety guards; most complex LLM architecture.
+Most complex LLM architecture; PostgreSQL metadata onboarding complete; GitHub publication blocked.
 
+- GitHub: `https://github.com/wguDataNinja/idlehacking-kb` (repo exists; implementation commit `61379d38220d10196661c6ee0e58ecc32521385e` unpushed pending privacy/history review)
+- PostgreSQL metadata database `idlehacking_kb` established with migration `011`
+- 49 historical cutoff identities reconciled; idempotent rerun passed (0 inserts / 49 duplicates)
+- Backup checksum verified; isolated restore passed
+- No raw-body columns in PostgreSQL — metadata-only boundary
+- Legacy cutoff cleanup: 47 files deleted, 8,134,330,994 bytes reclaimed
+- Root usage improved from approximately 95% to approximately 75% (free: ~1.9 GB → ~9.9 GB)
+- 44 genuine post-cleanup natural exports succeeded with zero failures or warning-journal entries
+- Current bounded runtime state: approximately 112 managed generations / 350 MB
+- Top-level client health incorrectly reports down — treats cumulative historical failure count as current failure
+- Cross-repo credential dependency: falls back to `ivy-control/.env` for `OPENCODE_API_KEY` (unresolved)
 - 34 total registered stages: 5 live, 7 historical/Ollama, 1 archived/OpenAI, 14 draft prompt-only, 4 KB discovery, 1 benchmark, 2 answerability
-- Best-in-portfolio content safety: `production_mutation_allowed: false`, `not_approved_for_filter_change`, `llm_annotation_is_not_truth` enforced at output parsing level
-- All 5 live stages use OpenCode CLI as sole provider — not provider-agnostic
-- Cross-repo credential dependency: falls back to `ivy-control/.env` for `OPENCODE_API_KEY`
-- 14 draft prompt-only stages with no runtime runner — need implementation or archival decision
-- Should come later in migration sequence
+- 14 draft prompt-only stages still need implementation or archival decision
+
+#### Palworld KB
+
+Published and structurally ready, but early as a knowledge product.
+
+- GitHub: `https://github.com/wguDataNinja/palworld-kb`
+- Remote main SHA: `1c8d411406ce45cf948390e82f1e8494ca0352b6`
+- Repository is clean and validated
+- Not yet admitted to the VPS; planned admission is source-only under `~/workspace/palworld-kb`
+- No service, timer, dependency installation, or PostgreSQL requirement currently exists
+- Current project bottleneck is evidence-rich factual content, not infrastructure
+
+#### Publication Authority Snapshot
+
+Current GitHub authority and VPS-admission snapshot for the three repositories named in Session 6:
+
+| Repository | Canonical GitHub URL | Canonical branch | GitHub visibility | Published SHA | Current VPS state | PostgreSQL state | Archive state | Admission status |
+|---|---|---|---|---|---|---|---|---|
+| IH Market Companion | `https://github.com/wguDataNinja/ih-market-companion` | `main` | `PUBLIC` | `ae50fd47b49c13016a98034677e16151b337c871` | Containment deployed on VPS; shared-helper normalization still pending | No production PostgreSQL authority; proposal only | Mac archives verified; no VPS deletion authorized | Published; authority established; cleanup still blocked |
+| Idle Hacking KB | `https://github.com/wguDataNinja/idlehacking-kb` | `main` | `PUBLIC` on GitHub; treat as privacy-sensitive regardless | Not published; implementation SHA `61379d38220d10196661c6ee0e58ecc32521385e` | Live PostgreSQL metadata database `idlehacking_kb` with migration `011`; bounded filesystem runtime state; legacy cutoff cleanup completed | VPS PostgreSQL for archive metadata; bounded filesystem state for current runtime; Mac private archive | Mac archive verified; no deletion authorized | PostgreSQL onboarding complete; 44 successful natural exports; publication blocked by privacy/history review; top-level health semantics still need correction |
+| Palworld KB | `https://github.com/wguDataNinja/palworld-kb` | `main` | `PUBLIC` | `1c8d411406ce45cf948390e82f1e8494ca0352b6` | Not admitted to VPS yet; source-only repository authority established | No PostgreSQL requirement identified yet | No VPS archive or deletion scope yet | Published; later VPS admission only |
 
 #### Reckless Ben
 
@@ -183,9 +217,9 @@ Derived from the 2026-07-05 portfolio audits. These gaps are organized by severi
 
 | Gap | Affected repos |
 |-----|---------------|
-| No health check script | SJC Intel, Traderie, BSDA Courses, WGU Atlas, Reckless Ben, Idle Hacking KB |
+| No health check script | SJC Intel, Traderie, BSDA Courses, WGU Atlas, Reckless Ben |
 | No backup/restore documentation | All 8 repos |
-| No service/scheduler definitions in repo | SJC Intel, BSDA Courses, Reckless Ben, Idle Hacking KB |
+| No service/scheduler definitions in repo | SJC Intel, BSDA Courses, Reckless Ben |
 | No CI test step in workflows | All 8 repos |
 | LLM provider hardcoded, not configurable per-deployment | BSDA Courses, WGU Atlas, Idle Hacking KB, WGU-Reddit |
 | No cost tracking on LLM stages | All repos with LLM stages |
@@ -227,7 +261,7 @@ A repository is not ready for Ivy VPS merely because it can run. Admission requi
 1. **Stabilize existing production workloads** — Traderie recovery and Reddit Ops publication/backup/reboot closure.
 2. **Prepare eligible ingestion systems in parallel** — SJC Intel, IH Market Companion, WGU Catalog batch readiness, and the safe subset of Idle Hacking KB where applicable.
 3. **Cut over in controlled waves** — start with low-risk deterministic repositories rather than simultaneous portfolio-wide activation.
-4. **Then mature downstream and LLM workflows** — WGU-derived workloads only after boundary reconciliation; BSDA Courses, WGU Atlas, and Idle Hacking KB LLM stages after deterministic health, backup, and Hermes read-only patterns are proven.
+4. **Then mature downstream and LLM workflows** — WGU-derived workloads only after boundary reconciliation; BSDA Courses, WGU Atlas LLM stages after deterministic health, backup, and Hermes read-only patterns are proven. Idle Hacking KB metadata onboarding is complete; remaining LLM-stage work and draft-stage cleanup follow the same pattern once the publication blocker resolves.
 5. **Keep Reckless Ben restricted** — `NO_LAUNCH` unless explicit newer authority reclassifies it.
 
 ### §5B Dependency relationships

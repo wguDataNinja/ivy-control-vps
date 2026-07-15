@@ -1,6 +1,24 @@
 # Git Workflow
 
-**Status:** Local-development standard. VPS-specific Git rules will be defined separately in the VPS checkout when that environment exists.
+**Status:** Local-development standard for the Mac-based repository. Portfolio-wide Git conventions remain pending — see the conventions list below.
+
+### Pending portfolio-wide Git conventions
+
+The following are explicitly not defined here and must be drafted as a separate portfolio-wide standard before they become requirements:
+
+- Repository naming convention
+- Default branch policy
+- Commit-message house style
+- Pull-request policy and review requirements
+- Public-by-default engineering history expectations
+- Private runtime-data exclusion from public repositories
+- Initial publication review process
+- Git history sanitization procedure
+- Agent Git write authority model (beyond the existing local-agent rules)
+- Exact-SHA deployment tagging
+- Tag and release versioning
+
+This document preserves the operator/implementation model for the local checkout. The portfolio-wide standard will supersede or extend these rules for the full portfolio.
 
 ## Principles
 

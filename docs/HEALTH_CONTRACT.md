@@ -275,6 +275,29 @@ Default evaluation when a repository has not defined stricter thresholds:
 
 Daily backups therefore default to `ok` through 36 hours, `stale` after 36 hours, and `fail` after 72 hours or on explicit backup failure. Repository control sheets may set stricter thresholds when the data source or recovery objective requires it.
 
+### 4.8 Failure semantics
+
+Current health must distinguish these failure dimensions:
+
+| Dimension | Definition | Computation |
+|-----------|------------|-------------|
+| Current active failure | Is the most recent run in a terminal error state? | `status IN ('fail', 'stale')` for the latest observation |
+| Latest run result | What did the most recent run report? | Raw `status` from the latest producer payload |
+| Bounded recent-run history | Have the last N runs (e.g., 10) completed within policy? | Count of `ok`/`warn` versus `fail`/`stale` in the rolling window |
+| Consecutive failures | How many uninterrupted failures since the last success? | Increment on each `fail` or `stale`; reset to 0 on `ok` or `warn` |
+| Cumulative historical failures | Total failures recorded since deployment or counter reset | Monotonic counter; never reset by a successful run |
+| Recovery state | Is the workload actively recovering after a known failure? | `last_failure_at < last_success_at` AND consecutive failures === 0 after a prior non-zero peak |
+
+Rules:
+
+1. **Cumulative counts remain visible.** Historical failure totals are preserved as evidence. They must not be hidden, reset on success, or removed from the data model.
+2. **A successful run resets consecutive failure state.** `failure_count` (field #41) tracks consecutive failures, not cumulative total.
+3. **Current status must not remain down solely because cumulative historical failures are nonzero.** A workload with a successful current run, recent bounded evidence of reliability, and no active failure must report a healthy current status.
+4. **Status computation uses:** current run state, freshness, active failures, recent bounded evidence, and recovery state. Cumulative historical failures are evidence for trend analysis and incident review — they are not a direct input to current health status.
+5. **Recovery state** is `recovered` when the most recent run is successful, consecutive failures are zero, and a prior failure peak existed. The aggregator may record the recovery timestamp.
+
+Example: 44 recent successful exports with zero consecutive failures produce a healthy current state even if cumulative historical failures are nonzero. The historical failures remain available for review but do not keep the health indicator in a `fail` or `stale` state.
+
 ---
 
 ## 4A. Phase 0 Operator Status View

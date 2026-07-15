@@ -1,8 +1,21 @@
 # Operating Model
 
+**Status:** Current authority. The project is in implementation and operational-hardening mode — no longer documenting a future VPS model. It now governs a live VPS with multiple production workloads, PostgreSQL, archives, health evidence, deployment records, Hermes, and repository admission.
+
 ## Purpose
 
-IvyControlVPS is the operational control plane for the VPS portfolio. The managed repositories remain separate projects with their own code, data, and roadmaps. Together they should present a cohesive standard of engineering, documentation, operations, and automation. Differences between repositories should be justified by their actual purpose rather than by habit.
+IvyControlVPS is the portfolio control plane for active Ivy VPS operations. It owns:
+
+- portfolio operational governance, topology, and standards;
+- health contracts, backup/restore, archive and retention rules;
+- repository admission, production topology, and lifecycle state;
+- deployment evidence, exact revision tracking, and privileged execution packets;
+- Hermes governance and cross-repository operational status;
+- portfolio roadmap and sequencing.
+
+Managed repositories remain separate projects with their own code, data, implementation schemas, runtime behavior, tests, and local workflows. Together they present a cohesive standard of engineering, documentation, operations, and automation. Differences between repositories are justified by their actual purpose rather than by habit.
+
+Current work is implementation mode, where task-specific Buddy authorization controls each change. Later production admission activates stricter production operating rules. This document defines the operating model; per-repository current state is maintained in `docs/PORTFOLIO_BASELINE.md`.
 
 ## Living standards
 
@@ -58,6 +71,13 @@ The following high-level direction is agreed:
 
 Development happens on Mac. GitHub distributes approved code. VPS checkouts are deployment targets only. No direct VPS code editing.
 
+In implementation mode, agents may operate under task-specific Buddy authorization. During this phase:
+
+- Buddy authorizes bounded implementation work (edits, tests, documentation, staging, non-production proof runs).
+- Strong Codex handles architecture, privileged execution, and irreversible operations through explicit packets.
+- Hermes operates as a read-only resident inspector — no production write, systemd, database, or destructive authority.
+- Future production activation will apply stricter separation: all changes flow through branches and pull requests; agents do not merge their own work; Hermes may gain recurring inspection and PR authority through a separate gate.
+
 VPS filesystem layout separates concerns:
 - **Code** in `apps/{project}/` — Git working trees, throwable and re-cloned from GitHub
 - **Persistent data** in `data/{project}/` — raw captures, exports, staging artifacts
@@ -67,19 +87,19 @@ VPS filesystem layout separates concerns:
 
 No mutable production data lives inside Git working trees. Working trees are disposable.
 
-An initial Git workflow is defined in `docs/GIT_WORKFLOW.md` (provisional). Repository protection settings, VPS deployment details, and Hermes permissions remain explicitly unresolved.
+The local-development Git workflow is defined in `docs/GIT_WORKFLOW.md`. Portfolio-wide Git conventions (repository naming, commit style, PR policy, history sanitization, agent Git authority, exact-SHA deployment, tags and releases) remain pending and will be drafted as a follow-on standard. Hermes is installed as a read-only resident agent; see `docs/HERMES_OPERATOR_GUIDE.md`.
 
 ## Hermes and agents
 
 The following high-level direction is agreed:
 
-- Hermes is expected to orchestrate work across managed repositories.
-- Hermes may invoke narrowly defined agents.
+- Hermes is installed as a read-only resident VPS assistant. It inspects, summarizes, and recommends. It does not have production write authority. See `docs/HERMES_OPERATOR_GUIDE.md`.
+- Hermes may invoke narrowly defined agents for bounded tasks.
 - Workflows should be defined independently of any single provider or model.
 
 Portfolio-level principles for designing LLM workflows are defined in `docs/LLM_TENETS.md`. These tenets establish the baseline for auditable interfaces, constrained workflows, model portability, minimal context, and deterministic preprocessing.
 
-A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHESTRATION.md`. The actual VPS path, deployment mechanism, credentials, destructive permissions, and private-context provisioning remain unresolved.
+A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHESTRATION.md`. Hermes is installed; its read-only authority is established. Broader deployment automation, credentials management, destructive permissions, and private-context provisioning remain unresolved.
 
 ## Work ownership
 
@@ -88,7 +108,7 @@ A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHES
 | **Buddy** | Authority and risk decisions | License choice, publication scope, gate approvals, destructive-operation approval, cross-repo policy |
 | **OpenCode** | Bounded low-risk implementation | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation, readiness packets |
 | **Strong Codex** | Architecture, privileged execution, and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, production deployment, reboot proof, history rewrite planning, destructive cleanup design |
-| **Orchestration agents** (future Hermes) | Monitoring, drift detection, PR proposal | Scheduled scans, health checks, SHA drift detection, structured PR creation |
+| **Hermes** (resident agent) | Read-only VPS inspection, monitoring, drift detection, PR proposal | Scheduled scans, health checks, SHA drift detection, structured PR creation |
 
 OpenCode agents receive bounded tasks with explicit scope, allowed files, and validation criteria. They do not invent architecture, mutate production state, or approve their own work. Strong Codex resolves architecture-level contradictions and designs fragile cross-repo boundaries. Orchestration agents observe and propose but never execute production changes directly.
 
@@ -104,15 +124,15 @@ A daily documentation loop is planned but not yet implemented. The intended work
 
 ## Pending standards
 
-The following areas are identified as requiring standards that have not yet been drafted or resolved:
+The following areas have defined standards; remaining implementation details are noted:
 
-- **Git workflow** — initial standard defined in `docs/GIT_WORKFLOW.md` (provisional). Repository protection settings, VPS deployment details, and Hermes permissions remain pending.
-- **Logging standard** — initial three-layer model defined in `docs/LOGGING_STANDARD.md` (provisional). Detailed retention, automation, aggregation, and repository-specific implementation remain pending.
-- **VPS/Hermes orchestration contract** — provisional contract defined in `agents/VPS_ORCHESTRATION.md`. The actual VPS path, deployment mechanism, credentials, destructive permissions, and private-context provisioning remain unresolved.
-- **Repository admission process** — defined in `docs/REPOSITORY_CONTROL_MODEL.md`. The six-gate model (Portfolio Admission through Operational Activation) applies to every managed repository. Repository-specific gate evidence is recorded in `repos/<repo>/RELEASE_GATES.md`.
-- **Data lifecycle and storage** — foundational principles are defined in `docs/DATA_LIFECYCLE_STANDARD.md`. Repository-specific retention windows, pruning configurations, and growth thresholds are set in each repo's `CONTROL.md` or local retention policy.
-- **Portfolio-level LLM strategy** — foundational design tenets are defined in `docs/LLM_TENETS.md`. Operational adoption, benchmarking, provider interfaces, validation patterns, and repository-specific implementation remain pending.
+- **Git workflow** — local-development standard defined in `docs/GIT_WORKFLOW.md`. Portfolio-wide Git conventions (repository naming, commit style, PR policy, history sanitization, agent Git authority, exact-SHA deployment, tags and releases) remain pending.
+- **Logging standard** — three-layer model defined in `docs/LOGGING_STANDARD.md`. Detailed retention automation, aggregation, and repository-specific implementation remain pending.
+- **VPS/Hermes orchestration contract** — defined in `agents/VPS_ORCHESTRATION.md`. Hermes read-only authority is resolved; recurring portfolio-review, branch creation, and PR authority are future stages.
+- **Repository admission process** — defined in `docs/REPOSITORY_CONTROL_MODEL.md`. The six-gate model applies to every managed repository. Repository-specific gate evidence is recorded in `repos/<repo>/RELEASE_GATES.md`.
+- **Data lifecycle and storage** — foundational principles defined in `docs/DATA_LIFECYCLE_STANDARD.md`. Repository-specific retention windows, pruning configurations, and growth thresholds are set in each repo's `CONTROL.md` or local retention policy.
+- **Portfolio-level LLM strategy** — foundational design tenets defined in `docs/LLM_TENETS.md`. Operational adoption, benchmarking, provider interfaces, validation patterns, and repository-specific implementation remain pending.
 - **Repository-specific templates** — conventions for `README.md`, `AGENTS.md`, `.gitignore`, and other files tailored to project types.
-- **Private orchestration workflow** — GPT-orchestrated roadmap work, numbered handoffs, high-reasoning gates, and session-close procedures are defined in `_internal/GPT_ORCHESTRATED_WORKFLOW.md`. That document is the private authority; this public document describes only the agent taxonomy.
+- **Private orchestration workflow** — GPT-orchestrated roadmap work, numbered handoffs, high-reasoning gates, and session-close procedures are defined in `_internal/GPT_ORCHESTRATED_WORKFLOW.md`.
 
-These items are explicitly pending and should not be treated as resolved until a standard is drafted, reviewed, and approved.
+None of these should be treated as final — they evolve with operational experience. Repository protection settings, VPS deployment details, and Hermes recurring-loop behavior remain explicitly future work.
