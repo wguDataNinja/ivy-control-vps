@@ -341,7 +341,7 @@ Deployment must stop immediately if:
 - Dirty checkout — `git status` shows modified tracked files
 - Unknown remote — `origin` does not match expected GitHub URL
 - Unapproved SHA — commit SHA not in deployment registry
-- Insufficient disk — >85% or < 1 GB free
+- Insufficient disk — >85% or < 1 GB free (thresholds defined in `DATA_LIFECYCLE_STANDARD.md` §Thresholds — see `docs/DATA_LIFECYCLE_STANDARD.md`)
 - Runtime data mixed inside Git working tree
 - Secret files tracked in Git
 - Pending migration without Database Authority Gate approval

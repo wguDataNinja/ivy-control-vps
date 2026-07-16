@@ -220,3 +220,144 @@ CONTROL.md must be reviewed or updated when:
 | `_internal/outbox/` and `_internal/tasks/` | Private gate-evidence packets and ad-hoc task artifacts. Not governance; evidence only. See `_internal/GPT_ORCHESTRATED_WORKFLOW.md`. |
 | `docs/PORTFOLIO_CONVENTIONS.md` | Durable cross-repo conventions. Referenced by CONTROL.md applicability matrix. |
 | `docs/DATA_LIFECYCLE_STANDARD.md` | Portfolio data-lifecycle principles. Referenced by CONTROL.md. |
+
+---
+
+## Machine-readable metadata block
+
+Every CONTROL.md begins with a YAML front-matter block. This block is the machine-readable identity and state record consumed by portfolio tooling (registry scripts, Hermes inspectors, dashboard generators).
+
+### Schema definition
+
+```yaml
+---
+control_model_version: "<semver>"
+repository:
+  slug: "<repo-slug>"
+  purpose: "<one-line description>"
+  remote: "<canonical-remote-url>"
+  default_branch: "<branch>"
+  approved_sha: "<full-commit-sha-or-null>"
+  local_path: "<mac-development-path>"
+  vps_path: "<vps-checkout-path-or-null>"
+lifecycle:
+  admission_gate: <1-6-or-null>
+  state: "<lifecycle-classification>"
+github:
+  visibility: "<public|private|null>"
+  publication_gate: <1-6-or-null>
+  clean_history: <true|false|null>
+vps:
+  clone_state: "<cloned|not-cloned|pending>"
+  runtime_location: "<vps-path-or-null>"
+scheduler:
+  active: "<systemd-timer-or-other>"
+  writer: "<writer-description>"
+  legacy: "<description-of-disabled-predecessor>"
+database:
+  present: <true|false>
+  name: "<db-name-or-null>"
+  schemas: []
+  migrations: "<range-or-null>"
+data_locations:
+  archive: "<mac-archive-path-or-null>"
+  backup: "<vps-backup-path-or-null>"
+  source_only: <true|false>
+health:
+  state: "<healthy|degraded|unknown>"
+roadmap:
+  gates: []
+  blockers: []
+  next_task: "<next-authorized-work-reference>"
+hermes:
+  scope: "<read-only|read-only-with-pr|none>"
+codex_stops: []
+buddy_decisions: []
+last_verified: "<yyyy-mm-dd>"
+evidence_basis: "<path-to-gate-evidence>"
+---
+```
+
+### Field semantics
+
+Every field is defined in the field reference table below. The front matter is **required** for every CONTROL.md. Fields marked `optional` may be omitted or set to `null`. Fields marked `private` must not appear in public GitHub copies of CONTROL.md (use a tracked-but-redacted or `.gitignore`-excluded copy if needed). Fields marked `live-verification-dependent` must be refreshed from live inspection, not copied from a prior snapshot.
+
+---
+
+## Hermes permissions field
+
+The `hermes.scope` field in the metadata block records Hermes's authorized inspection and action scope for this repository.
+
+| Value | Meaning |
+|-------|---------|
+| `none` | Hermes may not inspect this repository. |
+| `read-only` | Hermes may run read-only commands, compare SHAs, check health, and produce structured reports. No branch creation, PR preparation, or file modification. |
+| `read-only-with-pr` | Hermes may inspect, create isolated branches, run tests, and prepare pull requests for review. Self-merge is prohibited. |
+
+Scope changes require a Gate 3+ passage and Buddy approval documented in `RELEASE_GATES.md`. Hermes must never exceed the scope recorded here, even if the VPS environment permits broader access.
+
+---
+
+## Strong Codex stop conditions
+
+The `codex_stops` list in the metadata block enumerates conditions under which Strong Codex must stop and escalate to Buddy.
+
+Portfolio-wide defaults (defined in ROADMAP §1B):
+- Conflicting canonical-data claims, unexplained missing intervals, duplicate writers, or source/DB/archive disagreement
+- Any live database mutation, schema/retention architecture change, scheduler/writer transfer, failed restore, or destructive cleanup
+- Browser-profile manipulation, browser recovery/corruption, or source-to-installed userscript verification requiring sensitive profile access
+- Cross-repository ownership conflict, privacy/publication ambiguity, or capacity projection threatening the VPS
+- Disagreement between live evidence and a control/authority document
+
+Repository-specific additions may be recorded in `codex_stops` to capture workload-specific risk.
+
+Strong Codex must also stop on any condition listed in the portfolio-wide defaults, even if not duplicated in the repository's local list. The local list is additive only.
+
+---
+
+## Decisions requiring Buddy
+
+The `buddy_decisions` list in the metadata block records pending or accepted decisions that require Buddy authorization for this repository.
+
+Each entry should reference the specific decision (e.g. "Approve WGU Reddit clean publication/history strategy") and may include a state annotation: `PENDING`, `APPROVED`, `REJECTED`, or `DEFERRED`.
+
+The canonical list of portfolio-wide Buddy decisions is maintained in ROADMAP §10. Repository-specific decisions supplement, not replace, the portfolio list.
+
+---
+
+## Registry-facing fields
+
+Portfolio registry scripts consume the following fields from the metadata block for aggregation and dashboard generation:
+
+| Field | Purpose |
+|-------|---------|
+| `repository.slug` | Unique machine-readable repo identifier |
+| `repository.remote` | Canonical GitHub remote |
+| `lifecycle.state` | Current operational classification |
+| `lifecycle.admission_gate` | Highest passed gate number |
+| `github.visibility` | Public/private status |
+| `github.publication_gate` | Publication gate status |
+| `vps.clone_state` | Whether VPS checkout exists |
+| `health.state` | Aggregated health status |
+| `database.present` | Whether the repo uses PostgreSQL |
+| `scheduler.active` | Description of active scheduler |
+| `hermes.scope` | Hermes authorization level |
+
+These fields are consumed by `tools/portfolio_registry.py` (or equivalent). They must be updated whenever a gate passes, the SHA changes, or the health state changes. A registry update does not replace reading CONTROL.md for detailed governance.
+
+---
+
+## Data/archive/backup location inventory
+
+The `data_locations` block in the metadata block records where this repository's data lives across the three tiers:
+
+| Tier | Path field | Description |
+|------|------------|-------------|
+| Production runtime | `vps.runtime_location` | VPS working tree or data directory |
+| VPS backup | `data_locations.backup` | PostgreSQL dump root or file-export backup root |
+| Mac archive | `data_locations.archive` | Long-term Mac archive path |
+| Source-only | `data_locations.source_only` | `true` when the repo has no VPS runtime or persistent data |
+
+A repository should document known paths even when they are not yet populated. Missing paths indicate gaps, not exemptions.
+
+Detailed backup/restore evidence and manifest locations are documented in `RELEASE_GATES.md`, not in CONTROL.md. The metadata block records the *inventory*, not the *evidence*.
