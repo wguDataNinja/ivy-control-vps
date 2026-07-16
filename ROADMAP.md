@@ -1,1070 +1,375 @@
 # Ivy Control VPS Roadmap
 
-**Status:** Active ingestion-first portfolio roadmap. Current operational status reconciled through `docs/DATABASE.md`, `docs/PORTFOLIO_BASELINE.md`, and repository control sheets. Refined 2026-07-15.
-**Scope:** Portfolio-wide ingestion admission, reusable VPS/PostgreSQL platform products, health visibility, repository readiness packets, and controlled cutover waves.
+**Status:** Active ingestion-first operating plan. Reconciled from current control sheets, database/health standards, the private Session 8 evidence review, and the generated local dashboard on 2026-07-15.
 
-This roadmap separates two goals:
+**Purpose:** This is the broad current home for agents: it states what is true, what is next, who can act, what is blocked, and which gate/evidence closes a task. Repository control sheets and release gates remain the authority for repository-specific decisions; `docs/DATABASE.md`, `docs/HEALTH_CONTRACT.md`, and `docs/PORTFOLIO_CONVENTIONS.md` remain the technical standards.
 
-1. **Ingestion operational readiness** - the evidence required to move authoritative collection to the VPS safely.
-2. **Full public repository maturity** - broader documentation, CI, UI, LLM maturity, public polish, automation, and long-term hardening.
+## §0 Operator Summary
 
-The immediate goal is to get appropriate ingestion workloads under one VPS authority and visible health monitoring without forcing unrelated maturity work to block safe ingestion cutovers.
+### Current dashboard
 
-## §1 Strategy and Authority
+```sh
+./tools/open_ingestion_dashboard.sh
+```
 
-### §1A Operating Strategy
+The dashboard is the current simple operator surface. It refreshes safe read-only evidence and writes a private local HTML/JSON view. Evidence precedence is: live measurement, validated producer payload, read-only database/service inspection, control document, roadmap, placeholder, then unknown. A control- or roadmap-only claim can never be green; missing evidence is **UNKNOWN**, not healthy. Idle Hacking chat and market are separate lanes.
 
-**Outcome**
+### Current workload truth
 
-The portfolio moves from repeated one-off discovery to reusable admission packets and bounded privileged execution.
+| Workload | Current classification | Immediate issue | Evidence |
+|---|---|---|---|
+| WGU Reddit / Reddit Ops | `CANDIDATE_CANONICAL` | Scheduled backup is broken; recent completeness and archive continuity are unproven | Live dashboard + `repos/reddit-ops/CONTROL.md` |
+| Idle Hacking chat | `CAPTURING_BUT_NOT_DURABLE` | Acknowledgement, replay, archive continuity, and truthful current-failure health are open | Live dashboard + Session 8 evidence |
+| Idle Hacking market | `CAPTURING_BUT_NOT_DURABLE` | Same durability gap; PostgreSQL reconciliation is also pending | Live dashboard + Session 8 evidence |
+| Traderie | `DEGRADED_BUT_BOUNDED` | Focused `pc_hc_nl` natural-run recovery only | `repos/traderie/CONTROL.md` |
+| VPS capacity | `CURRENTLY_ACCEPTABLE` | Continue disk, inode, memory, backup-staging, and restore-headroom monitoring | Live dashboard |
 
-**Principles**
+### Immediate P0 priorities
 
-- Treat Traderie and Reddit Ops as evidence for reusable platform products.
-- Prepare eligible repositories in parallel where file ownership and authority do not conflict.
-- Cut over in small waves after a narrow Platform Confidence Gate passes.
-- Reserve Strong Codex for privileged VPS/PostgreSQL execution, production cutovers, rollback/recovery, cross-repository architecture, and stateful gate reviews.
-- Use medium OpenCode agents for source readiness, documentation, tests, local validation, health adapters, backup scripts, runbooks, control sheets, and handoff packets.
-- Keep one authoritative scheduler and one authoritative writer per production workflow.
-- Make Phase 0 health visibility a prerequisite for new waves; do not make polished dashboard UI a prerequisite.
+1. Repair and re-prove WGU Reddit backup/restore; do not retire fallback paths.
+2. Prove WGU recent completeness, archive-to-VPS continuity, and single-writer canonicality.
+3. Make Idle Hacking chat and market health truthful, separate, acknowledged, and replayable.
+4. Add the missing dashboard adapters before claiming portfolio ingestion is trustworthy.
+5. Keep Traderie in its focused recovery lane; do not reopen its architecture.
 
-**Authority set**
+### Execution-state vocabulary
 
-- `docs/OPERATING_MODEL.md` - operating model and execution classes.
-- `docs/REPOSITORY_CONTROL_MODEL.md` - repository gates and control-sheet authority.
-- `docs/PORTFOLIO_CONVENTIONS.md` - deployment, PostgreSQL, systemd, backup, rollback, and admission conventions.
-- `docs/HEALTH_CONTRACT.md` - canonical health payloads and health storage/API boundaries.
-- `docs/DATA_LIFECYCLE_STANDARD.md` - retention, backup, restore, archive, and deletion rules.
-- `docs/DATABASE.md` - consolidated database architecture and operations reference.
-- `docs/PORTFOLIO_BASELINE.md` - roster and baseline classification; current operational status is reconciled here and in `repos/<repo>/CONTROL.md`.
+- **READY — PARALLEL:** bounded preparation may run independently.
+- **READY — SEQUENTIAL:** may begin only after stated dependency completes.
+- **BLOCKED BY GATE:** needs evidence or an approval gate.
+- **REQUIRES STRONG CODEX:** live, privileged, irreversible, or broad-context execution.
+- **REQUIRES BUDDY:** risk, privacy, publication, destructive, or acceptance decision.
+- **DEFERRED:** intentionally parked; do not infer authority to resume.
 
-### §1B Execution Classes
+## §1 Authority and Execution Rules
 
-| Class | Owner | Examples |
-|---|---|---|
-| Medium OpenCode | Low-risk implementation and evidence | Admission audits, source fixes, docs, tests, unit templates, health adapters, backup scripts, runbooks, gate packets |
-| Strong Codex | Privileged or broad-context execution | VPS provisioning, PostgreSQL roles, production deployment, migration, scheduler cutover, rollback, reboot proof, cross-repo architecture |
-| git-steward | Authorized Git writes | Exact-file staging, commits, pushes, branch publication, clean-tree verification |
-| Buddy | Risk and authority decisions | Publication strategy approval, destructive approval, license choices, privileged/reboot timing, sensitive review |
+### §1A Operating boundaries
 
-## §2 Current Portfolio State
+- `docs/OPERATING_MODEL.md` defines roles and implementation-mode authority.
+- `docs/REPOSITORY_CONTROL_MODEL.md` defines Gates 1–6 and the Canonical Ingestion-Admission subgate.
+- `docs/HEALTH_CONTRACT.md` defines canonical health semantics; dashboard scaffolding does not supersede it.
+- Managed repositories own source, schemas, tests, and repository-local behavior. ivy-control-vps owns portfolio status, gates, shared standards, and admission evidence.
+- No mutable production data, dumps, browser profiles, raw archives, secrets, or large generated data belongs in Git.
 
-### §2A Repository and Workload Roster
+### §1B High-reasoning stops
 
-| Repository or workload | Owns ingestion? | Current state | Intended VPS ingestion scope | Next gate |
+Stop and escalate to **Strong Codex** for technical ambiguity; escalate to **Buddy** for risk, privacy, publication, destructive action, and operational acceptance. Stop on:
+
+- conflicting canonical-data claims, unexplained missing intervals, duplicate writers, or source/DB/archive disagreement;
+- any live database mutation, schema/retention architecture change, scheduler/writer transfer, failed restore, or destructive cleanup;
+- browser-profile manipulation, browser recovery/corruption, or source-to-installed userscript verification requiring sensitive profile access;
+- cross-repository ownership conflict, privacy/publication ambiguity, or capacity projection threatening the VPS;
+- disagreement between live evidence and a control/authority document.
+
+### §1C Role boundary
+
+| Owner | Current authority |
+|---|---|
+| OpenCode | Source audits, fixtures/tests, adapters, docs, size audits, readiness packets, and non-production preparation. |
+| Strong Codex | Approved live PostgreSQL/restore/deployment work, scheduler or writer transfer, technical canonicality conflicts, browser recovery, and high-risk architecture. |
+| git-steward | Authorized exact-file Git staging, commits, publication, and SHA recording only. |
+| Hermes | Read-only inspection, comparison, reporting, and later gated PR preparation. |
+| Buddy | Publication, source ownership, privacy, destructive action, operational acceptance, and activation decisions. |
+
+## §2 Active P0 — Ingestion Trust
+
+### §2A WGU Reddit canonicality and recovery — `§7B-G1`
+
+**State:** `CANDIDATE_CANONICAL` / **BLOCKED BY GATE** for legacy retirement.
+
+The active authority is `wgu-reddit-postgres-run.timer` and its PostgreSQL writer. The SQLite shadow timer is disabled and Mac launchd is documented disabled. The latest observed scheduled collection succeeded, but the installed backup unit references the wrong script and currently fails. `reddit_ops` is therefore candidate canonical for recent operations, not verified canonical for the complete dataset.
+
+| Task | State | Owner | Depends on | Completion unlocks |
 |---|---|---|---|---|
-| Traderie | Yes | `PRODUCTION_DEGRADED`: VPS sole scheduler/writer; natural run timed out in `pc_hc_nl` | Restore healthy scheduled generation, health/export clarity, backup freshness, reboot proof | `§7A-G1` Traderie Recovery Gate |
-| Reddit Ops | Yes | `production-stabilizing`: VPS systemd user timer is sole collector; publication/drift/reboot remain open | Publish clean source, repair backup unit source/deploy, prove backup freshness and recovery | `§7B-G1` Publication Strategy Gate |
-| SJC Intel | Yes | Mac development; inert systemd units and migrations exist | Early deterministic Wave 1 candidate | `§4C-G1` Readiness Packet Gate |
-| IH Market Companion | Yes | Ownership confirmed: public browser/runtime collector, market-book history, market snapshots, UI market history; Mac archive verified, bounded retention deployed, PostgreSQL schema design ready | PostgreSQL-backed public market history with collection/synchronization health, idempotent backfill, downstream research support; import pending | `§4D-G1` IH Market PostgreSQL and Continuity Gate |
-| WGU Catalog | Yes, low-frequency batch | Mac CLI/file-export workflow; no daemon required by current evidence | Event-driven or monthly-check catalog ingestion/export | `§4E-G1` Batch Source Authority Gate |
-| WGU-derived Reddit workloads | Unclear | Reddit Ops is the collector authority; WGU-Reddit/catalog/analysis/LLM ownership split is unresolved | Deferred behind boundary reconciliation | `§4F-G1` WGU Boundary Reconciliation Gate |
-| BSDA Courses | No, consumer | Mac development; consumes Reddit/WGU data | Consumer-only LLM pipeline after upstream contracts | `§4G-G1` Consumer Boundary Gate |
-| WGU Atlas | No, downstream/static | GitHub Pages/static site; catalog dependency active | Catalog consumer and later LLM QA reference | `§4H-G1` Catalog Contract Gate |
-| Idle Hacking KB | Yes, sensitive | Live PostgreSQL metadata onboarding (migration 011), idempotent reconciliation, backup/restore proof, verified archive, legacy cleanup reclaimed ~8.1 GB; root usage from ~95% to ~75%; publication blocked by privacy/history review | Private chat PostgreSQL metadata ingestion, lifecycle, health, backup; no production LLM activation in this phase | `§4I-G1` Idle Hacking KB Publication and Continuity Gate |
-| Palworld KB | Not yet (source-only) | Published repository; clean and validated; no VPS admission yet | Source-only admission under `~/workspace/palworld-kb`; no service/timer/database requirements | `§4K-G1` Palworld KB Source Admission Gate |
-| Reckless Ben | Restricted | `NO_LAUNCH` | No production ingestion unless reclassified | `§4J-G1` Restricted Repository Gate |
-| ivy-control-vps | Platform | Portfolio operational control plane | Standards, health view, templates, readiness review, Hermes governance, repository admission | `§3` platform gates |
+| Source-safe corrected backup unit, tests, publication packet | READY — PARALLEL | OpenCode | Secret/history review | Strong Codex repair packet |
+| Monitor-role canonicality report: source/DB frontier, recent completeness, duplicates/gaps, lock/writer state | READY — PARALLEL | OpenCode | Sanitized monitor query design | Verified-canonical review |
+| Archive inventory and VPS/archive continuity report | READY — PARALLEL | OpenCode | Approved archive metadata access | Historical continuity review |
+| Corrected unit install, fresh dump/checksum/manifest, isolated restore | REQUIRES STRONG CODEX | Strong Codex | Buddy-approved packet; reviewed source | Backup/restore acceptance |
+| Legacy fallback retirement decision | REQUIRES BUDDY | Buddy | All acceptance criteria below | Controlled inactive-fallback observation |
 
-### §2B Reconciled Current Facts
+**Can run in parallel with:** Idle Hacking health adapters, database-product preparation, SJC readiness, Palworld source admission.
 
-**Traderie**
+**Hard dependencies:** No legacy fetcher retirement before a current backup/restore, recent source completeness, archive-to-VPS continuity, one-writer proof, dashboard freshness, and documented fallback pass.
 
-- Deployed production SHA: `e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40`.
-- VPS systemd is sole scheduler and writer. Mac launchd is inactive.
-- Segmented runtime is deployed with per-segment bounds: `pc_sc_nl=180s`, `pc_sc_l=240s`, `pc_hc_l=360s`, `pc_hc_nl=480s`.
-- Manual bounded generation and Persistent catch-up generation passed.
-- The first genuine natural scheduled generation on 2026-07-11 18:01:46 UTC partially failed because `pc_hc_nl` hit the 480s bound.
-- DB-backed health records exist; file-export behavior is unresolved.
-- Backup freshness now has a portfolio default in `docs/HEALTH_CONTRACT.md`; Traderie still needs evidence that the threshold is applied correctly.
-- Controlled reboot proof is deferred until natural scheduled generation succeeds.
+**High-reasoning stop:** Any unexplained source/DB/archive gap, duplicate anomaly, lock conflict, failed restore, or uncertainty about credential-bearing history.
 
-**Reddit Ops**
+**Completion unlocks:** `VERIFIED_CANONICAL` review and later, separately approved legacy retirement.
 
-- VPS systemd user timer `wgu-reddit-postgres-run.timer` is the sole ingestion scheduler.
-- Database `reddit_ops` runs on VPS PostgreSQL 16 with migrations `0001` through `0006`.
-- Approved-partial exit semantics and three systemd-triggered runs are proven.
-- Backup source is reviewed, but the installed backup service has referenced the wrong script name in prior evidence; publication and deployment of reviewed source are still required.
-- Backup/restore evidence exists with remaining exact-SHA, drift, alerting, and reboot gaps.
-- Git publication is blocked because local unpublished history contains credential-bearing commit `e4acae0`; normal push is forbidden.
+**Acceptance criteria for `VERIFIED_CANONICAL`:**
 
-**IH Market / Idle Hacker data estate**
+- active VPS scheduler, exact writer, advisory lock, and inactive legacy schedulers are evidenced;
+- source frontier equals or is explained by database frontier over an agreed recent window;
+- recent posts are complete; duplicate and gap checks pass;
+- earliest/latest archive and VPS ranges overlap or have an explained handoff with no missing interval;
+- current backup, checksum, manifest, `pg_restore --list`, and isolated restore pass;
+- dashboard reports source freshness, DB freshness, backup age, restore-proof age, writer state, and canonicality classification;
+- Buddy accepts the evidence and natural-run observation window.
 
-- PostgreSQL 16 is loopback-only on `127.0.0.1:5432`; `traderie`, `reddit_ops`, and `idlehacking_kb` are the live workload databases.
-- PostgreSQL storage is small relative to the legacy filesystem estate that preceded the cleanup campaigns.
-- IH Market Companion owns public browser/runtime collection, market-book snapshots, and UI-facing market history. The private personal-trade boundary is separate.
-- Idle Hacking KB owns private Discord/chat ingestion and KB/LLM processing; it is a separate implementation and cutover boundary.
-- A prior synchronization failure combined with the seven-day VPS remote retention caused an approximately 18-day permanent market-history gap. Future market architecture must independently monitor collection and synchronization freshness, detect missing intervals, and support idempotent backfill.
-- Storage recovery is no longer theoretical. Idle Hacking KB legacy cleanup (migration 011) reclaimed 8,134,330,994 bytes (47 files) and reduced root usage from approximately 95% to approximately 75% (free space: ~1.9 GB to ~9.9 GB). Bounded retention is proven through 44 post-cleanup natural exports with zero failures.
-- Palworld KB is published and structurally ready but not yet admitted to the VPS. No service, timer, database, or runtime dependency is expected.
+### §2B Idle Hacking Collector — explicit browser dependency
 
-### §2C WGU-Derived Boundary Status
+**Component:** **Idle Hacking Collector** · namespace `ih-market-companion` · observed version `2026-05-03.3`.
 
-**Known from current evidence**
+It collects read-only Idle Hacking chat and public stackables market data through Chrome/Tampermonkey, then posts to `ih-collector-helper.service` on loopback. Browser/profile lifecycle remains Buddy-managed and sensitive. Browser or helper process health does **not** prove that chat or market data is being captured, offloaded, and archived.
 
-- `repos/reddit-ops/CONTROL.md` governs Reddit Ops as the WGU subreddit PostgreSQL collector.
-- `_internal/outbox/session4/agent-3-portfolio-ingestion-admission-matrix.md` identifies `/Users/buddy/Desktop/WGU-Reddit` as the Reddit Ops producer code and `/Users/buddy/projects/WGU-Reddit` as an empty placeholder.
-- Reddit Ops currently owns production ingestion into `reddit_ops`.
-- BSDA Courses is a downstream consumer in current planning.
-- WGU Catalog is a separate WGU course catalog source authority, not proven to be the same boundary as Reddit Ops.
+Current source/deployment truth:
 
-**Unresolved ownership questions**
+- an exact userscript copy is tracked in `idlehacking_kb`; an identical IH Market Companion copy is ignored;
+- the installed Tampermonkey copy is not hash-verified because extension/profile storage is sensitive;
+- the active helper matches the current tracked KB helper source, while the IH Market helper source differs;
+- source authority, reproducible installation receipt, drift detection, and rollback receipt remain open.
 
-- Which repository owns future Reddit catalog, catalog-like exports, or shared Reddit data contracts.
-- Which WGU-Reddit code paths are ingestion, catalog, analysis, LLM, benchmark, or historical tools.
-- Which future roadmap sections belong under Reddit Ops versus WGU-Reddit Operations versus consumer repositories.
-- Which publication strategy safely represents production collector code without credential-bearing history.
+**Can run in parallel with:** WGU preparation and shared dashboard work.
 
-**Planning rule**
+**Hard dependencies:** No browser restart automation, source consolidation, profile recovery, or retention cleanup before source ownership, safe installation evidence, and recovery authority are resolved.
 
-Do not plan production LLM, downstream WGU-Reddit, Reddit catalog, or derived Reddit workload admission until `§4F-G1` passes. This ambiguity does not block unrelated deterministic ingestion work such as SJC Intel or WGU Catalog batch readiness.
+**High-reasoning stop:** Browser/profile manipulation, a source/install hash mismatch, selector/auth/navigation failure, retention-loss risk, or cross-repo source ownership conflict.
 
-### §2D Ingestion Readiness Versus Full Maturity
+**Completion unlocks:** bounded browser-hardening drills and trustworthy producer registration.
 
-| Dimension | Required for ingestion cutover | Can wait for full maturity |
+### §2C Idle Hacking chat durability — `§4I-G1`
+
+**State:** `CAPTURING_BUT_NOT_DURABLE` / **READY — PARALLEL** for source/tests; live changes require Strong Codex packet.
+
+| Required evidence | Current state |
+|---|---|
+| collector heartbeat and latest chat source activity | Live helper evidence exists |
+| current durable local write | Live helper retention evidence reports success |
+| current vs lifetime failure semantics | Open; cumulative historical failures must not permanently make current success red |
+| acknowledgement destination/receipt | Open; current acknowledgement is pending |
+| oldest backlog age/count and retention deadline | Partially available; adapter required |
+| archive freshness and replay proof | Open |
+| PostgreSQL metadata freshness | Partially applicable; metadata does not prove raw-body capture |
+
+**Tasks:** create a separate sanitized `idlehacking_kb/chat_capture` producer; add fixtures for current-success-after-historical-failure, current failure, stale heartbeat, acknowledgement cap, and sanitization; define archive acknowledgement and replay contract; surface all fields in dashboard.
+
+### §2D Idle Hacking market durability — `§4D-G1`
+
+**State:** `CAPTURING_BUT_NOT_DURABLE` / **READY — PARALLEL** for source/tests; PostgreSQL/live admission is sequential.
+
+| Required evidence | Current state |
+|---|---|
+| current market capture and local durable write | Live helper evidence exists |
+| acknowledgement destination/receipt and backlog age | Open; acknowledgement pending |
+| missing-interval detection and idempotent backfill | Required after prior loss window; not yet proven |
+| PostgreSQL import/reconciliation/restore | Planned, not production authority |
+| Mac archive freshness/replay | Archive role exists; current continuity proof open |
+
+**Tasks:** create separate sanitized `ih_market_companion/market_capture` producer; acknowledgement/backlog/retention adapter; source-to-archive interval report; idempotent PostgreSQL import/reconciliation packet; restore proof before any authority transfer.
+
+### §2E Traderie bounded recovery — `§7A-G1`
+
+**State:** `DEGRADED_BUT_BOUNDED` / **READY — SEQUENTIAL**.
+
+Retain only the focused path: investigate `pc_hc_nl` natural-run timeout with runtime/progress evidence; reconcile DB/file health output; apply tested source correction if warranted; prove bounded then genuine natural run; perform reboot proof only after natural success. The VPS remains the documented sole scheduler/writer. Do not redesign schemas, migrations, or ownership absent a current integrity finding.
+
+### §2F P0 dashboard and alert adapters — `§3E-G1`
+
+**State:** simple operator page implemented; live trust adapters **READY — PARALLEL**.
+
+The current command is `./tools/open_ingestion_dashboard.sh`. It is deliberately a transitional local dashboard, not a public dashboard or a health-architecture replacement.
+
+| Missing adapter | Owner | State |
 |---|---|---|
-| Source authority | Reviewed source and exact deployment SHA, or explicit temporary exception | Branch protection, release automation |
-| Scheduler/trigger | Exactly one production scheduler or trigger | Scheduler UI and long-term automation |
-| Writer | Exactly one production writer | Legacy cleanup after stabilization |
-| Health | Phase 0 visibility plus contract-compatible producer or adapter | Polished dashboard and alert delivery |
-| Backup/recovery | Backup, checksum, manifest, restore or equivalent recovery proof | Monthly restore automation |
-| Documentation | Operator procedure, rollback, control/gate evidence | Public tutorials and presentation polish |
-| Tests | Focused validation for changed operational paths | Broad CI expansion |
+| Reddit source frontier, DB frontier, recent completeness, duplicate/gap, archive continuity, backup age, restore-proof age, sole writer | OpenCode prepares / Strong Codex validates live query | READY — PARALLEL |
+| Traderie live exporter | Traderie source owner | READY — PARALLEL |
+| IH installed-userscript verification | Buddy + Strong Codex | REQUIRES BUDDY / REQUIRES STRONG CODEX |
+| IH acknowledgement, oldest backlog age, retention deadline, archive freshness, replay state | IH Market + KB source owners | READY — PARALLEL |
+| Host recurring capacity and backup-staging/restore headroom | OpenCode prepares / Hermes later observes | READY — PARALLEL |
 
-## §3 Shared Platform Workstreams
+Use GREEN only for current live/producer evidence across required path; YELLOW for delayed/incomplete/pending evidence; RED for current failure/stale critical state; UNKNOWN for absent or unverified evidence. Fastest alert thresholds apply to chat heartbeat/durable write. A polished dashboard, API, and alert delivery remain later products.
 
-### §3A Canonical Ingestion-Admission Gate
+## §3 Shared Platform Products
 
-**Outcome**
+### §3A Canonical Ingestion-Admission Gate — `§3A-G1`
 
-Every ingestion workload satisfies one reusable gate before production authority can move, unless a documented workload-specific exception is recorded in its control sheet.
+Every ingestion workload must evidence collector, scheduler, writer, canonical data authority, reviewed SHA, deterministic entrypoint, lock/idempotency, bounded failure behavior, health/freshness/counts, backup/checksum/manifest/restore, rollback, Mac/archive role, inactive legacy scheduler, successful manual and natural run, and exactly one production writer. This remains Gate 4 evidence; it does not itself authorize activation.
 
-**Gate ID**
+### §3B PostgreSQL onboarding productization — `§3B-G1`
 
-`§3A-G1` Canonical Ingestion-Admission Gate.
+**State:** shared preparation **READY — PARALLEL**; live admission **REQUIRES STRONG CODEX**, one repository at a time.
 
-**Required evidence**
+Products to create or promote from Traderie, Reddit Ops, IH KB, and IH Market evidence:
 
-- Collector authority.
-- Scheduler or trigger authority.
-- Writer authority.
-- Canonical data authority.
-- Reviewed source and exact deployment SHA.
-- Secrets and runtime configuration.
-- Deterministic entry point.
-- Locking or concurrent-run protection.
-- Idempotency or duplicate prevention.
-- Bounded runtime and timeout behavior.
-- Retry and terminal failure behavior.
-- Schema and migration state where applicable.
-- Health output.
-- Freshness.
-- Counts, backlog, or output manifest where applicable.
-- Backup.
-- Checksum and manifest.
-- Isolated restore or equivalent recovery proof.
-- Rollback.
-- Mac fallback, archive, or recovery role.
-- Legacy scheduler shutdown.
-- Successful manual run.
-- Successful natural scheduled or event-triggered run.
-- Exactly one active production writer.
+1. onboarding guide and per-repository checklist;
+2. source-authority and recent-versus-archive decision inventory;
+3. schema/migration/rollback/validation template and role/grant matrix;
+4. idempotent importer and reconciliation-report standard;
+5. health producer/adapter template and fixture set;
+6. backup, SHA-256, manifest, and `pg_restore --list` process;
+7. isolated restore, rollback, bounded-pilot, and natural-run acceptance packets;
+8. cleanup-eligibility criteria that never imply cleanup authority.
 
-Repository-specific gates may add requirements, but they must not silently omit this common gate.
+The portfolio may prepare one onboarding wave, but production cutovers remain independent. Not every repository needs PostgreSQL: file/export-only and source-only repositories document `not applicable` rather than inventing a database.
 
-### §3B PostgreSQL Reusable Products
+### §3C Deployment, exact SHA, and drift — `§3C-G1`
 
-**Outcome**
+**State:** **READY — PARALLEL** for templates/source readiness; deployment **REQUIRES STRONG CODEX**.
 
-PostgreSQL onboarding becomes a set of reusable products prepared mostly by medium agents, with Strong Codex performing bounded privileged execution.
+Promote exact-SHA deployment, checkout cleanliness, service/unit source hash, deployed revision health field, drift check, rollback SHA, and helper installation/update verification. WGU Reddit is blocked by its credential-bearing publication history; no normal push or Git checkout claim is permitted until a clean strategy is approved.
 
-**Current bounded-privilege evidence**
+### §3D Scheduler and natural-run products — `§3D-G1`
 
-Session evidence shows the workflow changed from repeated interactive password entry to a migration-phase scoped model:
+**State:** **READY — PARALLEL** for templates; activation **BLOCKED BY GATE**.
 
-- Earlier state: `_internal/vps-inventory-and-runbook.md` and early Session 3 evidence recorded no broad passwordless sudo and interactive sudo requirements.
-- Session 3 evidence: `_internal/outbox/session3/agent-6-portfolio-vps-operations-discovery.md` found PostgreSQL admin already worked through `sudo -n -u postgres` for `psql`, `createdb`, and `dropdb`.
-- Session 3 Codex evidence: `_internal/outbox/session3/codex-7-operations-access-and-traderie-cutover.md` recorded durable migration-phase policy at `/usr/local/sbin/ivy-systemd-deploy`, `/etc/sudoers.d/ivy-migration`, and `/var/log/ivy-systemd-deploy.log`.
-- Session 4 evidence: `_internal/outbox/session4/agent-1-traderie-cutover-unblock-audit.md` recorded the current boundary as allowlisted `ivy-systemd-deploy` actions for Traderie, `/usr/sbin/reboot`, PostgreSQL `psql/createdb/dropdb` as `postgres`, and password-required broad sudo.
-- The helper is root-owned, not version-controlled, and cannot update itself through the current NOPASSWD boundary. A repository-hosted helper template plus scoped update command is still planned, not complete.
+Promote systemd unit validation, one-scheduler/one-writer evidence, locking, timeout/progress evidence, natural-run acceptance, rollback, and reboot-recovery packet. Timer enablement remains Gate 6 plus Buddy approval.
 
-**Current authority assessment**
+### §3E Health, backup, capacity, and browser hardening — `§3E-G1`
 
-This is current session evidence and current deployment practice, not yet a fully promoted public platform standard. It is safe to reuse only through explicit Strong Codex packets that cite the helper and sudo boundary. Promotion and hardening are required before treating it as a general-purpose platform product.
+**State:** **READY — PARALLEL**.
 
-**Reusable product plan**
+Health producers must provide sanitized v2 evidence and distinguish producer silence, exporter failure, collector failure, stale observations, and aggregate failure. Backup state is not archive acknowledgement. Capacity monitoring includes disk, inodes, memory, PostgreSQL/WAL growth, logs, backup staging, and restore headroom. Browser hardening is a named product: source/install integrity, profile ownership, safe manual recovery, heartbeat, current durable write, acknowledgement, replay, and bounded recovery drills.
 
-| Product | Status | Current location or evidence | Prepare | Execute | Completion evidence |
-|---|---|---|---|---|---|
-| Project database provisioning packet | Existing as task evidence; needs promotion | Traderie/Reddit Ops Codex packets; `docs/DATABASE.md` | Medium OpenCode | Strong Codex | DB exists, roles exist, grants verified |
-| Role and privilege matrix | Existing but dispersed | `docs/PORTFOLIO_CONVENTIONS.md`, `docs/DATABASE.md`, repo migrations | Medium OpenCode | Strong Codex validates | Positive and negative role tests |
-| Standard role naming with conditional applicability | Existing | `docs/PORTFOLIO_CONVENTIONS.md` | Medium OpenCode | Strong Codex validates | Control sheet records applicable roles |
-| Database onboarding manifest | Planned and required | New template under future `docs/templates/` or `repos/<repo>/` packet | Medium OpenCode | Strong Codex consumes | Manifest lists DB, schemas, roles, env vars, migrations, validation |
-| Environment/configuration template | Existing per repo, inconsistent | `.env.example`, deploy env examples | Medium OpenCode | Strong Codex installs live config | Safe example exists; live env outside Git |
-| Migration execution and validation packet | Existing per repo, needs standardization | Traderie migrations/validation; Reddit Ops migrations | Medium OpenCode | Strong Codex | Migration ledger and validation SQL pass |
-| Negative privilege-test procedure | Existing as evidence, needs template | Traderie role tests; Reddit Ops gates | Medium OpenCode | Strong Codex | Writer cannot read/alter outside scope; reader cannot write |
-| Isolated restore helper or packet | Existing as packets, needs helper | Traderie/Reddit Ops restore evidence | Medium OpenCode | Strong Codex | Restore DB validated and cleaned up |
-| Backup/checksum/manifest wrapper | Existing per repo, needs common wrapper | Traderie and Reddit Ops scripts | Medium OpenCode | Strong Codex or scheduler | Dump, SHA-256, manifest, `pg_restore --list` |
-| Health registration procedure | Planned and required | `docs/HEALTH_CONTRACT.md`, `docs/health/producer-registry.md` | Medium OpenCode | Strong Codex for production registration | Producer listed, Phase 0 view shows it |
-| Temporary restore cleanup procedure | Existing in packets, needs template | Traderie/Reddit Ops restore packets | Medium OpenCode | Strong Codex | No restore DB remains after proof |
-| Bounded privileged execution workflow | Existing but needs promotion/hardening | `ivy-systemd-deploy`, `/etc/sudoers.d/ivy-migration`, session logs | Strong Codex designs, Medium documents | Strong Codex | Helper actions logged; no broad sudo used |
-| PostgreSQL admission evidence template | Planned and required | This roadmap `§3B`, `§3A` | Medium OpenCode | Review by Strong Codex | Packet sufficient for execution without rediscovery |
+## §4 Repository Advancement — Publish, Clone, and Data Placement
 
-**Deliberate non-capabilities**
+### §4A Independent advancement wave
 
-- The current helper is not a general shell.
-- It does not permit arbitrary root file edits.
-- It does not manage secrets.
-- It does not update itself.
-- It does not authorize destructive data deletion.
-- It does not replace Buddy approval for reboot timing, publication strategy, or destructive cleanup.
+Repositories may advance independently:
 
-**Gate**
+1. local cleanup/completion;
+2. tests and durable documentation;
+3. GitHub readiness and approved push;
+4. VPS footprint review;
+5. source-only VPS clone for approved SHA;
+6. Hermes-readable setup and read-only inspection;
+7. optional database onboarding;
+8. optional production activation under Gates 4–6.
 
-`§3B-G1` PostgreSQL Productization Gate.
+Publishing or cloning does not authorize service activation, data transfer, database creation, or production authority.
 
-### §3C Deployment and Exact-SHA Tooling
+### §4B Footprint and placement review
 
-**Outcome**
+Before a VPS clone or admission, inspect checkout size, largest tracked files, untracked/ignored data, Git object history, `.db` files, dumps, archives, generated data, browser profiles, model artifacts, dependency footprint, mutable runtime growth, log retention, backup staging, PostgreSQL growth, and archive destination.
 
-Every deployable repository can be installed and verified by exact SHA.
+Default placement:
 
-**Products**
+- Git: code, schemas, migrations, tests, documentation, small sanitized fixtures.
+- VPS: approved code clone, recent operational PostgreSQL data, bounded runtime state, logs outside checkout.
+- Mac/backup storage: large historical/private corpus, raw archives, long retention, protected browser-profile backups.
+- Never Git: live DBs/dumps, profiles, raw archives, large generated data, secrets, or mutable runtime state.
 
-- Exact-SHA deployment template - existing but needs promotion from Traderie packets.
-- Deployment registry entry - planned and required.
-- Drift checker - planned and required.
-- Helper update mechanism - planned and required because current `ivy-systemd-deploy` hardcodes a SHA.
+### §4C Priority code/runtime/data matrix
 
-**Gate**
+| Repository/workload | Code and normal development | GitHub / VPS clone | Runtime and recent data | Historical/private/archive | Hermes-safe work | Mac-only / blocker |
+|---|---|---|---|---|---|---|
+| WGU Reddit / Reddit Ops | Producer repo; Mac development | Publication blocked by history; VPS runtime is not clean Git clone | VPS PostgreSQL `reddit_ops` and current collector | SQLite fallback, exports, Mac archive role | Read-only status/drift once clone exists | Publication decision, canonicality, backup repair |
+| Traderie | Mac repo | Published/deployed exact SHA | VPS PostgreSQL and systemd | Mac archive/backup | Read-only checks | Focused timeout recovery |
+| IH Market Companion | Mac repo | Published; source-only clone possible after footprint review | Browser helper, bounded market snapshots; PG planned | Mac archive | Tests/docs/health adapter | Source ownership, acknowledgement, import/reconciliation |
+| Idle Hacking KB | Mac repo | Publication privacy review open; clone after safe SHA | VPS metadata DB and bounded chat state | Full private corpus/Mac archive | Fixtures, metadata, tests, docs, later PR prep | Raw corpus, privacy, source authority |
+| SJC Intel | Mac repo | Prepare for publication/clone | No production runtime | Mac development data | Tests/docs/packet | Gate 4 readiness |
+| Palworld KB | Mac repo | Published; source-only clone suitable | No service/DB required | No VPS archive scope | Tests/docs/PR prep | Content work, later admission |
 
-`§3C-G1` Exact-SHA Deployment Gate.
+## §5 Executable Work Queue
 
-### §3D Systemd and Scheduler Standards
+### §5A Ready — parallel OpenCode queue
 
-**Outcome**
-
-Schedulers are bounded, observable, and never duplicated.
-
-**Products**
-
-- Systemd service/timer templates - existing per repo, need portfolio templates.
-- Unit validation procedure - existing through `systemd-analyze verify`, needs template.
-- Natural-run acceptance template - existing in Traderie evidence, needs promotion.
-- Rollback packet template - existing per repo, needs promotion.
-
-**Gate**
-
-`§3D-G1` Scheduler Gate.
-
-### §3E Phase 0 Health View
-
-**Outcome**
-
-Buddy can inspect ingestion status through a quick read-only operator view before new cutovers.
-
-**Product**
-
-`Phase 0 operator view`: a CLI-generated table or simple internal HTML page. Initial implementation should be a CLI report because it can be validated fastest.
-
-**Planned command path**
-
-`tools/portfolio_phase0_status.py --format table`
-
-**Current implementation**
-
-A working Phase 0 CLI (`tools/portfolio_phase0_status.py`) exists and generates the operator table for Traderie and Reddit Ops from control-sheet data and health placeholders. It reads `repos/<repo>/CONTROL.md` for lifecycle state, scheduler/writer authority, and approved SHA, then renders a formatted table.
-
-**Source data**
-
-- Repository health exporters or adapters where available.
-- `repos/<repo>/CONTROL.md` for expected scheduler/writer authority and approved SHA.
-- Read-only systemd state for local/VPS jobs where a producer is not yet registered.
-- Backup artifact age from repo health or documented backup path.
-- Drift evidence from Git SHA, health `deployed_revision`, and unit hash where available.
-
-**Required output columns**
-
-- Repository or workload.
-- Ingestion workflow.
-- Last attempt.
-- Last successful run.
-- Freshness.
-- Scheduler or trigger state.
-- Current writer authority.
-- Deployed revision.
-- Backup age.
-- Current failure.
-- Drift.
-- Active incident or approval requirement.
-
-**Completion proof**
-
-One generated report includes Traderie, Reddit Ops, SJC Intel readiness placeholder, and WGU Catalog batch placeholder without exposing secrets, connection strings, private paths, raw error bodies, or credentials.
-
-**Gate**
-
-`§3E-G1` Phase 0 Health Visibility Gate.
-
-### §3F Backup, Restore, and Retention
-
-**Outcome**
-
-Every authoritative data store has a verified recovery path before cutover.
-
-**Products**
-
-- Backup/checksum/manifest wrapper - existing per repo, needs promotion.
-- Isolated restore packet - existing per repo, needs template.
-- File/export recovery equivalent - planned for WGU Catalog and other non-DB workloads.
-- Backup freshness threshold - default added in `docs/HEALTH_CONTRACT.md`, repo-specific thresholds still required where stricter.
-
-**Legacy-ingestion migration and archive model**
-
-Legacy ingestion data that is not yet in PostgreSQL follows a three-tier model validated through the Idle Hacking KB cleanup:
-
-- Mac archive: canonical raw scraped source, transfer manifests, checksums, historical database dumps, rejected-record bundles, and import reconciliation evidence.
-- VPS PostgreSQL: authoritative operational and queryable state, including durable market-book history required for research and UI history.
-- VPS filesystem: bounded staging, recent rollback evidence, logs, caches, exports, and backup staging only.
-
-Migration acceptance requires: verified Mac archive, source manifest and checksums, idempotent import reconciliation, PostgreSQL backup, isolated restore proof, and explicit Buddy approval before legacy VPS data removal. Raw and derived copies must not coexist indefinitely unless the raw copy has a documented audit or re-derivation purpose and bounded retention.
-
-**Gate**
-
-`§3F-G1` Backup/Restore Gate.
-
-### §3G Drift and Deployed-Revision Verification
-
-**Outcome**
-
-Unapproved code, dirty checkouts, stale units, missing revision metadata, and schema drift are visible.
-
-**Products**
-
-- Drift checker - planned and required.
-- Deployment registry - planned and required.
-- Unit hash verification - existing in Traderie evidence, needs template.
-
-**Gate**
-
-`§3G-G1` Drift Detection Gate.
-
-### §3H Reusable Onboarding Artifacts
-
-| Artifact | Status |
-|---|---|
-| PostgreSQL onboarding packet/helper | Existing but needing promotion |
-| Role matrix | Existing and reusable |
-| Exact-SHA deployment template | Existing but needing promotion |
-| Deployment registry entry | Planned and required |
-| Systemd service and timer templates | Existing but needing promotion |
-| Unit validation | Existing but needing promotion |
-| Health exporter or adapter template | Planned and required |
-| Health producer registration | Existing registry doc, needs operational procedure |
-| Backup and restore wrapper | Existing per repo, needs promotion |
-| Cutover packet template | Existing but needing promotion |
-| Rollback packet template | Existing but needing promotion |
-| Natural-run acceptance template | Existing but needing promotion |
-| Drift checker | Planned and required |
-| Readiness review template | Planned and required |
-| Platform-confidence checklist | Planned in `§6A`, required before Wave 1 |
-
-**Gate**
-
-`§3H-G1` Reusable Artifact Gate.
-
-### §3I Hermes Operational Authority
-
-Hermes is installed and operational as a read-only resident VPS assistant:
-
-- Hermes Agent v0.18.2 installed; backend serves on loopback port; Desktop launches within the XFCE session on `DISPLAY=:10.0`.
-- Hermes file bridge exists at `/home/scraper/Desktop/hermes-bridge/` with inbox/outbox/archive protocol and documented filename conventions.
-- Hermes Bridge is documented in `docs/HERMES_OPERATOR_GUIDE.md`, `docs/VPS_ACCESS.md`, and `docs/RESIDENT_AGENT_MODEL.md`.
-- Authority remains strictly read-only: inspect, explain, navigate, search, summarize, review, recommend, and produce bridge files. No production write, systemd, database, network, destructive, Git, or authority-expansion permissions are granted.
-- Provider authentication is not configured; the default model (`deepseek-v4-flash`) suffices for bounded inspection.
-- Hermes Desktop remains blocked by the capacity gate (root storage after cleanup is approximately 75% used; Hermes requires known bounds on growth before permanent activation is authorized).
-- Future stages may add recurring portfolio-review loops, branch creation, and PR authority through a separate gate.
-
-**Gate**
-
-`§3I-G1` Hermes Read-Only Gate.
-
-## §4 Repository Readiness Campaign
-
-### §4A Campaign Model
-
-Prepare eligible ingestion repositories in parallel, but cut over in controlled waves. WGU-derived downstream ambiguity is deferred behind `§4F-G1` and must not block SJC Intel, WGU Catalog batch readiness, or other unrelated deterministic readiness work.
-
-### §4B Common Medium-Agent Packet Shape
-
-Every readiness packet must specify:
-
-- roadmap section and gate;
-- exact repository scope;
-- required reading;
-- allowed writes and prohibited actions;
-- expected source or documentation outputs;
-- local validation;
-- dry-run or staging proof;
-- evidence files;
-- stop conditions;
-- escalation conditions;
-- privileged handoff requirements;
-- completion gate.
-
-### §4C SJC Intel Readiness Packet
-
-**Task artifact**
-
-`_internal/outbox/session5/agent-sjc-intel-ingestion-readiness.md`
-
-**Repository scope**
-
-`/Users/buddy/projects/sjc_intel`; control-plane outputs under `repos/sjc-intel/`.
-
-**Required reading**
-
-Root `AGENTS.md`, `TODO.md`, `docs/OPERATING_MODEL.md`, `docs/REPOSITORY_CONTROL_MODEL.md`, `docs/PORTFOLIO_CONVENTIONS.md`, `docs/DATA_LIFECYCLE_STANDARD.md`, `docs/HEALTH_CONTRACT.md`, `docs/DATABASE.md`, SJC Intel README/AGENTS/deploy/systemd/db/health docs.
-
-**Expected outputs**
-
-Create `repos/sjc-intel/CONTROL.md` and `repos/sjc-intel/RELEASE_GATES.md`; update only SJC Intel source/docs if required for readiness.
-
-**Local validation**
-
-Run repository tests, migration validation, health exporter dry run, unit static validation if systemd files exist, `.env.example` check, no-secret/path scan.
-
-**Dry-run or staging proof**
-
-No VPS mutation. Produce a bounded command plan for Strong Codex.
-
-**Stop conditions**
-
-Secrets, unclear writer authority, missing deterministic entrypoint, failed tests, destructive cleanup need, or private data exposure risk.
-
-**Escalation**
-
-Strong Codex for database provisioning, config installation, systemd installation, production deploy, and scheduler activation.
-
-**Completion gate**
-
-`§4C-G1` SJC Intel Readiness Packet Gate.
-
-### §4D IH Market Companion PostgreSQL and Continuity Implementation
-
-**Task artifact**
-
-`_internal/outbox/session5/agent-ih-market-authority-readiness.md`, followed by repo-local implementation packets prepared in later sessions.
-
-**Repository scope**
-
-`/Users/buddy/projects/ih_market_companion`; control-plane outputs under `repos/ih-market-companion/`.
-
-**Confirmed ownership**
-
-IH Market Companion owns the public browser/runtime collector, public market-book history, market snapshots, and UI-facing market history. It does not own private personal-trade data. The transitional `collector_helper.py` / `ih-collector-helper.service` boundary must not be treated as shared production authority. The transitional shared helper does not create shared production authority between IH Market and Idle Hacking KB.
-
-**Current status**
-
-- GitHub repository published and clean at `https://github.com/wguDataNinja/ih-market-companion`; remote SHA `ae50fd47b49c13016a98034677e16151b337c871`.
-- Mac archive verified; bounded snapshot/receipt retention deployed on VPS.
-- Natural-run containment evidence exists.
-- PostgreSQL schema and migration design exists but import and reconciliation are still pending.
-- Backup/restore proof pending.
-- Shared-helper deployment authority remains transitional; one-repo-one-SHA normalization is still required.
-
-**Required implementation sequence**
-
-1. Repository-local PostgreSQL schema and migrations.
-2. Deterministic, idempotent, resumable legacy market importer for arbitrary historical ranges.
-3. Browser ingestion writes to PostgreSQL with bounded filesystem staging.
-4. Durable market snapshots and order-book history for UI and research consumers.
-5. Independent collection and synchronization health.
-6. Missing-interval detection and warning before remote retention expiry.
-7. Health-contract producer with ingest counts, freshness, backlog, deployed revision, backup age, and safe failures.
-8. Strong Codex provisioning, archive, migration, cutover, validation, rollback, and natural-run packet.
-9. Verified Mac archive and later legacy-file cleanup under explicit approval.
-
-**Market-data continuity requirements**
-
-The implementation must capture:
-
-- One owner for remote-to-local synchronization.
-- Separate freshness checks for remote collection and the local archive.
-- Sync-lag visibility.
-- Missing-interval detection.
-- Retention-window monitoring and warning before unrecovered data expires.
-- Idempotent backfill procedure.
-- Compatibility with the downstream `idle-hacker/market_strategy` research consumer.
-- Separation of public market history from private personal-trade data.
-
-The VPS retains market snapshots for only 7 rolling days; the design must explicitly address this retention boundary, including detection of intervals that could expire before import.
-
-**Market-history requirements**
-
-Each durable snapshot should preserve available market-book evidence including:
-
-- timestamp;
-- commodity;
-- best bid and best ask;
-- visible book depth and quantities;
-- spread;
-- additions;
-- cancellations;
-- fills or volume_changes;
-- source/run lineage;
-- any other stable order-book metadata available from the collector.
-
-Market history is a durable research asset, not a transient dashboard artifact. The design must preserve enough fidelity for statistically valid backtesting without look-ahead bias.
-
-**Continuity and health requirements**
-
-Collection and synchronization are separate health concerns. The system must expose:
-
-- newest remote snapshot;
-- newest PostgreSQL snapshot;
-- newest Mac-archived snapshot;
-- collection freshness;
-- synchronization freshness;
-- sync lag;
-- missing intervals;
-- oldest unrecovered interval;
-- warning before remote retention expiry;
-- last successful backfill;
-- staging backlog;
-- current writer;
-- deployed revision;
-- backup age;
-- current failure.
-
-Valid states include: collector healthy / synchronization healthy; collector healthy / synchronization failing; collector failing / synchronization healthy; collector failing / synchronization failing.
-
-**Recovery requirements**
-
-Backfill must be: idempotent, resumable, safe to repeat, capable of importing arbitrary historical ranges, able to reconcile source counts, accepted rows, duplicates, rejections, and time ranges, and able to detect and report missing source intervals.
-
-**Downstream research boundary**
-
-`idle-hacker/market_strategy` is an explicit downstream research consumer. It may combine public market snapshots, private personal trade history, private order lifecycle, and recorder exports. The public collector and public market database boundary must not contain private personal-trading information. These remain Rule 7, human-in-the-loop research systems. No automated trading authority is granted.
-
-**Local validation**
-
-- Run repository tests and focused migration/import tests.
-- Validate idempotent import and arbitrary-range backfill.
-- Verify snapshot continuity and missing-interval detection.
-- Verify collection and synchronization health independently.
-- Verify no private trade data enters the public collector boundary.
-- Verify UI/research queries can reconstruct historical market state without look-ahead bias.
-- Verify bounded staging and retention warnings.
-
-**Stop conditions**
-
-- private trading data crosses into the public collector;
-- collector or synchronization ownership is unclear;
-- historical source formats cannot be reconciled deterministically;
-- missing intervals cannot be distinguished from true no-data periods;
-- staging can expire before recovery without warning;
-- active dirty tree prevents safe classification;
-- production mutation is required;
-- automated trading authority is implied.
-
-**Escalation**
-
-Strong Codex for VPS helper changes, PostgreSQL provisioning, source archival to Mac, production import, browser/runtime activation, writer cutover, service changes, backup/restore proof, and legacy-file cleanup.
-
-**Completion gate**
-
-`§4D-G1` IH Market PostgreSQL and Continuity Gate.
-
-### §4E WGU Catalog Batch Readiness Packet
-
-**Classification**
-
-Low-frequency event-driven or scheduled batch ingestion workload. It is not a continuous collector.
-
-**Task artifact**
-
-`_internal/outbox/session5/agent-wgu-catalog-batch-readiness.md`
-
-**Repository scope**
-
-`/Users/buddy/projects/wgu-catalog`; control-plane outputs under `repos/wgu-catalog/`.
-
-**Required reading**
-
-Control-plane standards, WGU Catalog README/docs/scripts/export fixtures, and any current operator notes.
-
-**Expected outputs**
-
-Control/gate files that define source authority, deterministic commands, release-detection or monthly-check mechanism, output validation, archive/rollback, health/freshness visibility, exact source revision, and operator procedure.
-
-**Workload requirements**
-
-- Detect or confirm a new WGU catalog release.
-- Run established ingestion, parsing, validation, and export.
-- Record source version and acquisition date.
-- Validate outputs.
-- Publish checksums or manifests.
-- Expose freshness and last-success health.
-- Preserve prior catalog versions.
-- Notify when a new release requires review or ingestion.
-- Decide whether activation is automatic, approval-gated, or manually triggered.
-
-**Non-goals**
-
-Do not create unnecessary database, daemon, or continuous scheduler work if the existing file/export architecture is sufficient.
-
-**Local validation**
-
-Run existing ingest/parse/validate/export commands on fixtures or dry-run data; verify manifests/checksums and prior-version preservation.
-
-**Stop conditions**
-
-Unclear source authority, inability to validate output, missing archive/rollback, or release-detection ambiguity that cannot be resolved locally.
-
-**Escalation**
-
-Strong Codex only if VPS scheduling or production storage activation is selected.
-
-**Completion gate**
-
-`§4E-G1` WGU Catalog Batch Source Authority Gate.
-
-### §4F WGU-Derived Boundary Reconciliation
-
-**Task artifact**
-
-`_internal/outbox/session5/agent-wgu-reddit-boundary-reconciliation.md`
-
-**Scope**
-
-Read-only reconciliation across Reddit Ops controls, `/Users/buddy/Desktop/WGU-Reddit`, `/Users/buddy/projects/WGU-Reddit`, relevant Reddit catalog or derived workload evidence if present, BSDA consumer references, and `docs/DATABASE.md`.
-
-**Outcome**
-
-Resolve enough repository/workload ownership to decide which future roadmap sections belong to Reddit Ops, WGU-Reddit, a Reddit catalog boundary, BSDA Courses, or another derived workload.
-
-**Work**
-
-- Identify current authorities.
-- Separate ingestion, catalog, analysis, LLM, benchmark, and historical-tool responsibilities.
-- Resolve publication blockers at the correct repository boundary.
-- Define future roadmap sections and control-sheet owners.
-
-**Deferred**
-
-No production LLM, downstream WGU-Reddit, Reddit catalog, or derived Reddit workload admission until this gate passes.
-
-**Completion gate**
-
-`§4F-G1` WGU Boundary Reconciliation Gate.
-
-### §4G BSDA Courses Consumer Readiness
-
-Deferred until `§4F-G1` and WGU Catalog contract evidence are available. BSDA remains consumer-only and must not gain independent Reddit ingestion authority.
-
-### §4H WGU Atlas Readiness
-
-Deferred until WGU Catalog contract evidence is available. Atlas remains downstream/static unless a later gate adds production LLM authority.
-
-### §4I Idle Hacking KB PostgreSQL Implementation and Publication
-
-**Task artifact**
-
-`_internal/outbox/session5/agent-idlehacking-safe-ingestion-boundary.md`, followed by implementation packets for ongoing ingestion design.
-
-**Repository scope**
-
-`/Users/buddy/projects/idlehacking_kb`; control-plane outputs under `repos/idlehacking-kb/`.
-
-**Current status**
-
-Idle Hacking KB has live PostgreSQL metadata onboarding. The following milestones are complete:
-
-- Repository published at `https://github.com/wguDataNinja/idlehacking-kb`; implementation commit `61379d38220d10196661c6ee0e58ecc32521385e` unpushed pending privacy/history review.
-- PostgreSQL metadata database `idlehacking_kb` established with migration `011`.
-- 49 historical cutoff identities reconciled; idempotent rerun passed (0 inserts / 49 duplicates).
-- Backup checksum verified; isolated restore passed.
-- No raw-body columns in PostgreSQL — metadata-only boundary.
-- Legacy cutoff cleanup: 47 files deleted, 8,134,330,994 bytes reclaimed; root usage from approximately 95% to approximately 75%.
-- 44 genuine post-cleanup natural exports succeeded with zero failures.
-- Current bounded runtime state: approximately 112 managed generations / 350 MB.
-
-**Confirmed ownership and separation**
-
-- Idle Hacking KB owns private Discord/chat ingestion and KB/LLM processing.
-- It is a separate repository-local implementation and production cutover from IH Market Companion.
-- The transitional shared helper boundary does not create shared production authority.
-- Private chat ingestion may reuse PostgreSQL, health, backup, archive, and cutover products, but requires independent lifecycle, privacy, retention, credential, and acceptance evidence.
-- Production LLM execution remains excluded from this phase.
-
-**Remaining work**
-
-- Correct top-level health semantics: client currently treats cumulative historical failure count as current failure (should distinguish current active failure, consecutive failures, and recovery state).
-- Complete privacy/history review before GitHub publication.
-- Define reliable long-term Discord ingestion and incremental archive behavior.
-- Implement health-contract producer with ingest counts, freshness, backup age, and deployed revision.
-
-**Stop conditions**
-
-Sensitive-source ambiguity, cross-repo credential dependency, unclear capture authority, or any required live service interaction without explicit authorization.
-
-**Escalation**
-
-Strong Codex for production database provisioning, Discord capture deployment, or LLM production authority.
-
-**Completion gate**
-
-`§4I-G1` Idle Hacking KB Publication and Continuity Gate.
-
-### §4J Reckless Ben Restricted Path
-
-Reckless Ben remains `NO_LAUNCH`. It contributes approval and evidence patterns only unless Buddy explicitly reclassifies it.
-
-## §5 Schedulable Execution Groups
-
-### §5A Shared Platform Foundation
-
-**Hard dependencies:** Current roadmap authority, no production mutation.
-**Concurrent work:** PostgreSQL product templates, deployment registry design, reusable packet templates.
-**Owner:** Medium OpenCode prepares; Strong Codex reviews privileged design.
-**Completion evidence:** Reusable artifact list reaches `existing reusable` or `planned with owner`; no ambiguous helper/sudo boundary remains.
-**Next gate:** `§3B-G1`, `§3H-G1`.
-
-### §5B Repository-Specific Medium-Agent Readiness Packets
-
-**Hard dependencies:** `§3A` gate model.
-**Concurrent work:** SJC Intel and WGU Catalog readiness may proceed independently. IH Market ownership discovery is complete and moves next to repo-local PostgreSQL implementation. Idle Hacking KB metadata onboarding is live; next work is long-term Discord ingestion design and health correction. WGU-derived workloads wait for `§4F-G1`.
-**Owner:** Medium OpenCode.
-**Completion evidence:** Required outbox report, control/gate drafts, validation output, privileged handoff packet.
-**Next gate:** repository readiness gate.
-
-### §5C Minimum Health Visibility
-
-**Hard dependencies:** Phase 0 source list and control-sheet fields.
-**Concurrent work:** Health adapter review can run with readiness packets.
-**Owner:** Medium OpenCode; Strong Codex only for live health registration.
-**Completion evidence:** Phase 0 report shows required columns for existing and candidate workloads.
-**Next gate:** `§3E-G1`.
-
-### §5D Platform Confidence Review
-
-**Hard dependencies:** Existing workload status, Phase 0 health, capacity check, backup freshness.
-**Owner:** Strong Codex or high-reasoning review from a compact evidence packet.
-**Completion evidence:** `§6A-G1` pass/fail with conditions.
-**Next gate:** Wave 1 authorization.
-
-### §5E Wave 1 Privileged Cutover
-
-**Hard dependencies:** Platform Confidence Gate, repository readiness gate, exact approved SHA, backup/rollback packet.
-**Owner:** Strong Codex.
-**Completion evidence:** Bounded manual run, health, backup, restore/recovery proof, scheduler activation.
-**Next gate:** Natural-run acceptance.
-
-### §5F Natural-Run Acceptance
-
-**Hard dependencies:** Scheduler active and no manual start substituted for proof.
-**Owner:** OpenCode read-only evidence, Strong Codex only if remediation is needed.
-**Completion evidence:** Genuine scheduled or event-triggered run succeeds and is distinguished from manual or Persistent catch-up.
-**Next gate:** Stabilization.
-
-### §5G Stabilization
-
-**Hard dependencies:** Natural-run acceptance.
-**Owner:** OpenCode evidence review; Strong Codex for recovery/reboot if needed.
-**Completion evidence:** Health current, backup fresh, rollback available, drift clean, incidents absent or documented.
-**Next gate:** next readiness/cutover wave.
-
-### §5H Next Readiness and Cutover Wave
-
-**Hard dependencies:** Prior wave stabilized or explicitly accepted with conditions.
-**Owner:** Medium OpenCode prepares; Strong Codex executes.
-**Completion evidence:** Same as Wave 1, adjusted by workload risk.
-
-## §6 Cutover Strategy and Platform Confidence
-
-### §6A Platform Confidence Gate
-
-**Gate ID**
-
-`§6A-G1` Platform Confidence Gate.
-
-**Minimum conditions before first new ingestion cutover wave**
-
-- No unresolved critical production incident.
-- Traderie and Reddit Ops each have exactly one authoritative scheduler/trigger and writer, or any exception is documented and not relevant to the candidate wave.
-- Current health is visible in Phase 0 view or equivalent evidence.
-- Backup freshness is passing or explicitly waived for a non-database candidate with equivalent recovery proof.
-- Rollback is available for existing production workloads.
-- PostgreSQL service is healthy.
-- Disk/capacity is below stop thresholds.
-- No known duplicate-writer condition.
-- No active recovery operation would make another cutover unsafe.
-- Unresolved legacy filesystem data estates do not threaten root capacity or recovery safety.
-- Every active ingestion candidate has bounded staging, known growth behavior, and independent collection/synchronization health where applicable.
-- Data is not removed merely to satisfy capacity thresholds without verified archive, import reconciliation, backup, restore, and explicit deletion approval.
-
-**Not required for this gate**
-
-- Full repository maturity.
-- Polished dashboard UI.
-- Every reboot proof.
-- Every remaining Traderie or Reddit Ops maturity task, unless the unresolved item is a genuine hard dependency for the candidate cutover.
-
-### §6B Recommended Batching
-
-| Wave | Scope | Rationale |
+| Task | Depends on | Completion unlocks |
 |---|---|---|
-| Wave 0 | Traderie recovery and Reddit Ops recovery/publication as separate sessions | Existing workloads must not hide critical incidents |
-| Wave 1 | SJC Intel; WGU Catalog only if it selects VPS batch trigger | Low-risk deterministic and batch workloads |
-| Wave 2A | IH Market PostgreSQL onboarding and browser-ingestion cutover | Public market-history continuity, PostgreSQL snapshots, independent sync health, Mac archive, and research-data requirements |
-| Wave 2B | Idle Hacking KB private chat-ingestion cutover | Separate sensitive-data, privacy, retention, backup, health, and credential boundary |
-| Wave 3 | LLM/downstream production stages | Requires boundary, budget, prompt, audit, and review gates |
+| Reddit corrected-backup source, tests, publication/repair packet | Source review | Strong Codex repair |
+| Reddit monitor-role canonicality and archive-continuity query/report design | Safe schema knowledge | Canonicality review |
+| IH chat/market separate health adapters, fixtures, acknowledgement/retention fields | Source ownership decision may be deferred but must be recorded | Dashboard trust fields |
+| Database onboarding guide/checklist/templates | Existing evidence | Faster repo-local preparation |
+| SJC Intel readiness packet and source audit | Repo-local access | Gate 4 review |
+| Palworld KB source-only admission/footprint packet | Repo-local access | Optional VPS clone |
+| IH KB and IH Market publication/footprint/source-boundary preparation | Privacy/ownership review | Independent clone/admission decisions |
 
-### §6C Rollback Rules
+### §5B Ready — sequential / Strong Codex queue
 
-- Bounded generation failure stops activation.
-- Natural scheduled or event-triggered run failure produces one focused remediation task.
-- Duplicate scheduler/writer risk triggers rollback to last known single authority.
-- Backup/restore failure blocks production-complete status.
-- Reboot failure requires documented fallback authority where applicable.
+| Task | State | Requires | Completion unlocks |
+|---|---|---|---|
+| Reddit backup unit repair, fresh backup, isolated restore | REQUIRES STRONG CODEX | Buddy-approved exact packet and reviewed source | Current recovery evidence |
+| Reddit verified-canonical review | REQUIRES STRONG CODEX | Monitor report + archive continuity + repaired restore | Buddy retirement decision |
+| IH source-to-installed userscript verification | REQUIRES STRONG CODEX / REQUIRES BUDDY | Safe browser UI/export procedure | Deployment drift evidence |
+| IH PostgreSQL import/reconciliation pilot | REQUIRES STRONG CODEX | Repo-local source/tests, manifest, capacity, backup/restore packet | Market authority-transfer review |
+| Traderie deploy/natural-run/reboot proof | REQUIRES STRONG CODEX | Focused source correction and natural-run preconditions | Production-complete review |
 
-## §7 Active Recovery Workstreams
+### §5C Blocked and Buddy decisions
 
-### §7A Traderie Production Recovery
+| Decision / gate | State | Needed before unlock |
+|---|---|---|
+| WGU Reddit clean publication/history strategy | REQUIRES BUDDY | Safe reviewed history and publication scope |
+| WGU fallback retirement | REQUIRES BUDDY | Verified canonicality, backup/restore, observation window |
+| Canonical Idle Hacking userscript source and duplicate disposition | REQUIRES BUDDY | Cross-repo ownership decision |
+| Chat/market acknowledgement destination and archive authority | REQUIRES BUDDY | Durable offload/replay contract |
+| Browser recovery/install verification | REQUIRES BUDDY | Sensitive-profile procedure and timing |
+| Controlled reboot timing | REQUIRES BUDDY | Workload-specific success gates |
 
-**Outcome**
+## §6 Repository Workstreams
 
-Traderie returns from `PRODUCTION_DEGRADED` to `production-complete` or a clearly narrower blocked state.
+### §6A SJC Intel — `§4C-G1`
 
-**Work**
+**State:** `READY — PARALLEL`. Prepare source authority, scheduler/writer boundary, migrations/roles if needed, health adapter, backup/restore and rollback packet, exact-SHA/footprint review, and tests. No production cutover without Gate 4/5 packet.
 
-- Investigate `pc_hc_nl` timeout using runtime, retry, volume, latency, progress, file mtime/size, and process evidence.
-- Verify DB-backed and file-based health behavior.
-- Apply backup freshness threshold to Traderie evidence.
-- Apply source correction and tests if needed.
-- Deploy exact published SHA, prove bounded generation, prove one genuine natural scheduled generation, then perform controlled reboot proof if the Platform Confidence Gate does not require deferral.
+### §6B IH Market Companion — `§4D-G1`
 
-**Gate**
+**State:** source/health preparation `READY — PARALLEL`; production import `REQUIRES STRONG CODEX`. Resolve collector source ownership, acknowledgement/replay, market adapter, idempotent import, interval reconciliation, Mac archive continuity, backup/restore, then use a bounded pilot. Public browser/runtime collection and private personal-trade data remain distinct.
 
-`§7A-G1` Traderie Recovery Gate.
+### §6C WGU Catalog — `§4E-G1`
 
-### §7B Reddit Ops Publication Strategy
+**State:** `READY — PARALLEL` for batch-source authority. It is a low-frequency file/export workflow unless evidence later justifies PostgreSQL; do not invent daemon or database requirements.
 
-**Outcome**
+### §6D WGU-derived boundary — `§4F-G1`
 
-Publishable Reddit Ops source path is approved without exposing credential-bearing history.
+**State:** `BLOCKED BY GATE`. Resolve Reddit/catalog/analysis/LLM ownership and safe publication representation before new derived workload activation. This does not block deterministic WGU Reddit stabilization or unrelated repositories.
 
-**Work**
+### §6E Idle Hacking KB — `§4I-G1`
 
-- Reconstruct clean publishable history excluding `e4acae0`, or choose another Buddy-approved publication strategy.
-- Add reviewed backup unit source and tests.
-- Run secret scan and present strategy for Buddy approval before any push.
+**State:** metadata continuity and health work `READY — PARALLEL`; publication/source privacy decision `REQUIRES BUDDY`. Keep raw bodies outside PostgreSQL; retain Mac corpus authority; correct top-level health semantics; add private-safe adapter; preserve 44-natural-export/metadata restore evidence as completed history rather than reopening it.
 
-**Gate**
+### §6F Palworld KB — `§4K-G1`
 
-`§7B-G1` Reddit Ops Publication Strategy Gate.
+**State:** `READY — PARALLEL`. Published source-only admission under a small VPS checkout is suitable after footprint review. No service, timer, PostgreSQL, archive transfer, or runtime dependency is implied. Main work is content quality.
 
-### §7C Reddit Ops Production Recovery
+### §6G Restricted and downstream repositories
 
-**Outcome**
+- Reckless Ben remains `NO_LAUNCH` / **DEFERRED** unless explicitly reclassified.
+- BSDA Courses and WGU Atlas remain downstream consumers; advance their LLM/product work only after upstream data contracts and WGU boundary decisions are adequate.
 
-Backup service, backup freshness, exact-SHA deployment, restore evidence, drift, and reboot/persistence gaps are reconciled after publication or explicit rsync exception.
+## §7 Gates and Acceptance Criteria
 
-**Gate**
+### §7A Traderie Recovery Gate — `§7A-G1`
 
-`§7C-G1` Reddit Ops Recovery Gate.
+Pass when focused timeout diagnosis/source correction is evidenced, DB/file health behavior is reconciled, backup freshness is demonstrated, a genuine natural generation succeeds, and later reboot proof succeeds. See `repos/traderie/CONTROL.md` and release gates.
 
-## §8 Evidence and Completion Proofs
+### §7B Reddit Recovery and Canonicality Gate — `§7B-G1`
 
-### §8A Standard Gate IDs
+Pass the recovery subgate when corrected backup unit, fresh checksum/manifest, isolated restore, and scheduled backup proof pass. Pass canonicality only when §2A acceptance criteria pass. Legacy retirement is a later Buddy decision, not a side effect.
 
-| Gate | Meaning |
-|---|---|
-| `ADMISSION` | Control sheet, gate file, source boundary, current authority, next phase |
-| `INGESTION` | Canonical ingestion-admission gate from `§3A` |
-| `SOURCE` | Publishable source, `.env.example`, tests, docs, no secret/private blockers |
-| `PG` | Database, roles, migrations, validation, privilege proof |
-| `HEALTH` | Contract-compatible health, freshness, backup state, deployed revision |
-| `BACKUP` | Dump or export, checksum, manifest, restore or equivalent recovery proof |
-| `DEPLOY` | Exact SHA deployed, config installed, checkout clean, smoke proof |
-| `SCHEDULER` | One scheduler/trigger active, duplicate writers disabled, exit semantics correct |
-| `NATURAL` | Genuine scheduled or event-triggered run passes |
-| `REBOOT` | Post-reboot service/timer/database recovery passes where required |
-| `MATURITY` | Broader CI, docs, dashboard polish, LLM budgets, public presentation |
+### §7C Idle Hacking Durability Gate — `§7C-G1`
 
-### §8B Required Evidence Per Ingestion Workload
+Pass chat and market independently only when source/install authority is known, capture and current durable write are fresh, acknowledgement/oldest backlog/retention deadline are visible, archive freshness and replay are proven, and applicable DB reconciliation/restore passes. Browser process liveness alone fails this gate.
 
-Every ingestion readiness review must answer:
+### §7D Platform Confidence Gate — `§7D-G1`
 
-- What data is collected or acquired.
-- Current and future collector.
-- Current and future scheduler or trigger.
-- Current and future writer.
-- Canonical data store or export authority.
-- Exact source revision.
-- Health/freshness surface.
-- Backup/recovery surface.
-- Duplicate-writer risk.
-- Publication blocker.
-- Privileged execution requirements.
-- Deferred maturity work.
-- Next gate.
+Before a new production wave: dashboard exposes current evidence, capacity is within threshold, backup/restore products work, one-writer rules are demonstrable, and the bounded privileged execution path is sufficient for the packet. It does not require polished public UI or full portfolio maturity.
 
-## §9 Near-Term Session Sequence
+## §8 Hermes Evolution
 
-### §9A Roadmap Reconciliation and Authority Alignment
+**Current:** read-only inspection, health comparison, status reports, drift/defect identification, and bounded evidence requests. Hermes is not a production controller.
 
-**Scope:** This refinement pass.
-**Risk profile:** Documentation/control only.
-**Completion:** Roadmap, affected authority docs, private log, validation.
+**Next gated stage:** after clean clone, scoped credential/audit design, test/secret-scan checks, and repository-specific Buddy approval, Hermes may inspect VPS clones, identify bounded work, create isolated branches, run tests, and prepare pull requests for review.
 
-### §9B Traderie Recovery Session
+**Still prohibited:** self-merge, autonomous production deployment, database mutation, broad secrets access, destructive operations, unrestricted service control, and treating its conclusions as unverified authority.
 
-**Scope:** `§7A` only.
-**Risk profile:** Existing production recovery.
-**Owner:** OpenCode evidence/source prep, git-steward if source changes, Strong Codex for production deployment/reboot.
-**Dependency:** None from WGU boundary work.
+## §9 Completed Milestones and Evidence References
 
-### §9C Reddit Ops Publication Strategy Session
+Completed work remains evidence, not active execution flow:
 
-**Scope:** `§7B` only.
-**Risk profile:** Git/history/publication.
-**Owner:** OpenCode prepares clean branch and scan; Buddy approves strategy; git-steward performs authorized writes.
-**Dependency:** No production mutation.
-
-### §9D Reddit Ops Production Recovery Session
-
-**Scope:** `§7C` only.
-**Risk profile:** Live backup/service/restore/reboot work.
-**Owner:** Strong Codex after publication or explicit rsync exception.
-**Dependency:** `§9C` or Buddy-approved deployment exception.
-
-### §9E PostgreSQL Platform Products Session
-
-**Scope:** `§3B`, `§3H`.
-**Risk profile:** Productization and bounded privilege design; no live changes unless separately authorized.
-**Owner:** Medium OpenCode prepares templates and packets; Strong Codex reviews privilege model and later executes only bounded privileged packets.
-**Current product outputs:** `docs/DATABASE.md` reusable PostgreSQL onboarding system, `docs/PORTFOLIO_CONVENTIONS.md` bounded privileged execution requirements, `_internal/templates/SESSION5_REUSABLE_TASK_TEMPLATES.md`, and Session 5 PostgreSQL/helper packets under `_internal/outbox/session5/`.
-
-### §9F Phase 0 Health Session
-
-**Scope:** `§3E`.
-**Risk profile:** Read-only status surface.
-**Owner:** Medium OpenCode; Strong Codex only if live health registration is needed.
-**Current product outputs:** `docs/HEALTH_CONTRACT.md` §4A, `tools/portfolio_phase0_status.py`, and `_internal/outbox/session5/agent-phase0-health-implementation.md`.
-
-### §9G SJC Intel Readiness Session
-
-**Scope:** `§4C`.
-**Risk profile:** Source/readiness only.
-**Owner:** Medium OpenCode.
-**Dependency:** Canonical gate model.
-
-### §9H IH Market PostgreSQL Implementation Session
-
-**Scope:** `§4D-G1`, supported by `§3A`, `§3B`, `§3E`, `§3F`, and `§3G`.
-**Risk profile:** Repository-local source, migrations, importer, snapshots, continuity health, lifecycle, and tests; no live mutation.
-**Owner:** Medium OpenCode.
-**Dependency:** Ownership discovery complete.
-**Completion:** Validated schema, idempotent importer, browser-to-PostgreSQL path, market-history queries, independent collection/sync health, tests, and Strong Codex cutover packet.
-
-### §9I Idle Hacking KB PostgreSQL and Ingestion Session
-
-**Scope:** `§4I-G1`, supported by `§3A`, `§3B`, `§3E`, `§3F`, and `§3G`.
-**Risk profile:** Repository-local private chat schema, importer, ingestion, privacy boundary, lifecycle, health semantics correction, and tests; no production LLM activation.
-**Owner:** Medium OpenCode.
-**Dependency:** IH Market ownership boundary remains separate and explicit.
-**Completion:** Validated private chat schema, deterministic importer, corrected health semantics, health producer, lifecycle evidence, tests, and Strong Codex cutover packet.
-
-### §9J Idle Hacker Data Migration and Cutover Session
-
-**Scope:** Separate privileged cutovers for IH Market and Idle Hacking KB.
-**Risk profile:** Live VPS, PostgreSQL, Mac archive, migration, service and writer cutover, backup, restore, and natural-run proof.
-**Owner:** Strong Codex.
-**Dependency:** Relevant repository implementation gate, `§6A-G1`, exact approved SHA, archive packet, backup/restore packet, and explicit Buddy authorization.
-**Completion:** Verified Mac archive, reconciled PostgreSQL import, one writer, independent health, backup/restore proof, natural-run acceptance, and separately approved legacy-file cleanup.
-
-### §9K Platform Confidence Review
-
-**Scope:** `§6A`.
-**Risk profile:** Cross-workload readiness decision.
-**Owner:** Strong Codex or high-reasoning gate review.
-**Dependency:** Phase 0 health plus current production evidence.
-
-### §9L Wave 1 Privileged Cutover
-
-**Scope:** First candidate that passes readiness, likely SJC Intel.
-**Risk profile:** Live VPS/PostgreSQL/scheduler work.
-**Owner:** Strong Codex.
-**Dependency:** `§6A-G1` and repository readiness gate.
-
-### §9M Resident Operator Bootstrap
-
-**Completed milestone:** Session 7 established the resident-agent architecture on the VPS. Hermes Agent v0.18.2 installed read-only, file bridge bootstrapped, first orientation exchange validated.
-
-**Outcome:** `docs/RESIDENT_AGENT_MODEL.md` became the canonical architecture document defining the Resident Agent Interface (RAI). `docs/HERMES_OPERATOR_GUIDE.md` became the implementation reference. `docs/VPS_ACCESS.md` documents operational SSH/SCP/graphical access. The verification principle (independent verification before repository truth) is now permanent.
-
-**Remaining open items from session:** 11 TODO items on root disk, backup service, provider config, config migration, API-key compatibility, clipboard, bridge mode, health language.
-
-## §10 Reference Migration
-
-Historical logs and outbox packets keep their old references. Current authority documents should use the new references below. `TODO.md` still contains old roadmap references but is protected task input and must not be edited by agents.
-
-| Old reference | New reference |
-|---|---|
-| Old `§2A` admission | `§3A`, `§4`, `§8` |
-| Old `§3A` VPS capacity | `§6A`, `§5D` |
-| Old `§3B` PostgreSQL foundation | `§3B`, `docs/DATABASE.md` |
-| Old `§3C` backup/restore | `§3F`, `§8A BACKUP` |
-| Old `§4A` deployment contract | `§3C`, `§3G`, `§8A DEPLOY` |
-| Old `§5A` authority transfer | `§3A`, `§6C`, `§8A SCHEDULER` |
-| Old `§6A` health | `§3E`, `docs/HEALTH_CONTRACT.md` |
-| Old `§7A` Traderie current state | `§2B`, `§7A` |
-| Old `§7G` Traderie scheduler | `§7A`, `§8A SCHEDULER` |
-| Old `§7H` Traderie acceptance | `§7A`, `§5G` |
-| Old `§8` Hermes | `§3I` |
-| Old `§9A` WGU-Reddit ingestion inspection | `§2C`, `§4F` |
-| Old `§9B` WGU-Reddit LLM | Deferred behind `§4F-G1` |
-| Old `§10A` SJC Intel | `§4C`, `§9G` |
-| Old `§11` WGU Catalog | `§4E`, `§9G` or later batch readiness session |
-| Old `§12` BSDA Courses | `§4G` |
-| Old `§13` WGU Atlas | `§4H` |
-| Old `§14` Idle Hacking KB | `§4I` |
-| Old `§15` IH Market Companion | `§4D` |
-| Old `§16` Reckless Ben | `§4J` |
-| Old `§17` rebuild/incident response | `§3F`, `§3G`, `§6C` |
-| Old `§18` sequencing | `§5`, `§6`, `§9` |
-| Old `§19` standards loop | `§3H`, `§9A` |
-| Old `§20` next work | `§11` |
-
-**Unmigrated safely**
-
-- `TODO.md` roadmap references: left unchanged because `TODO.md` is protected task input.
-- Historical `_internal/outbox/` and agent logs: left unchanged as evidence.
-- Private VPS runbook stale privilege statements: not edited in this task because `_internal/` is protected; later workflow maintenance should reconcile it with Session 3/4 evidence.
-- `repos/traderie/PHASE_B_CODEX_PACKET.md`: marked superseded because it is a historical phase packet, not current execution authority.
-- `repos/traderie/STATUS.md`: already marked deprecated and historical, so its old blocker list was left unchanged.
-
-## §11 Current Next Work
-
-1. Complete and reconcile the current Phase 0 health implementation without overwriting unrelated working-tree changes.
-2. Run the repo-local `ih_market_companion` PostgreSQL implementation packet under `§4D-G1` (schema, importer, snapshots, continuity health, tests).
-3. Run the separate repo-local `idlehacking_kb` PostgreSQL implementation and ingestion-design packet under `§4I-G1` (private chat schema, importer, health semantics correction, tests).
-4. Prepare Mac archive, manifest, checksum, import-reconciliation, backup, restore, rollback, and cleanup packets for each workload.
-5. Continue Traderie recovery (`§7A`) and Reddit Ops publication/recovery (`§7B`, `§7C`) as separate workstreams.
-6. Run `§6A-G1` Platform Confidence Review before either Idle Hacker production cutover.
-7. Execute IH Market and Idle Hacking KB cutovers separately through Strong Codex.
-8. Reassess root capacity after onboarding, archive verification, bounded retention, and approved legacy-file cleanup.
-9. Authorize Hermes Desktop installation only after the capacity gate passes.
-
-## §12 Decisions Requiring Buddy
-
-| Decision | Why Buddy is required |
-|---|---|
-| Reddit Ops publication strategy | Credential-bearing history blocks normal push |
-| Reboot timing and privilege path | Reboot affects production workloads |
-| WGU-derived repository/workload ownership | Current split is unresolved and should not be inferred |
-| WGU Catalog activation mode | Automatic monthly check, approval-gated trigger, or manual operator run |
-| License choices | Several repositories lack licenses |
-| Destructive cleanup or legacy data deletion | Requires exact target approval |
+- Traderie PostgreSQL schema/roles/migrations, backup/isolated restore, segmented runtime, and sole VPS authority are documented in its control/release evidence; natural-run recovery remains open.
+- Reddit Ops migration, roles, locking, frontier/idempotence, approved-partial semantics, and earlier restore proof are documented in `repos/reddit-ops/` and `docs/DATABASE.md`; current backup/continuity closure remains open.
+- Idle Hacking KB metadata onboarding, idempotent reconciliation, isolated restore, archive verification, and bounded cleanup/natural-export evidence remain recorded in private Session 7 material; health semantics and archive acknowledgement remain open.
+- IH Market bounded retention/helper deployment and publication evidence remain references; durable archive and PostgreSQL reconciliation remain open.
+- The simple dashboard command is implemented; it is a transitional view with named missing adapters, not a claim of complete health architecture.
+
+## §10 Decisions Requiring Buddy
+
+1. Approve WGU Reddit clean publication/history strategy and later backup-repair execution packet.
+2. Accept or hold WGU Reddit canonicality and the legacy-retirement observation window after evidence passes.
+3. Select the one tracked canonical Idle Hacking userscript source and disposition of duplicate copies.
+4. Select chat and market archive-acknowledgement destination/receipt authority and archive role.
+5. Approve any browser-profile inspection/recovery/install-verification procedure.
+6. Approve controlled reboot timing only after workload-specific prerequisites pass.
+7. Approve Hermes PR credentials and scope per repository after the staged gate is designed.
+
+## Reference continuity
+
+The active stable references retained here are `§3A-G1` (Canonical Ingestion-Admission), `§3B-G1` (PostgreSQL Productization), `§3C-G1` (Exact-SHA Deployment), `§3D-G1` (Scheduler), `§3E-G1` (Health), `§4C-G1` through `§4K-G1` (repository workstreams), and `§7A-G1`/`§7B-G1` (Traderie/Reddit). New `§7C-G1` and `§7D-G1` make Idle Hacking durability and platform confidence explicit without replacing the six-gate control model.
