@@ -1,3 +1,60 @@
+---
+control_model_version: "1.0"
+repository:
+  slug: reddit-ops
+  purpose: "Active governance authority for Reddit Ops (WGU-Reddit PostgreSQL collector)."
+  remote: "git@github.com:wguDataNinja/WGU-Reddit-Feedback-Analyzer.git"
+  default_branch: main
+  approved_sha: "70474003444def9c6426a27d9ec73b11ee0e2340"
+  local_path: "/Users/buddy/Desktop/WGU-Reddit"
+  vps_path: "/home/scraper/apps/wgu-reddit"
+lifecycle:
+  admission_gate: 5
+  state: "production-runtime"
+github:
+  visibility: public
+  publication_gate: 2
+  clean_history: false
+vps:
+  clone_state: not-cloned
+  runtime_location: "/home/scraper/apps/wgu-reddit"
+scheduler:
+  active: "wgu-reddit-postgres-run.timer"
+  writer: "VPS systemd service (sole collector)"
+  legacy: "wgu-reddit-shadow-run.timer (disabled/inactive); Mac launchd (disabled)"
+database:
+  present: true
+  name: "reddit_ops"
+  schemas: ["reddit_core", "wgu_reddit", "bsda_courses"]
+  migrations: "0001-0006"
+data_locations:
+  archive: null
+  backup: "/home/scraper/backups/postgres/reddit_ops"
+  source_only: false
+health:
+  state: degraded
+roadmap:
+  gates: [1, 4, 5]
+  blockers: ["Credential-bearing commit e4acae0 blocks Git publication", "VPS backup unit ExecStart drift (wrong script)"]
+  next_task: "Strong Codex deploys corrected backup unit; OpenCode prepares monitor-role canonicality query design"
+hermes:
+  scope: "read-only"
+codex_stops:
+  - "Service/timer not found or inactive"
+  - "Backup unit ExecStart mismatch"
+  - "Deployed SHA cannot be determined"
+  - "Disk >85%"
+  - "Backup dump missing or zero-byte"
+  - "Restore validation failure"
+  - "Unexplained data gaps"
+  - "Duplicate writer evidence"
+  - "Credential or secret exposure in logs"
+buddy_decisions:
+  - "Approve clean Git publication strategy (history remediation or replacement repo) — PENDING"
+last_verified: "2026-07-16"
+evidence_basis: "_internal/outbox/session-9/21-live-discovery.md"
+---
+
 # Reddit Ops — Repository Control
 
 **Purpose:** Active governance authority for Reddit Ops (WGU-Reddit PostgreSQL collector).

@@ -1,3 +1,53 @@
+---
+control_model_version: "1.0"
+repository:
+  slug: palworld-kb
+  purpose: "Active governance authority for Palworld KB within IvyControlVPS."
+  remote: "https://github.com/wguDataNinja/palworld-kb.git"
+  default_branch: main
+  approved_sha: "1c8d411406ce45cf948390e82f1e8494ca0352b6"
+  local_path: "/Users/buddy/projects/palworld-kb"
+  vps_path: null
+lifecycle:
+  admission_gate: 3
+  state: "source-only"
+github:
+  visibility: public
+  publication_gate: 3
+  clean_history: true
+vps:
+  clone_state: not-cloned
+  runtime_location: null
+scheduler:
+  active: null
+  writer: null
+  legacy: null
+database:
+  present: false
+  name: null
+  schemas: []
+  migrations: null
+data_locations:
+  archive: null
+  backup: null
+  source_only: true
+health:
+  state: unknown
+roadmap:
+  gates: [1, 2, 3]
+  blockers: []
+  next_task: "ROADMAP.md §6F — footprint review, Hermes admission packet, source-only VPS clone"
+hermes:
+  scope: "read-only"
+codex_stops:
+  - "No runtime or database work possible for a source-only repository"
+buddy_decisions:
+  - "Approve VPS source-only clone timing and path — PENDING"
+  - "Authorize Hermes branch/PR creation when that gate is designed — PENDING"
+last_verified: "2026-07-16"
+evidence_basis: "_internal/outbox/session-9/21-live-discovery.md"
+---
+
 # Palworld KB — Repository Control
 
 **Purpose:** Active governance authority for Palworld KB within IvyControlVPS.
@@ -5,7 +55,7 @@
 **Default branch:** `main`
 **Approved production SHA:** `1c8d411406ce45cf948390e82f1e8494ca0352b6`
 **Local path:** `/Users/buddy/projects/palworld-kb`
-**Lifecycle state:** `published` — source-only admission candidate; no service, DB, or runtime
+**Lifecycle state:** `source-only` — source-only admission candidate; no service, DB, or runtime
 **Detailed gate evidence:** `repos/palworld-kb/RELEASE_GATES.md`
 
 ---

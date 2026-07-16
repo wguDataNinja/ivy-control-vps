@@ -1,3 +1,58 @@
+---
+control_model_version: "1.0"
+repository:
+  slug: traderie
+  purpose: "Active governance authority for Traderie within IvyControlVPS."
+  remote: "git@github.com:wguDataNinja/d2-market-helper.git"
+  default_branch: master
+  approved_sha: "e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40"
+  local_path: "/Users/buddy/projects/traderie"
+  vps_path: "/home/scraper/apps/traderie"
+lifecycle:
+  admission_gate: 5
+  state: "production-runtime"
+github:
+  visibility: public
+  publication_gate: 3
+  clean_history: true
+vps:
+  clone_state: cloned
+  runtime_location: "/home/scraper/apps/traderie"
+scheduler:
+  active: "traderie-ingest-snapshot.timer"
+  writer: "VPS systemd service (sole writer)"
+  legacy: "Mac launchd — inactive/unloaded for production authority"
+database:
+  present: true
+  name: "traderie"
+  schemas: ["app", "archive", "health"]
+  migrations: "001-017"
+data_locations:
+  archive: null
+  backup: "/home/scraper/backups/postgres/traderie"
+  source_only: false
+health:
+  state: degraded
+roadmap:
+  gates: [1, 2, 3, 4, 5]
+  blockers: ["pc_hc_nl timeout on 2026-07-16 natural run"]
+  next_task: "Session 5 §7A — Traderie production recovery"
+hermes:
+  scope: "read-only"
+codex_stops:
+  - "Service unit not found"
+  - "Timer inactive/unexpected state"
+  - "pc_hc_nl timeout recurrence"
+  - "Deployed SHA mismatch"
+  - "Disk >85%"
+  - "Backup dump missing or zero-size"
+  - "Restore validation failure"
+  - "Conflicting health run/service state evidence"
+buddy_decisions: []
+last_verified: "2026-07-16"
+evidence_basis: "_internal/outbox/session-9/21-live-discovery.md"
+---
+
 # Traderie — Repository Control
 
 **Purpose:** Active governance authority for Traderie within IvyControlVPS.
