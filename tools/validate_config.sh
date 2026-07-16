@@ -45,6 +45,13 @@ check_warn() {
     WARN=$((WARN + 1))
 }
 
+path_outside_checkout() {
+    case "$1" in
+        "$REPO_ROOT"|"$REPO_ROOT"/*) printf '%s\n' "fail" ;;
+        *) printf '%s\n' "pass" ;;
+    esac
+}
+
 printf '=== VPS Configuration Validation ===\n'
 printf 'REPO_ROOT: %s\n' "$REPO_ROOT"
 printf 'VPS_STATE_DIR: %s\n' "$VPS_STATE_DIR"
@@ -54,11 +61,11 @@ printf '\n'
 # ---- 1. Path class resolution ----
 printf '[1] Path class resolution\n'
 check "VPS_STATE_DIR is non-empty" "$([ -n "$VPS_STATE_DIR" ] && echo "pass" || echo "fail")"
-check "VPS_GENERATED_DIR is outside checkout" "$(case "$VPS_GENERATED_DIR" in "$REPO_ROOT"*) echo "fail";; *) echo "pass";; esac)" "VPS_GENERATED_DIR=$VPS_GENERATED_DIR is inside $REPO_ROOT"
-check "VPS_CONFIG_DIR is outside checkout" "$(case "$VPS_CONFIG_DIR" in "$REPO_ROOT"*) echo "fail";; *) echo "pass";; esac)"
-check "VPS_DATA_DIR is outside checkout" "$(case "$VPS_DATA_DIR" in "$REPO_ROOT"*) echo "fail";; *) echo "pass";; esac)"
-check "VPS_LOG_DIR is outside checkout" "$(case "$VPS_LOG_DIR" in "$REPO_ROOT"*) echo "fail";; *) echo "pass";; esac)"
-check "VPS_BACKUP_DIR is outside checkout" "$(case "$VPS_BACKUP_DIR" in "$REPO_ROOT"*) echo "fail";; *) echo "pass";; esac)"
+check "VPS_GENERATED_DIR is outside checkout" "$(path_outside_checkout "$VPS_GENERATED_DIR")" "VPS_GENERATED_DIR=$VPS_GENERATED_DIR is inside $REPO_ROOT"
+check "VPS_CONFIG_DIR is outside checkout" "$(path_outside_checkout "$VPS_CONFIG_DIR")"
+check "VPS_DATA_DIR is outside checkout" "$(path_outside_checkout "$VPS_DATA_DIR")"
+check "VPS_LOG_DIR is outside checkout" "$(path_outside_checkout "$VPS_LOG_DIR")"
+check "VPS_BACKUP_DIR is outside checkout" "$(path_outside_checkout "$VPS_BACKUP_DIR")"
 
 # ---- 2. Git state ----
 printf '\n[2] Git state\n'
@@ -90,12 +97,12 @@ fi
 
 # ---- 4. No .env files tracked ----
 printf '\n[4] Tracked .env files\n'
-TRACKED_ENV=$(git ls-files 2>/dev/null | grep -c '\.env$' || echo "0")
+TRACKED_ENV=$(git ls-files 2>/dev/null | grep -c '\.env$' || true)
 check "No .env files tracked in git" "$([ "$TRACKED_ENV" -eq 0 ] && echo "pass" || echo "fail")" "Found $TRACKED_ENV .env files in git tracking"
 
 # ---- 5. No generated artifacts inside checkout ----
 printf '\n[5] Generated artifacts inside checkout\n'
-GENERATED_INSIDE=$(git ls-files --others --exclude-standard 2>/dev/null | grep -c 'generated' || echo "0")
+GENERATED_INSIDE=$(git ls-files --others --exclude-standard 2>/dev/null | grep -c 'generated' || true)
 check_warn "Untracked generated/ files: $GENERATED_INSIDE (may be expected if state dir is inside checkout)"
 
 # ---- 6. Ownership and permissions ----
