@@ -9,6 +9,14 @@ Status derivation preserves:
 - Lifetime failure counts do not override current success (Wave 1 fix)
 - Acknowledgement semantics from the adapters
 - deployed_revision = None/unknown while source authority unresolved
+
+Evidence semantics (evidence_level values):
+- live: fresh observation from live system
+- stale: observation exists but exceeds freshness threshold
+- missing_producer: no producer/exporter for this field
+- unsupported_field: field is not yet instrumented
+- doc_fallback: derived from documentation, not live observation
+- unresolved_authority: authority decision pending (Buddy)
 """
 
 from __future__ import annotations
@@ -18,6 +26,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+# Ensure the repository root is on sys.path for standalone usage.
+_ADAPTER_ROOT = Path(__file__).resolve().parent.parent
+if str(_ADAPTER_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ADAPTER_ROOT))
 
 
 # External repos are co-located under ~/projects/ alongside ivy-control-vps.
@@ -91,7 +104,7 @@ def _row(name: str, collector: str, reference: str) -> dict:
         "backup": "unknown",
         "capacity": "unknown",
         "status": "UNKNOWN",
-        "evidence_level": "unknown",
+        "evidence_level": "missing_producer",
         "evidence_timestamp": now,
         "detail": {},
         "issues": [],
@@ -139,22 +152,26 @@ def _v2_to_row(
     result["source_freshness"] = (
         f"{freshness}s ago" if freshness is not None else "unknown"
     )
-    result["db_freshness"] = "unknown (adapter does not have a DB adapter yet)"
+    result["db_freshness"] = "missing_producer (no DB adapter; no PostgreSQL reconciliation)"
 
     ack = meta.get("archive_acknowledgement_status")
     result["offload"] = _v2_ack_to_dash(ack)
 
     result["backup"] = _v2_backup_to_dash(v2.get("backup_state"))
 
-    result["capacity"] = "unknown (host adapter pending)"
+    result["capacity"] = "missing_producer (host capacity adapter pending)"
 
     detail: dict[str, Any] = {
         "component": component
         or "Idle Hacking Collector (namespace ih-market-companion; observed v2026-05-03.3)",
         "helper_service": service_state,
         "helper_sha256": helper_sha
-        or "7747c2eb…bec1020 (fresh 2026-07-15 inspection)",
-        "userscript_source_authority": "unresolved; installed-copy verification unavailable",
+        or "7747c2eb…bec1020 (observed 2026-07-15; not runtime-verified)",
+        "userscript_source_authority": "unresolved_authority — installed-copy verification unavailable; cannot inspect Chrome/Tampermonkey profile",
+        "installed_revision": "unresolved_authority (no userscript hash verification possible without profile access)",
+        "replay_proof": "unsupported_field (no replay mechanism observed or contract defined)",
+        "acknowledgement_destination": "unresolved_authority (Buddy must decide canonical source and destination for acknowledgement)",
+        "durable_destination": "unresolved_authority (no durable archive path contract beyond local helper storage)",
         "adapter_version": v2.get("producer_version", "unknown"),
     }
     ec = v2.get("error_class")
@@ -190,6 +207,8 @@ def _v2_to_row(
         )
     if ack == "required":
         issues.append("Archive acknowledgement is required but not confirmed")
+    if ack == "pending":
+        issues.append("Archive acknowledgement is pending; replay and durability not confirmed")
     result["issues"] = issues
 
     return result

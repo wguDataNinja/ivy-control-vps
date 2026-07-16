@@ -26,6 +26,13 @@ OUTPUT = ROOT / "_internal" / "generated" / "ingestion-dashboard"
 ROADMAP = ROOT / "ROADMAP.md"
 UTC = dt.timezone.utc
 STATUSES = ("GREEN", "YELLOW", "RED", "UNKNOWN")
+EVIDENCE_LEVELS = ("live", "stale", "missing_producer", "unsupported_field", "doc_fallback", "unresolved_authority")
+
+# Ensure the repository root is on sys.path so that 'from tools.*' imports
+# work regardless of the caller's working directory.
+_THIS_DIR = str(ROOT)
+if _THIS_DIR not in sys.path:
+    sys.path.insert(0, _THIS_DIR)
 
 # This small registry is intentionally explicit rather than a fragile
 # general-purpose ROADMAP Markdown parser.  The coverage check below warns if
@@ -74,7 +81,7 @@ def row(name: str, collector: str, reference: str) -> dict:
         "workload": name, "collector": collector, "reference": reference,
         "last_success": "unknown", "source_freshness": "unknown",
         "db_freshness": "unknown", "offload": "unknown", "backup": "unknown",
-        "capacity": "unknown", "status": "UNKNOWN", "evidence_level": "unknown",
+        "capacity": "unknown", "status": "UNKNOWN", "evidence_level": "missing_producer",
         "evidence_timestamp": now(), "detail": {}, "issues": [],
     }
 
@@ -88,6 +95,15 @@ def control_text(path: str) -> str:
 
 def collect_reddit() -> dict:
     result = row("WGU Reddit", "wgu-reddit-postgres-run.timer", "ROADMAP §7B-G1")
+    result["evidence_level"] = "missing_producer"
+    result["detail"].update({
+        "deployed_revision": "unknown (SCP-managed runtime; no Git checkout)",
+        "canonicality": "unresolved_authority — needs source/DB frontier, duplicate/gap check, archive continuity, lock proof, fresh backup/restore, natural-run observation",
+        "source_frontier_adapter": "missing_producer",
+        "db_frontier_adapter": "missing_producer",
+        "duplicate_gap_adapter": "missing_producer",
+        "archive_continuity_adapter": "missing_producer",
+    })
     command = (
         "systemctl --user show wgu-reddit-postgres-run.timer "
         "-p ActiveState -p UnitFileState --value; echo ---; "
@@ -98,6 +114,7 @@ def collect_reddit() -> dict:
     )
     ok, output = ssh(command)
     if not ok:
+        result["evidence_level"] = "missing_producer"
         result["issues"].append("Live VPS service evidence unavailable: " + output)
         return result
     groups = output.split("\n---\n")
@@ -109,24 +126,35 @@ def collect_reddit() -> dict:
     result["detail"].update({"scheduler": timer, "service": service, "legacy_scheduler": legacy, "backup_unit": backup, "sole_writer": "candidate only; DB lock/query adapter pending"})
     if "success" in service:
         result["last_success"] = iso_from_systemd(next((item for item in service if item != "success" and item != "inactive"), "unknown"))
-        result["source_freshness"] = "unknown (monitor-role source/frontier adapter pending)"
-        result["db_freshness"] = "unknown (monitor-role DB adapter pending)"
+        result["source_freshness"] = "missing_producer (monitor-role source/frontier adapter needed)"
+        result["db_freshness"] = "missing_producer (monitor-role DB adapter needed)"
     if backup and "success" not in backup:
-        result["backup"] = "FAILED: systemd backup unit"
+        result["backup"] = "FAILED: systemd backup unit (daily failures since 2026-07-11)"
         result["status"] = "RED"
-        result["issues"].append("Backup service currently failed; canonicality cannot be verified")
-    else:
-        result["backup"] = "unknown"
-        result["status"] = "UNKNOWN"
+        result["evidence_level"] = "live"
+        result["issues"].append("Backup service currently failed; no current restore proof; canonicality cannot be verified")
+    if backup and len(backup) > 0 and backup[0] == "success":
+        result["backup"] = "current (live systemd evidence)"
+        result["status"] = "YELLOW"
+        result["issues"].append("Backup OK per systemd, but restore proof, archive continuity, and canonicality remain unverified")
     return result
 
 
 def collect_ih() -> tuple[dict, dict]:
     chat = row("Idle Hacking chat", "Idle Hacking Collector / Chrome + helper", "ROADMAP §4I-G1")
+    chat["detail"]["installed_revision"] = "unresolved_authority (no userscript hash verification; inspection of Chrome/Tampermonkey profile not permitted)"
+    chat["detail"]["replay_proof"] = "unsupported_field (no replay mechanism observed)"
+    chat["detail"]["acknowledgement_destination"] = "unresolved_authority (Buddy must decide canonical source and destination)"
+    chat["detail"]["durable_destination"] = "unresolved_authority (no durable archive path contract)"
     market = row("Idle Hacking market", "Idle Hacking Collector / Chrome + helper", "ROADMAP §4D-G1")
+    market["detail"]["installed_revision"] = "unresolved_authority (no userscript hash verification)"
+    market["detail"]["replay_proof"] = "unsupported_field (no replay mechanism observed)"
+    market["detail"]["acknowledgement_destination"] = "unresolved_authority (Buddy must decide canonical source and destination)"
+    market["detail"]["postgresql_reconciliation"] = "unsupported_field (no PG market import pilot)"
     ok, output = ssh("curl --max-time 5 -s http://127.0.0.1:8765/health; echo; systemctl --user is-active ih-collector-helper.service")
     if not ok:
         for item in (chat, market):
+            item["evidence_level"] = "missing_producer"
             item["issues"].append("Live browser/helper evidence unavailable: " + output)
         return chat, market
     payload_text, _, service_state = output.rpartition("\n")
@@ -134,14 +162,16 @@ def collect_ih() -> tuple[dict, dict]:
         payload = json.loads(payload_text)
     except json.JSONDecodeError:
         for item in (chat, market):
+            item["evidence_level"] = "missing_producer"
             item["issues"].append("Malformed helper health payload; treated as UNKNOWN")
         return chat, market
     if not isinstance(payload, dict):
         for item in (chat, market):
+            item["evidence_level"] = "missing_producer"
             item["issues"].append("Non-dict payload from helper; treated as UNKNOWN")
         return chat, market
     from tools.ih_dashboard_adapter import adapt_chat, adapt_market
-    helper_sha = "7747c2eb…bec1020 (fresh 2026-07-15 inspection)"
+    helper_sha = "7747c2eb…bec1020 (observed 2026-07-15; not runtime-verified — installed-copy verification unavailable)"
     component = "Idle Hacking Collector (namespace ih-market-companion; observed v2026-05-03.3)"
     chat = adapt_chat(payload, service_state=service_state.strip() or "unknown", helper_sha=helper_sha, component=component)
     market = adapt_market(payload, service_state=service_state.strip() or "unknown", helper_sha=helper_sha, component=component)
@@ -149,23 +179,31 @@ def collect_ih() -> tuple[dict, dict]:
 
 
 def collect_capacity() -> dict:
-    result = row("VPS capacity", "VPS host", "ROADMAP §3E")
+    result = row("VPS / control plane", "VPS host", "ROADMAP §3E")
+    result["detail"].update({
+        "control_plane_deployed_revision": "missing_producer (no ivy-control-vps checkout on VPS)",
+        "control_plane_drift": "missing_producer (no checkout to compare)",
+        "capacity_producer": "missing_producer (no recurring capacity snapshot producer deployed)",
+    })
     ok, output = ssh("df -P / | tail -1; df -Pi / | tail -1; free -h | sed -n '2p'")
     if not ok:
+        result["evidence_level"] = "missing_producer"
         result["issues"].append("Live capacity unavailable: " + output)
         return result
     lines = output.splitlines()
     if not lines:
+        result["evidence_level"] = "missing_producer"
         result["issues"].append("Malformed capacity response")
         return result
     parts = lines[0].split()
     try:
         used_pct = int(parts[4].rstrip("%"))
     except (IndexError, ValueError):
+        result["evidence_level"] = "missing_producer"
         result["issues"].append("Cannot parse root filesystem utilization")
         return result
     result.update({"evidence_level": "live", "last_success": now(), "source_freshness": "not applicable", "db_freshness": "not applicable", "offload": "not applicable", "backup": "not applicable", "capacity": f"{parts[3]} free / {used_pct}% used", "status": "GREEN" if used_pct < 80 else "YELLOW" if used_pct <= 85 else "RED"})
-    result["detail"] = {"filesystem": lines[0], "inodes": lines[1] if len(lines) > 1 else "unknown", "memory": lines[2] if len(lines) > 2 else "unknown"}
+    result["detail"].update({"filesystem": lines[0], "inodes": lines[1] if len(lines) > 1 else "unknown", "memory": lines[2] if len(lines) > 2 else "unknown", "control_plane_deployed_revision": "missing_producer (no ivy-control-vps checkout on VPS)", "control_plane_drift": "missing_producer", "capacity_producer": "missing_producer"})
     if used_pct >= 85:
         result["issues"].append("Capacity deployment stop threshold reached")
     return result
@@ -173,10 +211,17 @@ def collect_capacity() -> dict:
 
 def traderie_fallback() -> dict:
     result = row("Traderie", "traderie-ingest-snapshot.timer", "ROADMAP §7A-G1")
+    result["detail"].update({
+        "deployed_revision": "e5ebd0f (exact SHA from VPS checkout; clean/detached)",
+        "live_exporter_adapter": "missing_producer (no live Traderie probe adapter deployed)",
+        "backup_age": "stale (last dump 2026-07-09; backup restore proof missing)",
+        "timeout_progress": "unsupported_field (instrumentation not yet deployed; local source at 137dd64 has it)",
+        "mutable_data_violation": "1.2 GB mutable data inside Git checkout (violates exact-SHA deployment model)",
+    })
     text = control_text("repos/traderie/CONTROL.md")
     if "pc_hc_nl" in text and "timed out" in text:
-        result.update({"status": "RED", "evidence_level": "control-doc", "source_freshness": "unknown", "db_freshness": "unknown", "offload": "not applicable", "backup": "unknown", "capacity": "unknown"})
-        result["issues"].append("Control evidence records a failed natural run; no fresh Traderie probe adapter")
+        result.update({"status": "RED", "evidence_level": "doc_fallback", "source_freshness": "stale (no live exporter; control doc from prior observation)", "db_freshness": "unknown", "offload": "not applicable", "backup": "stale (last backup 2026-07-09)", "capacity": "unknown"})
+        result["issues"].append("Control evidence records a failed natural run (pc_hc_nl timeout 2026-07-16); no fresh Traderie probe adapter")
     return result
 
 
@@ -200,7 +245,7 @@ def render(rows: list[dict], coverage: dict) -> str:
     def cell(value: object) -> str:
         return html.escape(str(value))
     table = "\n".join(
-        "<tr class='{status}'><td>{workload}</td><td>{collector}</td><td>{last_success}</td><td>{source}</td><td>{db}</td><td>{offload}</td><td>{backup}</td><td>{capacity}</td><td><strong>{status}</strong><br><small>{level}</small></td></tr>".format(
+        "<tr class='{status}'><td>{workload}</td><td>{collector}</td><td>{last_success}</td><td>{source}</td><td>{db}</td><td>{offload}</td><td>{backup}</td><td>{capacity}</td><td><strong>{status}</strong><br><small class='ev-{level}'>{level}</small></td></tr>".format(
             status=cell(r["status"]), workload=cell(r["workload"]), collector=cell(r["collector"]), last_success=cell(r["last_success"]), source=cell(r["source_freshness"]), db=cell(r["db_freshness"]), offload=cell(r["offload"]), backup=cell(r["backup"]), capacity=cell(r["capacity"]), level=cell(r["evidence_level"])
         ) for r in rows
     )
@@ -208,8 +253,8 @@ def render(rows: list[dict], coverage: dict) -> str:
     priorities = "".join(f"<li>{cell(item)}</li>" for item in coverage["priorities"]) or "<li>No matching roadmap priority lines found.</li>"
     unmapped = ", ".join(coverage["unmapped"]) if coverage["unmapped"] else "None"
     return f"""<!doctype html><html><head><meta charset='utf-8'><title>Ivy ingestion dashboard</title><style>
-body{{font-family:system-ui,sans-serif;margin:2rem;color:#171717}} table{{border-collapse:collapse;width:100%;font-size:.9rem}}th,td{{border:1px solid #bbb;padding:.55rem;text-align:left;vertical-align:top}}th{{background:#eee}}.GREEN{{background:#e8f5e9}}.YELLOW{{background:#fff8d8}}.RED{{background:#ffe5e5}}.UNKNOWN{{background:#eeeeee}}pre{{white-space:pre-wrap;word-break:break-word}}small{{color:#555}}.notice{{padding:.75rem;background:#fff8d8;border-left:4px solid #b8860b}}</style></head><body>
-<h1>Ivy ingestion dashboard</h1><p class='notice'>Generated {cell(now())}. Live evidence is preferred; control/roadmap evidence cannot render GREEN. Browser/helper process health does not prove chat or market capture and offload.</p>
+body{{font-family:system-ui,sans-serif;margin:2rem;color:#171717}} table{{border-collapse:collapse;width:100%;font-size:.9rem}}th,td{{border:1px solid #bbb;padding:.55rem;text-align:left;vertical-align:top}}th{{background:#eee}}.GREEN{{background:#e8f5e9}}.YELLOW{{background:#fff8d8}}.RED{{background:#ffe5e5}}.UNKNOWN{{background:#eeeeee}}pre{{white-space:pre-wrap;word-break:break-word}}small{{color:#555}}.ev-live{{color:#2e7d32}}.ev-stale{{color:#e65100}}.ev-missing_producer{{color:#c62828;font-weight:bold}}.ev-unsupported_field{{color:#6a1b9a}}.ev-doc_fallback{{color:#e65100;font-style:italic}}.ev-unresolved_authority{{color:#6a1b9a;font-style:italic}}.notice{{padding:.75rem;background:#fff8d8;border-left:4px solid #b8860b}}</style></head><body>
+<h1>Ivy ingestion dashboard</h1><p class='notice'>Generated {cell(now())}. Evidence levels: <strong class='ev-live'>live</strong> (fresh observation) · <strong class='ev-stale'>stale</strong> (exceeds freshness) · <strong class='ev-missing_producer'>missing_producer</strong> · <strong class='ev-unsupported_field'>unsupported_field</strong> · <strong class='ev-doc_fallback'>doc_fallback</strong> (not live) · <strong class='ev-unresolved_authority'>unresolved_authority</strong> (needs Buddy). Doc_fallback evidence cannot render GREEN. Browser/helper process health does not prove chat or market capture and offload.</p>
 <p><strong>Summary:</strong> GREEN {counts['GREEN']} · YELLOW {counts['YELLOW']} · RED {counts['RED']} · UNKNOWN {counts['UNKNOWN']}. <strong>Highest priority:</strong> {cell(highest['workload'] + ': ' + '; '.join(highest['issues'])) if highest else 'none'}</p>
 <table><thead><tr><th>Workload</th><th>Collector</th><th>Last success</th><th>Source freshness</th><th>DB freshness</th><th>Offload / sync</th><th>Backup</th><th>Capacity</th><th>Status</th></tr></thead><tbody>{table}</tbody></table>
 <h2>Details</h2>{details}<h2>ROADMAP.md coverage</h2><p>Expected ingestion workload labels missing from roadmap: <strong>{cell(unmapped)}</strong>.</p><h3>Open priority items</h3><ul>{priorities}</ul>
@@ -232,7 +277,7 @@ def main() -> int:
     rows = [reddit, chat, market, traderie, capacity]
     coverage = roadmap_coverage()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    data = {"generated_at": now(), "rows": rows, "roadmap_coverage": coverage, "missing_live_adapters": ["Reddit monitor-role canonicality/source/DB/duplicate-gap adapter", "Traderie live exporter adapter", "IH installed-userscript source verification", "IH acknowledgement destination/receipt adapter", "portfolio recurring host-capacity producer"]}
+    data = {"generated_at": now(), "rows": rows, "roadmap_coverage": coverage, "missing_live_adapters": ["Reddit: source-frontier adapter (missing_producer)", "Reddit: DB-frontier adapter (missing_producer)", "Reddit: duplicate/gap adapter (missing_producer)", "Reddit: archive-continuity adapter (missing_producer)", "Reddit: canonicality evidence (unresolved_authority)", "Reddit: backup/restore proof adapter (missing_producer)", "Traderie: live exporter probe adapter (missing_producer)", "Traderie: backup-age/restore adapter (missing_producer)", "Traderie: timeout/progress instrumentation (unsupported_field; local source 137dd64 has it)", "IH: installed-userscript source verification (unresolved_authority)", "IH: acknowledgement destination/receipt adapter (unresolved_authority)", "IH: replay proof (unsupported_field)", "IH: durable destination contract (unresolved_authority)", "IH market: PostgreSQL reconciliation (unsupported_field)", "VPS: recurring capacity snapshot producer (missing_producer)", "VPS: control-plane deployed-revision producer (missing_producer)", "VPS: checkout drift producer (missing_producer)"]}
     (args.output_dir / "status.json").write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (args.output_dir / "index.html").write_text(render(rows, coverage), encoding="utf-8")
     print(args.output_dir / "index.html")

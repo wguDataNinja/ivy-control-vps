@@ -1,0 +1,16 @@
+{
+  "deployed_revision": "e5ebd0f",
+  "run_status": "fail",
+  "last_success_at": "2026-07-09T00:30:00Z",
+  "last_failure_at": "2026-07-16T00:14:07Z",
+  "error_class": "pc_hc_nl_timeout",
+  "schedule_state": "active",
+  "backup_age_seconds": 604800,
+  "backup_state": "stale",
+  "records_read": 520,
+  "records_written": 480,
+  "segment_duration_seconds": 480.0,
+  "has_timeout_error": true,
+  "mutable_data_violation": true,
+  "upstream_source_sha": "137dd64"
+}

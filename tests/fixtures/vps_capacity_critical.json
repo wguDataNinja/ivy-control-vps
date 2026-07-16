@@ -1,0 +1,7 @@
+{
+  "status": "fail",
+  "filesystem": "/dev/sda1    37860320  33000000  3000000  88% /",
+  "inodes": "37860320  6000000  31860320  16% /",
+  "memory": "Mem:  3.7Gi total, 0.3Gi free, 3.0Gi used, 0.4Gi swap",
+  "uptime": "2026-07-15T18:00:00Z"
+}
