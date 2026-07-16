@@ -31,6 +31,19 @@ data_locations:
   archive: null
   backup: "/home/scraper/backups/postgres/reddit_ops"
   source_only: false
+backup:
+  importance: important
+  sensitivity: public
+  strategy: database_dump
+  priority: P2
+  include_groups:
+    - database_dump
+  exclude_groups:
+    - cache
+    - virtualenv
+    - regenerable_output
+    - git_objects
+  evidence_max_age_days: 90
 health:
   state: degraded
 roadmap:

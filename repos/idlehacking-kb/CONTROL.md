@@ -31,6 +31,21 @@ data_locations:
   archive: null
   backup: null
   source_only: false
+backup:
+  importance: critical
+  sensitivity: private
+  strategy: file_archive
+  priority: P0
+  include_groups:
+    - raw_corpus
+    - derived_irreplaceable
+  exclude_groups:
+    - cache
+    - virtualenv
+    - build_output
+    - regenerable_output
+    - git_objects
+  evidence_max_age_days: 30
 health:
   state: degraded
 roadmap:

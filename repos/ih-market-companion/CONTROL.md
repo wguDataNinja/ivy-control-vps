@@ -31,6 +31,19 @@ data_locations:
   archive: null
   backup: null
   source_only: false
+backup:
+  importance: important
+  sensitivity: private
+  strategy: file_archive
+  priority: P1
+  include_groups:
+    - private_state
+  exclude_groups:
+    - cache
+    - virtualenv
+    - build_output
+    - git_objects
+  evidence_max_age_days: 60
 health:
   state: unknown
 roadmap:
