@@ -1,5 +1,6 @@
 #!/bin/sh
-# Generate a private read-only ingestion dashboard and open it on macOS.
+# Generate a private read-only ingestion dashboard and open it in a browser.
+# Supports macOS (open), Linux (xdg-open), and fallback to path print.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -16,6 +17,8 @@ if [ "$#" -ne 0 ]; then
 fi
 if command -v open >/dev/null 2>&1; then
   open "$HTML"
+elif command -v xdg-open >/dev/null 2>&1; then
+  xdg-open "$HTML"
 else
   printf 'Generated dashboard; open the printed file path manually.\n' >&2
 fi
