@@ -278,8 +278,8 @@ class TestBoundedOutput:
 
     def test_capacity_unknown(self) -> None:
         payload = both_healthy_payload()
-        assert "unknown" in adapt_chat(payload)["capacity"]
-        assert "unknown" in adapt_market(payload)["capacity"]
+        assert "missing_producer" in adapt_chat(payload)["capacity"]
+        assert "missing_producer" in adapt_market(payload)["capacity"]
 
     def test_last_success_is_iso_or_unknown(self) -> None:
         payload = both_healthy_payload()

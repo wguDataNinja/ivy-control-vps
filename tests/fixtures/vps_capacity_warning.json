@@ -1,0 +1,7 @@
+{
+  "status": "warn",
+  "filesystem": "/dev/sda1    37860320  31000000  5000000  82% /",
+  "inodes": "37860320  6000000  31860320  16% /",
+  "memory": "Mem:  3.7Gi total, 0.8Gi free, 2.5Gi used, 0.4Gi swap",
+  "uptime": "2026-07-15T12:00:00Z"
+}

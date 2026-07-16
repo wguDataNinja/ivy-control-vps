@@ -1,0 +1,10 @@
+{
+  "deployed_revision": "5432ec9",
+  "branch": "main",
+  "is_dirty": false,
+  "drift_state": "clean",
+  "ahead_count": 9,
+  "behind_count": 0,
+  "has_origin": true,
+  "issues": ["Local checkout is 9 commits ahead of upstream"]
+}

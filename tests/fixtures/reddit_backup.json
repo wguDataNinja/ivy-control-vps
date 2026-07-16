@@ -1,0 +1,12 @@
+{
+  "last_dump_at": "2026-07-09T08:00:00Z",
+  "last_checksum_at": "2026-07-09T08:05:00Z",
+  "last_restore_proof_at": null,
+  "backup_unit_ok": false,
+  "dump_exists": true,
+  "checksum_valid": true,
+  "restore_proven": false,
+  "archive_earliest": "2025-01-01T00:00:00Z",
+  "archive_latest": "2026-07-09T08:00:00Z",
+  "errors": ["systemd unit EXEC failure: backup_reddit_ops.sh not found"]
+}
