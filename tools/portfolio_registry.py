@@ -43,11 +43,14 @@ VALID_LIFECYCLES = {
     "pre-admission", "admission-pending", "admitted",
     "production-stabilizing", "production-degraded", "production-active",
     "production-complete", "archived", "decommissioned",
+    "production-runtime",
+    "source-only", "published",
+    "browser-dependent", "downstream", "restricted", "batch",
 }
 
 VALID_GATES = {"1", "2", "3", "4", "5", "6", "UNKNOWN", "MISSING"}
 
-HERMES_SCOPES = {"read-only", "read-write", "enabled", "MISSING", "UNKNOWN", "N/A"}
+HERMES_SCOPES = {"read-only", "read-write", "enabled", "none", "MISSING", "UNKNOWN", "N/A"}
 
 # Baseline repos from PORTFOLIO_BASELINE.md §1A
 BASELINE_REPOS: list[dict[str, str]] = [
@@ -81,7 +84,7 @@ def parse_yaml_front_matter(text: str) -> tuple[dict[str, str], str]:
     """Parse YAML front matter (--- ... ---) from CONTROL.md.
 
     Returns (metadata_dict, body_without_front_matter).
-    Uses simple line parsing — no external YAML dependency.
+    Supports simple nested keys by tracking indentation — no external YAML dependency.
     """
     lines = text.split("\n")
     if not lines or lines[0].strip() != "---":
@@ -92,13 +95,29 @@ def parse_yaml_front_matter(text: str) -> tuple[dict[str, str], str]:
     if end >= len(lines):
         return {}, text
     meta: dict[str, str] = {}
-    for line in lines[1:end]:
-        line = line.strip()
-        if ":" in line:
-            key, _, value = line.partition(":")
-            key = key.strip().lower()
-            value = value.strip().strip('"').strip("'")
-            meta[key] = value
+    prefix_stack: list[tuple[str, int]] = []
+    for raw_line in lines[1:end]:
+        if not raw_line.strip():
+            continue
+        stripped = raw_line.rstrip()
+        content = stripped.lstrip()
+        indent = len(stripped) - len(content)
+        if ":" not in content:
+            continue
+        key, _, value = content.partition(":")
+        leaf_key = key.strip().lower()
+        value = value.strip()
+        # Pop prefix stack until we find a parent at a lower indentation
+        while prefix_stack and prefix_stack[-1][1] >= indent:
+            prefix_stack.pop()
+        if value:
+            # This is a leaf key (has a value)
+            prefix = ".".join(p[0] for p in prefix_stack)
+            full_key = f"{prefix}.{leaf_key}" if prefix else leaf_key
+            meta[full_key] = value.strip('"').strip("'")
+        else:
+            # This is a parent key (no value, children follow)
+            prefix_stack.append((leaf_key, indent))
     body = "\n".join(lines[end + 1:])
     return meta, body
 
@@ -236,7 +255,11 @@ def extract_database(table: dict[str, str]) -> str:
 def extract_lifecycle(text: str, bold: dict[str, str]) -> str:
     raw = bold.get("lifecycle state", "")
     if raw:
-        return raw.replace("`", "").strip()
+        raw = raw.replace("`", "").strip()
+        for sep in (" — ", " —", "— ", " – ", " -- "):
+            if sep in raw:
+                raw = raw.split(sep)[0].strip()
+        return raw
     admission_table = extract_table(extract_heading(text, "Portfolio Admission State"))
     for key in admission_table:
         if "not yet admitted" in admission_table[key].lower():
@@ -273,7 +296,12 @@ def extract_blocker(text: str) -> str:
     section = extract_heading(text, "Current Blocker")
     if section:
         lines = [l.strip() for l in section.split("\n") if l.strip() and not l.startswith("#")]
-        return lines[0][:120] if lines else UNKNOWN
+        if lines:
+            first = lines[0][:120]
+            if first.lower().startswith("none"):
+                return "none"
+            return first
+        return UNKNOWN
     return "none"
 
 
@@ -340,6 +368,7 @@ def parse_control_md(
         "repo_id": repo_id,
         "display_name": UNKNOWN,
         "source": MISSING,
+        "_yaml_present": "false",
         "lifecycle": UNKNOWN,
         "admission": UNKNOWN,
         "github_url": UNKNOWN,
@@ -374,27 +403,86 @@ def parse_control_md(
     yaml_meta, body = parse_yaml_front_matter(control_text)
 
     if yaml_meta:
-        rec["repo_id"] = yaml_meta.get("repo_id", repo_id)
-        rec["display_name"] = yaml_meta.get("display_name", yaml_meta.get("name", UNKNOWN))
-        rec["lifecycle"] = yaml_meta.get("lifecycle", yaml_meta.get("lifecycle_state", UNKNOWN))
-        rec["admission"] = yaml_meta.get("admission", yaml_meta.get("admission_state", UNKNOWN))
-        rec["github_url"] = yaml_meta.get("github_url", yaml_meta.get("canonical_remote", UNKNOWN))
-        rec["default_branch"] = yaml_meta.get("default_branch", UNKNOWN)
-        rec["github_visibility"] = yaml_meta.get("github_visibility", rec["github_visibility"])
-        rec["approved_sha"] = yaml_meta.get("approved_sha", yaml_meta.get("approved_production_sha", UNKNOWN))
-        rec["vps_clone_state"] = yaml_meta.get("vps_clone_state", yaml_meta.get("vps_path", UNKNOWN))
-        rec["runtime"] = yaml_meta.get("runtime", UNKNOWN)
-        rec["scheduler_writer"] = yaml_meta.get("scheduler_writer", yaml_meta.get("scheduler", UNKNOWN))
-        rec["database"] = yaml_meta.get("database", UNKNOWN)
-        rec["health"] = yaml_meta.get("health", UNKNOWN)
-        rec["archive"] = yaml_meta.get("archive", UNKNOWN)
-        rec["hermes_scope"] = yaml_meta.get("hermes_scope", NA)
-        rec["blocker"] = yaml_meta.get("blocker", "none")
-        rec["next_task"] = yaml_meta.get("next_task", UNKNOWN)
-        rec["gate"] = yaml_meta.get("gate", yaml_meta.get("current_gate", UNKNOWN))
+        rec["_yaml_present"] = "true"
+        rec["repo_id"] = yaml_meta.get("repository.slug", repo_id)
+        rec["display_name"] = yaml_meta.get("display_name", yaml_meta.get("name",
+            yaml_meta.get("repository.purpose", UNKNOWN)))
+        rec["lifecycle"] = yaml_meta.get("lifecycle.state",
+            yaml_meta.get("lifecycle", yaml_meta.get("lifecycle_state", UNKNOWN)))
+        rec["admission"] = yaml_meta.get("lifecycle.admission_gate",
+            yaml_meta.get("admission", yaml_meta.get("admission_state", UNKNOWN)))
+        rec["github_url"] = yaml_meta.get("repository.remote",
+            yaml_meta.get("github_url", yaml_meta.get("canonical_remote", UNKNOWN)))
+        rec["default_branch"] = yaml_meta.get("repository.default_branch",
+            yaml_meta.get("default_branch", UNKNOWN))
+        rec["github_visibility"] = yaml_meta.get("github.visibility",
+            yaml_meta.get("github_visibility", rec["github_visibility"]))
+        rec["approved_sha"] = yaml_meta.get("repository.approved_sha",
+            yaml_meta.get("approved_sha", yaml_meta.get("approved_production_sha", UNKNOWN)))
+        rec["vps_clone_state"] = yaml_meta.get("vps.clone_state",
+            yaml_meta.get("vps_clone_state", yaml_meta.get("vps_path", UNKNOWN)))
+        rec["runtime"] = yaml_meta.get("vps.runtime_location",
+            yaml_meta.get("runtime", UNKNOWN))
+        active = yaml_meta.get("scheduler.active", "")
+        writer_val = yaml_meta.get("scheduler.writer", "")
+        if active or writer_val:
+            rec["scheduler_writer"] = (
+                f"scheduler={active}; writer={writer_val}"
+            )
+        else:
+            rec["scheduler_writer"] = yaml_meta.get("scheduler_writer",
+                yaml_meta.get("scheduler", UNKNOWN))
+        rec["database"] = yaml_meta.get("database.name",
+            yaml_meta.get("database", UNKNOWN))
+        rec["health"] = yaml_meta.get("health.state",
+            yaml_meta.get("health", UNKNOWN))
+        rec["archive"] = yaml_meta.get("data_locations.archive",
+            yaml_meta.get("archive", UNKNOWN))
+        rec["hermes_scope"] = yaml_meta.get("hermes.scope",
+            yaml_meta.get("hermes_scope", NA))
+        raw_blocker = yaml_meta.get("roadmap.blockers",
+            yaml_meta.get("blocker", "none"))
+        if raw_blocker and raw_blocker not in ("none", "[]", "", UNKNOWN):
+            if raw_blocker.startswith("[") and raw_blocker.endswith("]"):
+                try:
+                    import ast
+                    parsed = ast.literal_eval(raw_blocker)
+                    if isinstance(parsed, list) and parsed:
+                        rec["blocker"] = str(parsed[0])[:120]
+                    elif isinstance(parsed, list):
+                        rec["blocker"] = "none"
+                    else:
+                        rec["blocker"] = raw_blocker[:120]
+                except (ValueError, SyntaxError):
+                    rec["blocker"] = raw_blocker[:120]
+            else:
+                rec["blocker"] = raw_blocker[:120]
+        else:
+            rec["blocker"] = "none"
+        rec["next_task"] = yaml_meta.get("roadmap.next_task",
+            yaml_meta.get("next_task", UNKNOWN))
+        raw_gate = yaml_meta.get("lifecycle.admission_gate",
+            yaml_meta.get("gate", yaml_meta.get("current_gate", "")))
+        if raw_gate and raw_gate not in (UNKNOWN, "", "null"):
+            rec["gate"] = str(raw_gate)
+        else:
+            # Compute from roadmap gates list
+            raw_rm_gates = yaml_meta.get("roadmap.gates", "[]")
+            gates_passed = 0
+            try:
+                import ast
+                parsed = ast.literal_eval(raw_rm_gates)
+                if isinstance(parsed, list):
+                    gates_passed = len(parsed)
+            except (ValueError, SyntaxError):
+                pass
+            if gates_passed >= 6:
+                rec["gate"] = "6"
+            elif gates_passed > 0:
+                rec["gate"] = str(min(gates_passed + 1, 6))
+            else:
+                rec["gate"] = parse_gate_from_lifecycle(rec["lifecycle"])
         rec["last_verified"] = yaml_meta.get("last_verified", UNKNOWN)
-        if not rec["gate"] or rec["gate"] == UNKNOWN:
-            rec["gate"] = parse_gate_from_lifecycle(rec["lifecycle"])
         return rec
 
     bold = extract_bold_fields(control_text)
@@ -530,6 +618,8 @@ def validate_registry(records: list[dict[str, str]]) -> list[dict[str, str]]:
     issues: list[dict[str, str]] = []
     seen_ids: dict[str, int] = {}
 
+    REQUIRED_YAML_FIELDS = {"repository.slug", "lifecycle.state"}
+
     for i, rec in enumerate(records):
         rid = rec["repo_id"]
 
@@ -551,6 +641,13 @@ def validate_registry(records: list[dict[str, str]]) -> list[dict[str, str]]:
             })
 
         if rec["approved_sha"] in (UNKNOWN, MISSING, "unknown"):
+            issues.append({
+                "severity": "warning",
+                "rule": "missing_approved_sha",
+                "repo_id": rid,
+                "message": f"repo_id={rid} missing approved_sha",
+            })
+        elif rec["approved_sha"] == "null" and rec["source"] == MISSING:
             issues.append({
                 "severity": "warning",
                 "rule": "missing_approved_sha",
@@ -598,6 +695,27 @@ def validate_registry(records: list[dict[str, str]]) -> list[dict[str, str]]:
             if "backup" not in rec.get("health", "").lower() and rec["health"] != UNKNOWN:
                 pass
 
+        if rec["_yaml_present"] == "true":
+            if rec["source"] != MISSING:
+                ctrl_text = read_file(REPOS_DIR / rid / "CONTROL.md")
+                yaml_meta, _ = parse_yaml_front_matter(ctrl_text)
+                missing = REQUIRED_YAML_FIELDS - set(yaml_meta.keys())
+                if missing:
+                    issues.append({
+                        "severity": "warning",
+                        "rule": "yaml_missing_required_fields",
+                        "repo_id": rid,
+                        "message": f"YAML front matter present but missing required fields: {', '.join(sorted(missing))}",
+                    })
+
+        if is_active_production and rec["hermes_scope"] in (NA, UNKNOWN, MISSING):
+            issues.append({
+                "severity": "warning",
+                "rule": "active_repo_no_hermes_scope",
+                "repo_id": rid,
+                "message": f"Active lifecycle={rec['lifecycle']} but hermes_scope is {rec['hermes_scope']}",
+            })
+
         if rec["hermes_scope"] not in (NA, UNKNOWN, MISSING) and rec["hermes_scope"]:
             if rec["hermes_scope"] not in HERMES_SCOPES:
                 issues.append({
@@ -607,9 +725,17 @@ def validate_registry(records: list[dict[str, str]]) -> list[dict[str, str]]:
                     "message": f"repo_id={rid} hermes_scope={rec['hermes_scope']} not in valid set",
                 })
 
-        if rec["last_verified"] not in (UNKNOWN, MISSING, NA):
+        if rec["last_verified"] not in (UNKNOWN, MISSING, NA, ""):
             try:
-                date.fromisoformat(rec["last_verified"])
+                lv_date = date.fromisoformat(rec["last_verified"])
+                days_old = (date.today() - lv_date).days
+                if days_old > 30:
+                    issues.append({
+                        "severity": "warning",
+                        "rule": "stale_last_verified",
+                        "repo_id": rid,
+                        "message": f"last_verified={rec['last_verified']} is {days_old} days old (>30 day threshold)",
+                    })
             except (ValueError, TypeError):
                 issues.append({
                     "severity": "warning",

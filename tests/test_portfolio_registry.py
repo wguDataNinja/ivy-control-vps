@@ -304,7 +304,8 @@ class TestBuildRegistry:
 
     def test_missing_repos_have_missing_source(self):
         records = build_registry(repo_filter="bsda-courses")
-        assert records[0]["source"] == MISSING
+        assert records[0]["source"] != MISSING
+        assert records[0]["_yaml_present"] == "true"
 
 
 # ── Format ─────────────────────────────────────────────────────────────
@@ -338,7 +339,19 @@ class TestValidation:
     def test_detects_missing_control(self):
         records = build_registry(repo_filter="bsda-courses")
         issues = validate_registry(records)
-        assert any(i["rule"] == "missing_control_md" for i in issues)
+        assert not any(i["rule"] == "missing_control_md" for i in issues)
+
+    def test_yaml_validated_fields(self):
+        records = build_registry(repo_filter="traderie")
+        issues = validate_registry(records)
+        assert not any(i["rule"] == "yaml_missing_required_fields" for i in issues)
+
+    def test_staleness_detection(self):
+        text = "---\nrepository:\n  slug: stale-repo\nlifecycle:\n  state: source-only\nlast_verified: 2025-01-01\n---\n# content"
+        rec = parse_control_md("stale-repo", text)
+        issues = validate_registry([rec])
+        stale_issues = [i for i in issues if i["rule"] == "stale_last_verified"]
+        assert len(stale_issues) >= 1
 
     def test_no_duplicates_in_full_registry(self):
         records = build_registry(include_missing=True)
