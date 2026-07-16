@@ -1,3 +1,59 @@
+---
+control_model_version: "1.0"
+repository:
+  slug: ih-market-companion
+  purpose: "Public market site, VPS/cloud collector, market publishing, health checks, and ecosystem docs for IdleHacker."
+  remote: "https://github.com/wguDataNinja/ih-market-companion.git"
+  default_branch: main
+  approved_sha: "ae50fd47b49c13016a98034677e16151b337c871"
+  local_path: "/Users/buddy/projects/ih_market_companion"
+  vps_path: null
+lifecycle:
+  admission_gate: 1
+  state: "browser-dependent"
+github:
+  visibility: public
+  publication_gate: 3
+  clean_history: true
+vps:
+  clone_state: not-cloned
+  runtime_location: "/home/scraper/vps_helper/collector_helper.py"
+scheduler:
+  active: "ih-collector-helper.service"
+  writer: "VPS systemd service (shared helper — collector_helper.py)"
+  legacy: null
+database:
+  present: false
+  name: null
+  schemas: []
+  migrations: null
+data_locations:
+  archive: null
+  backup: null
+  source_only: false
+health:
+  state: unknown
+roadmap:
+  gates: [1]
+  blockers: ["Userscript source authority unresolved (pending Buddy decision)"]
+  next_task: "Buddy decides canonical userscript source; resolve acknowledgement destination and archive authority"
+hermes:
+  scope: "read-only"
+codex_stops:
+  - "Tracked secrets or credentials found"
+  - "Browser profile paths exposed"
+  - "Untracked private data in working tree"
+  - "_internal/ not properly git-ignored"
+  - "Health adapter returning raw exception messages"
+  - "Evidence of unintended automation"
+buddy_decisions:
+  - "Canonical userscript source (Option A — IH Market Companion, or alternative) — PENDING"
+  - "IH acknowledgement destination and archive authority — PENDING"
+  - "IH ownership decision — PENDING"
+last_verified: "2026-07-16"
+evidence_basis: "_internal/outbox/session-9/21-live-discovery.md"
+---
+
 # IH Market Companion — Repository Control
 
 **Purpose:** Public market site, VPS/cloud collector, market publishing, health checks, and ecosystem docs for IdleHacker.

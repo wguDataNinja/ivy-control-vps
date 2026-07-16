@@ -1,3 +1,56 @@
+---
+control_model_version: "1.0"
+repository:
+  slug: sjc-intel
+  purpose: "AI-assisted local intelligence/reporting for St. Johns County, Florida. Discovers, monitors, classifies, verifies, and organizes public information."
+  remote: null
+  default_branch: master
+  approved_sha: "35a0246f530f2ace77d9f93d07ddf78431c31667"
+  local_path: "/Users/buddy/projects/sjc_intel"
+  vps_path: null
+lifecycle:
+  admission_gate: 1
+  state: "source-only"
+github:
+  visibility: null
+  publication_gate: null
+  clean_history: null
+vps:
+  clone_state: not-cloned
+  runtime_location: null
+scheduler:
+  active: null
+  writer: null
+  legacy: null
+database:
+  present: false
+  name: null
+  schemas: []
+  migrations: null
+data_locations:
+  archive: null
+  backup: null
+  source_only: true
+health:
+  state: unknown
+roadmap:
+  gates: [1]
+  blockers: ["No remote configured for local checkout"]
+  next_task: "Establish canonical remote and publication-readiness review; prepare Gate 4 readiness packet"
+hermes:
+  scope: "read-only"
+codex_stops:
+  - "Tracked secrets or credentials found"
+  - "Untracked private data in working tree"
+  - "Unexpected runtime state (scheduled tasks, daemons)"
+  - "Untracked _outbox/ contains unassessed private content"
+  - "Data growth exceeds safe bounds"
+  - "Evidence of unintended automation"
+buddy_decisions: []
+last_verified: "2026-07-16"
+evidence_basis: "_internal/outbox/session-9/21-live-discovery.md"
+---
+
 # SJC Intel — Repository Control
 
 **Purpose:** AI-assisted local intelligence/reporting for St. Johns County, Florida. Discovers, monitors, classifies, verifies, and organizes public information.
