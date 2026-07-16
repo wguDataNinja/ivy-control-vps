@@ -232,8 +232,20 @@ def collect_ih(_transport: Transport | None = None) -> tuple[dict, dict]:
     from tools.ih_dashboard_adapter import adapt_chat, adapt_market
     helper_sha = "7747c2eb…bec1020 (observed 2026-07-15; not runtime-verified — installed-copy verification unavailable)"
     component = "Idle Hacking Collector (namespace ih-market-companion; observed v2026-05-03.3)"
-    chat = adapt_chat(payload, service_state=service_state.strip() or "unknown", helper_sha=helper_sha, component=component)
-    market = adapt_market(payload, service_state=service_state.strip() or "unknown", helper_sha=helper_sha, component=component)
+    try:
+        chat = adapt_chat(payload, service_state=service_state.strip() or "unknown", helper_sha=helper_sha, component=component)
+        market = adapt_market(payload, service_state=service_state.strip() or "unknown", helper_sha=helper_sha, component=component)
+    except (FileNotFoundError, ImportError, AttributeError) as exc:
+        # The adapters live in separate repositories and are intentionally
+        # optional on the VPS.  Their absence is evidence of a missing
+        # producer, never a reason for the operator dashboard to abort.
+        for item in (chat, market):
+            item["evidence_level"] = "missing_producer"
+            item["issues"].append(
+                "Idle Hacking adapter unavailable; live helper payload is not "
+                f"mapped to a dashboard row: {type(exc).__name__}"
+            )
+        return chat, market
     return chat, market
 
 

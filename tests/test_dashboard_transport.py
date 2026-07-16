@@ -243,6 +243,22 @@ class TestAbsentSshConfig:
         finally:
             shutil.which = original_which
 
+    def test_direct_mode_missing_ih_adapters_is_explicit_not_fatal(self) -> None:
+        """An optional external adapter must not abort the VPS dashboard."""
+        with tempfile.TemporaryDirectory() as tmp:
+            result = _run_python(
+                ["--mode", "direct", "--json", "--output-dir", tmp],
+                env={
+                    "IVY_IH_MARKET_ADAPTER": "/definitely/missing/market.py",
+                    "IVY_IH_CHAT_ADAPTER": "/definitely/missing/chat.py",
+                },
+            )
+            assert result.returncode == 0
+            data = json.loads(result.stdout)
+            rows = {r["workload"]: r for r in data["rows"]}
+            for workload in ("Idle Hacking chat", "Idle Hacking market"):
+                assert rows[workload]["evidence_level"] == "missing_producer"
+
 
 # ── 6. --json output ────────────────────────────────────────────────────────
 
