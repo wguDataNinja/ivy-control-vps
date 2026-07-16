@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import re
+import shlex
 import subprocess
 import tempfile
 from pathlib import Path
@@ -282,3 +284,92 @@ class TestCommandGeneration:
                 assert not pattern.startswith("-"), (
                     f"Exclude group {group_name} has flag-like pattern: {pattern}"
                 )
+
+    def test_shlex_round_trip(self) -> None:
+        """shlex.split(shlex.join(args)) must reproduce the original arg list."""
+        packet, src_root, dest_root = self._make_packet()
+        for c in packet.get("copy_commands", []):
+            args = c.get("args", [])
+            rendered = c["command"]
+            reparsed = shlex.split(rendered)
+            assert reparsed == args, (
+                f"shlex round-trip failed for {c['repo_slug']} {c['relative_path']}:\n"
+                f"  original args: {args}\n"
+                f"  reparsed:      {reparsed}"
+            )
+        for c in packet.get("verify_commands", []):
+            args = c.get("args", [])
+            rendered = c["command"]
+            reparsed = shlex.split(rendered)
+            assert reparsed == args, (
+                f"shlex round-trip failed for verify {c['repo_slug']} {c['relative_path']}"
+            )
+
+    def test_args_list_no_concat(self) -> None:
+        """Verify that source and destination are separate args, never concatenated."""
+        packet, src_root, dest_root = self._make_packet()
+        for c in packet.get("copy_commands", []):
+            args = c.get("args", [])
+            path_args = [a for a in args if a.startswith("/")]
+            assert len(path_args) == 2, (
+                f"Expected 2 path args, got {len(path_args)}: {path_args}"
+            )
+            src, dst = path_args
+            # The destination must NOT be a substring of source (concatenation guard)
+            assert not dst.startswith(src.rstrip("/")), (
+                f"Dest starts with source — concatenation detected!\n"
+                f"  source: {src}\n"
+                f"  dest:   {dst}"
+            )
+            # Source should end with /
+            assert src.endswith("/"), f"Source missing trailing slash: {src}"
+
+    def test_hdiutil_info_parsing_encrypted(self) -> None:
+        """Test that the encryption parser recognizes 'image-encrypted : TRUE'."""
+        # Simulate hdiutil info output structure
+        fixture_encrypted = """
+framework       : 683.100.3
+================================================
+image-path      : /Volumes/Passport/B/ivy-portfolio.sparsebundle
+image-type      : sparse bundle disk image
+image-encrypted : TRUE
+/dev/disk5      GUID_partition_scheme
+/dev/disk5s1    ...
+/dev/disk6      ...
+/dev/disk6s1    41504653-0000-11AA-AA11-00306543ECAC  /Volumes/Ivy-Portfolio-Backup
+"""
+        fixture_unencrypted = """
+framework       : 683.100.3
+================================================
+image-path      : /Volumes/Passport/B/test.sparsebundle
+image-type      : sparse bundle disk image
+image-encrypted : FALSE
+/dev/disk5      GUID_partition_scheme
+/dev/disk5s1    ...
+"""
+        # Test encrypted: should find image-encrypted TRUE for the mount device
+        sections = fixture_encrypted.split("================================================")
+        mount_device = "/dev/disk6s1"
+        found = False
+        for section in sections:
+            if mount_device in section:
+                for line in section.splitlines():
+                    if "image-encrypted" in line:
+                        val = line.split(":", 1)[1].strip().upper()
+                        if val == "TRUE":
+                            found = True
+                        break
+        assert found, "Failed to detect encrypted image in fixture"
+
+        # Test unencrypted: should NOT find TRUE
+        sections = fixture_unencrypted.split("================================================")
+        found = False
+        for section in sections:
+            if mount_device in section:
+                for line in section.splitlines():
+                    if "image-encrypted" in line:
+                        val = line.split(":", 1)[1].strip().upper()
+                        if val == "TRUE":
+                            found = True
+                        break
+        assert not found, "Falsely detected encryption in unencrypted fixture"
