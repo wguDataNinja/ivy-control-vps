@@ -747,7 +747,7 @@ Historical subreddit observations were exported to the Mac archive and removed f
 
 The VPS may retain only bounded current observations required for live health or research.
 
-### Idle Hacking data
+### idlehacking_kb data
 
 The verified-cutoff cleanup produced these results:
 
@@ -857,7 +857,7 @@ The migration introduced:
 
 Before import and cutover:
 
-- IH Market and Idle Hacking chat data were archived to the Mac;
+- ih-market-companion (IH Market) and idlehacking_kb chat data were archived to the Mac;
 - archives were checksum-verified and tested;
 - approved historical VPS copies were removed;
 - approximately 12.7 GB of free space was recovered;
@@ -989,7 +989,7 @@ The following remain planned:
 - incremental archive automation;
 - WGU Course Reference Contract;
 - selective BSDA comment acquisition implementation;
-- Idle Hacking Discord ingestion design and implementation;
+- idlehacking_kb Discord ingestion design and implementation;
 - IH Market pipeline and retention finalization;
 - public diagrams and refined case-study presentation.
 

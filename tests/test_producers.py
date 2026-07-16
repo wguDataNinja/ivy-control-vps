@@ -2,9 +2,12 @@
 
 Validates:
 - Required core fields present in every producer output
-- Status derivation logic
-- Evidence level semantics
+- Status derivation logic (healthy, warning, stop, inode stop)
+- Evidence level semantics (available/unavailable)
 - Malformed input handling
+- Missing PostgreSQL / WAL handling
+- Partial measurement handling
+- Overflow / units errors
 - No private leakage
 - Fixture-based local testing works
 """
@@ -22,6 +25,15 @@ from tests.fixtures.producer_fixtures import (
     CAPACITY_OK_FIXTURE,
     CAPACITY_WARN_FIXTURE,
     CAPACITY_CRITICAL_FIXTURE,
+    CAPACITY_HEALTHY_FIXTURE,
+    CAPACITY_WARNING_CLOSE_FIXTURE,
+    CAPACITY_STOP_FIXTURE,
+    CAPACITY_STOP_INODES_FIXTURE,
+    CAPACITY_MISSING_WAL_FIXTURE,
+    CAPACITY_MISSING_PG_FIXTURE,
+    CAPACITY_MALFORMED_FIXTURE,
+    CAPACITY_PARTIAL_FIXTURE,
+    CAPACITY_OVERFLOW_FIXTURE,
     REDDIT_BACKUP_FAILED_FIXTURE,
     TRADERIE_FAILED_FIXTURE,
 )
@@ -56,12 +68,22 @@ def _validate_core_fields(payload: dict, name: str) -> None:
     assert isinstance(payload["incident_state"], str), f"{name} incident_state must be string"
 
 
+def _get_capacity_metadata(payload: dict) -> dict:
+    meta = payload.get("metadata", {})
+    return meta.get("capacity", {})
+
+
 # ── VPS Capacity Snapshot ──────────────────────────────────────────────────
 
 
-class TestVpsCapacity:
+class TestVpsCapacityCore:
     def test_ok_status(self) -> None:
         payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_OK_FIXTURE))
+        _validate_core_fields(payload, "VPS capacity")
+        assert payload["status"] == "ok"
+
+    def test_ok_healthy_fixture(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
         _validate_core_fields(payload, "VPS capacity")
         assert payload["status"] == "ok"
         assert payload["incident_state"] == "none"
@@ -73,8 +95,28 @@ class TestVpsCapacity:
         assert payload["incident_state"] == "degraded"
         assert payload["disk_usage_pct"] >= 80
 
+    def test_warning_close_fixture(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_WARNING_CLOSE_FIXTURE))
+        _validate_core_fields(payload, "VPS capacity")
+        assert payload["status"] == "warn"
+        assert payload["incident_state"] == "degraded"
+        assert payload["disk_usage_pct"] >= 80
+
     def test_critical_status(self) -> None:
         payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_CRITICAL_FIXTURE))
+        _validate_core_fields(payload, "VPS capacity")
+        assert payload["status"] == "fail"
+        assert payload["incident_state"] == "critical"
+
+    def test_stop_threshold(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_STOP_FIXTURE))
+        _validate_core_fields(payload, "VPS capacity")
+        assert payload["status"] == "fail"
+        assert payload["incident_state"] == "critical"
+        assert payload["disk_usage_pct"] >= 85
+
+    def test_stop_inodes(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_STOP_INODES_FIXTURE))
         _validate_core_fields(payload, "VPS capacity")
         assert payload["status"] == "fail"
         assert payload["incident_state"] == "critical"
@@ -88,10 +130,132 @@ class TestVpsCapacity:
         assert payload["deployed_revision"] is None
 
     def test_no_fixture_fallback(self) -> None:
-        """Without --fixture, produces valid core fields (may be ok or fail depending on environment)."""
         payload = _run_producer("vps_capacity_snapshot.py")
         _validate_core_fields(payload, "VPS capacity no-fixture")
         assert payload["status"] in ("ok", "warn", "fail")
+
+    def test_disk_free_bytes_present(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_OK_FIXTURE))
+        assert payload.get("disk_free_bytes") is not None
+        assert isinstance(payload["disk_free_bytes"], int)
+
+    def test_disk_usage_pct_present(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_OK_FIXTURE))
+        assert payload.get("disk_usage_pct") is not None
+        assert isinstance(payload["disk_usage_pct"], float)
+
+
+# ── Capacity Evidence Structure ─────────────────────────────────────────────
+
+
+class TestCapacityEvidenceStructure:
+    def test_metadata_capacity_present(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        assert cap, "metadata.capacity should be present"
+
+    def test_all_measurement_keys_present(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        expected = [
+            "root_filesystem", "inodes", "memory",
+            "postgresql_data", "postgresql_wal",
+            "backup_directory", "latest_backup",
+            "journal_logs", "checkouts",
+            "browser_helper", "external_state", "uptime",
+        ]
+        for key in expected:
+            assert key in cap, f"Missing capacity measurement: {key}"
+
+    def test_collected_at_present(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        assert cap.get("collected_at"), "collected_at should be present"
+
+    def test_source_host_present(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        assert cap.get("source_host"), "source_host should be present"
+
+    def test_no_absolute_paths_in_output(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        output = json.dumps(payload)
+        assert "/home/" not in output, "Output contains absolute path"
+        assert "/var/" not in output, "Output contains absolute path"
+        assert "/dev/" not in output, "Output contains absolute path"
+
+    def each_measurement_has_available_bool(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        for key, val in cap.items():
+            if isinstance(val, dict) and "available" in val:
+                assert isinstance(val["available"], bool), f"{key}.available should be bool"
+
+
+# ── Edge Cases ──────────────────────────────────────────────────────────────
+
+
+class TestCapacityEdgeCases:
+    def test_missing_wal_access(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_MISSING_WAL_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        assert cap.get("postgresql_data", {}).get("available") is True
+        wal = cap.get("postgresql_wal", {})
+        assert not wal.get("available"), "WAL should be unavailable"
+
+    def test_missing_postgresql(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_MISSING_PG_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        pg_data = cap.get("postgresql_data", {})
+        pg_wal = cap.get("postgresql_wal", {})
+        assert not pg_data.get("available"), "PG data should be unavailable"
+        assert not pg_wal.get("available"), "PG WAL should be unavailable"
+
+    def test_malformed_data_returns_fail(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_MALFORMED_FIXTURE))
+        _validate_core_fields(payload, "VPS capacity malformed")
+        assert payload["status"] == "fail"
+        assert "error_class" in payload
+
+    def test_partial_measurement(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_PARTIAL_FIXTURE))
+        _validate_core_fields(payload, "VPS capacity partial")
+        cap = _get_capacity_metadata(payload)
+        assert cap.get("root_filesystem", {}).get("available") is True
+        assert cap.get("inodes", {}).get("available") is True
+        assert cap.get("memory", {}).get("available") is True
+        assert not cap.get("backup_directory", {}).get("available")
+        assert not cap.get("journal_logs", {}).get("available")
+        assert not cap.get("checkouts", {}).get("available")
+        assert not cap.get("browser_helper", {}).get("available")
+        assert not cap.get("external_state", {}).get("available")
+
+    def test_overflow_values(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_OVERFLOW_FIXTURE))
+        _validate_core_fields(payload, "VPS capacity overflow")
+        cap = _get_capacity_metadata(payload)
+        fs = cap.get("root_filesystem", {}).get("value", {})
+        assert fs.get("used_pct") == 0
+        pg_data = cap.get("postgresql_data", {}).get("value")
+        assert pg_data is not None
+
+    def test_capacity_still_ok_with_unavailable_optional(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_PARTIAL_FIXTURE))
+        assert payload["status"] == "ok"
+
+    def test_memory_available_field(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        mem = cap.get("memory", {}).get("value", {})
+        assert "available_bytes" in mem
+        assert isinstance(mem["available_bytes"], int)
+
+    def test_memory_swap_fields(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        mem = cap.get("memory", {}).get("value", {})
+        assert "swap_total" in mem
+        assert "swap_used" in mem
 
 
 # ── Control Plane Revision ─────────────────────────────────────────────────
@@ -99,19 +263,49 @@ class TestVpsCapacity:
 
 class TestControlPlaneRevision:
     def test_imports_resolve(self) -> None:
-        """Producer runs standalone without path errors."""
         result = subprocess.run(
             [sys.executable, str(PRODUCERS_DIR / "control_plane_revision.py"), "--fixture", "/dev/null"],
             capture_output=True, text=True, timeout=10,
         )
-        # Will fail because fixture is not valid JSON, but shouldn't crash on import
         assert "No module" not in result.stderr
         assert "ModuleNotFoundError" not in result.stderr
 
     def test_produces_valid_core_fields(self) -> None:
-        """Even with a fake fixture path, produces valid output structure."""
         payload = _run_producer("control_plane_revision.py")
         _validate_core_fields(payload, "Control plane revision")
+
+    def test_drift_direction_field_present(self) -> None:
+        payload = _run_producer("control_plane_revision.py")
+        meta = payload.get("metadata", {})
+        assert "drift_direction" in meta, "Missing drift_direction in metadata"
+
+    def test_drift_direction_valid_values(self) -> None:
+        payload = _run_producer("control_plane_revision.py")
+        meta = payload.get("metadata", {})
+        valid = {"exact_match", "local_ahead", "local_behind", "diverged", "unavailable", "unknown"}
+        assert meta.get("drift_direction") in valid, (
+            f"Invalid drift_direction: {meta.get('drift_direction')}"
+        )
+
+    def test_drift_direction_exact_match(self) -> None:
+        payload = _run_producer("control_plane_revision.py")
+        meta = payload.get("metadata", {})
+        ahead = meta.get("ahead_count")
+        behind = meta.get("behind_count")
+        if ahead is not None and behind is not None:
+            if ahead == 0 and behind == 0:
+                assert meta.get("drift_direction") == "exact_match"
+            elif ahead > 0 and behind == 0:
+                assert meta.get("drift_direction") == "local_ahead"
+            elif ahead == 0 and behind > 0:
+                assert meta.get("drift_direction") == "local_behind"
+            elif ahead > 0 and behind > 0:
+                assert meta.get("drift_direction") == "diverged"
+
+    def test_backward_compat_drift_state(self) -> None:
+        payload = _run_producer("control_plane_revision.py")
+        meta = payload.get("metadata", {})
+        assert "drift_state" in meta
 
 
 # ── Reddit Backup Evidence ─────────────────────────────────────────────────
@@ -159,7 +353,7 @@ class TestRedditCanonicalityPlaceholder:
             assert dim in evidence, f"Missing canonicality dimension: {dim}"
 
 
-# ── Traderie Live Export ───────────────────────────────────────────────────
+# ── Traderie Live Export ────────────────────────────────────────────────────
 
 
 class TestTraderieLiveExport:
@@ -212,7 +406,6 @@ class TestProducerStructural:
 
     @pytest.mark.parametrize("producer", ALL_PRODUCERS)
     def test_producer_runs_without_crash(self, producer: str) -> None:
-        """Every producer runs without crashing."""
         result = subprocess.run(
             [sys.executable, str(PRODUCERS_DIR / producer)],
             capture_output=True, text=True, timeout=15,
@@ -222,7 +415,6 @@ class TestProducerStructural:
 
     @pytest.mark.parametrize("producer", ALL_PRODUCERS)
     def test_producer_output_valid_json(self, producer: str) -> None:
-        """Every producer outputs valid JSON."""
         result = subprocess.run(
             [sys.executable, str(PRODUCERS_DIR / producer)],
             capture_output=True, text=True, timeout=15,
@@ -235,7 +427,6 @@ class TestProducerStructural:
 
     @pytest.mark.parametrize("producer", ALL_PRODUCERS)
     def test_producer_required_core_fields(self, producer: str) -> None:
-        """Every producer has all required core fields."""
         result = subprocess.run(
             [sys.executable, str(PRODUCERS_DIR / producer)],
             capture_output=True, text=True, timeout=15,
@@ -251,10 +442,33 @@ class TestProducerStructural:
 
     @pytest.mark.parametrize("producer", ALL_PRODUCERS)
     def test_no_private_leakage(self, producer: str) -> None:
-        """No producer output contains private patterns."""
         result = subprocess.run(
             [sys.executable, str(PRODUCERS_DIR / producer)],
             capture_output=True, text=True, timeout=15,
         )
         for pattern in self.FORBIDDEN:
             assert pattern not in result.stdout, f"{producer} leaks {pattern}"
+
+
+# ── Comprehensive fixture parametrisation ────────────────────────────────────
+
+
+class TestAllCapacityFixtures:
+    @pytest.mark.parametrize("fixture_path,expected_status", [
+        (CAPACITY_OK_FIXTURE, "ok"),
+        (CAPACITY_HEALTHY_FIXTURE, "ok"),
+        (CAPACITY_WARN_FIXTURE, "warn"),
+        (CAPACITY_WARNING_CLOSE_FIXTURE, "warn"),
+        (CAPACITY_CRITICAL_FIXTURE, "fail"),
+        (CAPACITY_STOP_FIXTURE, "fail"),
+        (CAPACITY_STOP_INODES_FIXTURE, "fail"),
+        (CAPACITY_MISSING_WAL_FIXTURE, "ok"),
+        (CAPACITY_MISSING_PG_FIXTURE, "ok"),
+        (CAPACITY_PARTIAL_FIXTURE, "ok"),
+    ])
+    def test_fixture_status(self, fixture_path: Path, expected_status: str) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(fixture_path))
+        _validate_core_fields(payload, f"fixture {fixture_path.name}")
+        assert payload["status"] == expected_status, (
+            f"{fixture_path.name}: expected {expected_status}, got {payload['status']}"
+        )

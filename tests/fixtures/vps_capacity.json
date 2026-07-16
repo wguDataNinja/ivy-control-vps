@@ -1,7 +1,36 @@
 {
-  "status": "ok",
   "filesystem": "/dev/sda1    37860320  27000000  9000000  75% /",
   "inodes": "37860320  6000000  31860320  16% /",
-  "memory": "Mem:  3.7Gi total, 1.2Gi free, 1.7Gi used, 0.8Gi swap",
-  "uptime": "2026-07-15T00:00:00Z"
+  "memory": "Mem:  3972849664  1825361101  1288490188  429496732  429496732  1288490188\nSwap: 2147483648  838860800  1308622848",
+  "uptime": "2026-07-15T00:00:00Z",
+  "postgresql": {
+    "available": true,
+    "data_size_bytes": 235000000,
+    "wal_size_bytes": 5000000
+  },
+  "backups": {
+    "available": true,
+    "directory_size_bytes": 45000000,
+    "latest_backup_size_bytes": 16077748
+  },
+  "journals": {
+    "available": true,
+    "bytes": 236500000
+  },
+  "checkouts": {
+    "available": true,
+    "control_plane_bytes": 1782579,
+    "repositories": {
+      "reddit_ops": 2300000000,
+      "traderie": 1400000000
+    }
+  },
+  "browser_helper": {
+    "available": true,
+    "aggregate_bytes": 2900000000
+  },
+  "external_state": {
+    "available": true,
+    "bytes": 1800000000
+  }
 }

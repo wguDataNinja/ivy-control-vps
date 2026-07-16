@@ -5,6 +5,13 @@ The dashboard is intentionally a transitional view: it combines safe live VPS
 measurements with current control evidence, labels their provenance, and makes
 missing adapters visible as UNKNOWN.  It never reads secrets or browser
 profiles and never changes production state.
+
+Execution modes
+---------------
+auto     — try direct (systemd locally), fall back to remote SSH
+direct   — run all probes locally (VPS mode, no SSH)
+remote   — run probes via SSH (Mac mode, configurable host)
+no-live  — skip live probes, use only fallback evidence
 """
 
 from __future__ import annotations
@@ -14,11 +21,11 @@ import datetime as dt
 import html
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,10 +71,57 @@ def run(command: list[str], timeout: int = 18) -> tuple[bool, str]:
     return True, completed.stdout.strip()
 
 
-def ssh(remote_command: str) -> tuple[bool, str]:
-    if not shutil.which("ssh"):
-        return False, "ssh unavailable on this Mac"
-    return run(["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "ih-market-vps", remote_command])
+# ---------------------------------------------------------------------------
+# Transport abstraction — handles direct (VPS) and remote (SSH) execution.
+# ---------------------------------------------------------------------------
+
+class Transport:
+    """Abstract execution transport.
+
+    Modes
+    -----
+    auto     — try direct, fall back to remote SSH
+    direct   — run probes locally (no SSH)
+    remote   — run probes via SSH
+    no-live  — skip all live probes
+    """
+
+    AUTO = "auto"
+    DIRECT = "direct"
+    REMOTE = "remote"
+    NO_LIVE = "no-live"
+
+    def __init__(self, mode: str = "", host: str = "") -> None:
+        mode = mode or os.environ.get("IVY_VPS_MODE", self.AUTO)
+        self.host = host or os.environ.get("IVY_VPS_HOST", "")
+        if mode == self.AUTO:
+            mode = self._detect()
+        self.mode = mode
+
+    def _detect(self) -> str:
+        ok, _ = run(["systemctl", "--user", "show", "-p", "ActiveState", "--value",
+                      "wgu-reddit-postgres-run.timer"])
+        if ok:
+            return self.DIRECT
+        return self.REMOTE
+
+    def exec(self, command: str) -> tuple[bool, str]:
+        if self.mode == self.NO_LIVE:
+            return False, "live evidence disabled"
+        if self.mode == self.DIRECT:
+            return run(["sh", "-c", command])
+        return self._ssh(command)
+
+    def _ssh(self, command: str) -> tuple[bool, str]:
+        if not shutil.which("ssh"):
+            return False, "ssh not available"
+        host = self.host or "ih-market-vps"
+        return run(["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes",
+                     host, command])
+
+
+# Global transport instance — set in main() before any collector runs.
+transport: Transport | None = None
 
 
 def iso_from_systemd(value: str) -> str:
@@ -93,7 +147,7 @@ def control_text(path: str) -> str:
         return ""
 
 
-def collect_reddit() -> dict:
+def collect_reddit(_transport: Transport | None = None) -> dict:
     result = row("WGU Reddit", "wgu-reddit-postgres-run.timer", "ROADMAP §7B-G1")
     result["evidence_level"] = "missing_producer"
     result["detail"].update({
@@ -104,6 +158,7 @@ def collect_reddit() -> dict:
         "duplicate_gap_adapter": "missing_producer",
         "archive_continuity_adapter": "missing_producer",
     })
+    t = _transport or transport
     command = (
         "systemctl --user show wgu-reddit-postgres-run.timer "
         "-p ActiveState -p UnitFileState --value; echo ---; "
@@ -112,7 +167,7 @@ def collect_reddit() -> dict:
         "systemctl --user show wgu-reddit-shadow-run.timer -p ActiveState -p UnitFileState --value; echo ---; "
         "systemctl --user show wgu-reddit-backup.service -p Result -p ExecMainExitTimestamp --value"
     )
-    ok, output = ssh(command)
+    ok, output = t.exec(command) if t else (False, "no transport")
     if not ok:
         result["evidence_level"] = "missing_producer"
         result["issues"].append("Live VPS service evidence unavailable: " + output)
@@ -140,7 +195,7 @@ def collect_reddit() -> dict:
     return result
 
 
-def collect_ih() -> tuple[dict, dict]:
+def collect_ih(_transport: Transport | None = None) -> tuple[dict, dict]:
     chat = row("Idle Hacking chat", "Idle Hacking Collector / Chrome + helper", "ROADMAP §4I-G1")
     chat["detail"]["installed_revision"] = "unresolved_authority (no userscript hash verification; inspection of Chrome/Tampermonkey profile not permitted)"
     chat["detail"]["replay_proof"] = "unsupported_field (no replay mechanism observed)"
@@ -151,7 +206,11 @@ def collect_ih() -> tuple[dict, dict]:
     market["detail"]["replay_proof"] = "unsupported_field (no replay mechanism observed)"
     market["detail"]["acknowledgement_destination"] = "unresolved_authority (Buddy must decide canonical source and destination)"
     market["detail"]["postgresql_reconciliation"] = "unsupported_field (no PG market import pilot)"
-    ok, output = ssh("curl --max-time 5 -s http://127.0.0.1:8765/health; echo; systemctl --user is-active ih-collector-helper.service")
+    t = _transport or transport
+    ok, output = t.exec(
+        "curl --max-time 5 -s http://127.0.0.1:8765/health; echo; "
+        "systemctl --user is-active ih-collector-helper.service"
+    ) if t else (False, "no transport")
     if not ok:
         for item in (chat, market):
             item["evidence_level"] = "missing_producer"
@@ -178,14 +237,24 @@ def collect_ih() -> tuple[dict, dict]:
     return chat, market
 
 
-def collect_capacity() -> dict:
+def collect_capacity(_transport: Transport | None = None) -> dict:
     result = row("VPS / control plane", "VPS host", "ROADMAP §3E")
     result["detail"].update({
         "control_plane_deployed_revision": "missing_producer (no ivy-control-vps checkout on VPS)",
         "control_plane_drift": "missing_producer (no checkout to compare)",
         "capacity_producer": "missing_producer (no recurring capacity snapshot producer deployed)",
     })
-    ok, output = ssh("df -P / | tail -1; df -Pi / | tail -1; free -h | sed -n '2p'")
+
+    try:
+        from tools.producers.vps_capacity_snapshot import collect as _producer_collect
+        _producer_collect()
+    except Exception:
+        pass
+
+    t = _transport or transport
+    ok, output = t.exec(
+        "df -P / | tail -1; df -Pi / | tail -1; free -b | sed -n '2,3p'"
+    ) if t else (False, "no transport")
     if not ok:
         result["evidence_level"] = "missing_producer"
         result["issues"].append("Live capacity unavailable: " + output)
@@ -202,10 +271,21 @@ def collect_capacity() -> dict:
         result["evidence_level"] = "missing_producer"
         result["issues"].append("Cannot parse root filesystem utilization")
         return result
-    result.update({"evidence_level": "live", "last_success": now(), "source_freshness": "not applicable", "db_freshness": "not applicable", "offload": "not applicable", "backup": "not applicable", "capacity": f"{parts[3]} free / {used_pct}% used", "status": "GREEN" if used_pct < 80 else "YELLOW" if used_pct <= 85 else "RED"})
-    result["detail"].update({"filesystem": lines[0], "inodes": lines[1] if len(lines) > 1 else "unknown", "memory": lines[2] if len(lines) > 2 else "unknown", "control_plane_deployed_revision": "missing_producer (no ivy-control-vps checkout on VPS)", "control_plane_drift": "missing_producer", "capacity_producer": "missing_producer"})
+    free_blocks = int(parts[3]) if len(parts) > 3 else 0
+    free_gb = round(free_blocks * 1024 / (1024 ** 3), 1)
+    result.update({"evidence_level": "live", "last_success": now(), "source_freshness": "not applicable", "db_freshness": "not applicable", "offload": "not applicable", "backup": "not applicable", "capacity": f"{free_gb}G free / {used_pct}% used", "status": "GREEN" if used_pct < 80 else "YELLOW" if used_pct <= 85 else "RED"})
+    inode_line = lines[1] if len(lines) > 1 else "unknown"
+    mem_lines = "\n".join(lines[2:]) if len(lines) > 2 else "unknown"
+    result["detail"].update({
+        "filesystem": lines[0], "inodes": inode_line, "memory": mem_lines,
+        "control_plane_deployed_revision": "missing_producer (no ivy-control-vps checkout on VPS)",
+        "control_plane_drift": "missing_producer", "capacity_producer": "missing_producer",
+        "disk_free_gb": free_gb, "disk_used_pct": used_pct,
+    })
     if used_pct >= 85:
         result["issues"].append("Capacity deployment stop threshold reached")
+    elif used_pct >= 80 or free_gb < 7:
+        result["issues"].append("Capacity warning threshold approached")
     return result
 
 
@@ -264,12 +344,19 @@ body{{font-family:system-ui,sans-serif;margin:2rem;color:#171717}} table{{border
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate private read-only ingestion dashboard")
     parser.add_argument("--output-dir", type=Path, default=OUTPUT)
-    parser.add_argument("--no-live", action="store_true", help="Do not use read-only SSH; render only safe fallback evidence")
+    parser.add_argument("--mode", choices=("auto", "direct", "remote", "no-live"),
+                        default="", help="Execution transport mode")
+    parser.add_argument("--host", default="",
+                        help="SSH host for remote execution (env: IVY_VPS_HOST)")
+    parser.add_argument("--no-live", action="store_true",
+                        help="Alias for --mode=no-live")
+    parser.add_argument("--json", action="store_true",
+                        help="Output JSON to stdout (machine-readable)")
     args = parser.parse_args()
-    global ssh
     if args.no_live:
-        original_ssh = ssh
-        ssh = lambda _: (False, "live evidence disabled by --no-live")  # type: ignore[assignment]
+        args.mode = args.mode or "no-live"
+    global transport
+    transport = Transport(mode=args.mode, host=args.host)
     reddit = collect_reddit()
     chat, market = collect_ih()
     capacity = collect_capacity()
@@ -277,10 +364,38 @@ def main() -> int:
     rows = [reddit, chat, market, traderie, capacity]
     coverage = roadmap_coverage()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    data = {"generated_at": now(), "rows": rows, "roadmap_coverage": coverage, "missing_live_adapters": ["Reddit: source-frontier adapter (missing_producer)", "Reddit: DB-frontier adapter (missing_producer)", "Reddit: duplicate/gap adapter (missing_producer)", "Reddit: archive-continuity adapter (missing_producer)", "Reddit: canonicality evidence (unresolved_authority)", "Reddit: backup/restore proof adapter (missing_producer)", "Traderie: live exporter probe adapter (missing_producer)", "Traderie: backup-age/restore adapter (missing_producer)", "Traderie: timeout/progress instrumentation (unsupported_field; local source 137dd64 has it)", "IH: installed-userscript source verification (unresolved_authority)", "IH: acknowledgement destination/receipt adapter (unresolved_authority)", "IH: replay proof (unsupported_field)", "IH: durable destination contract (unresolved_authority)", "IH market: PostgreSQL reconciliation (unsupported_field)", "VPS: recurring capacity snapshot producer (missing_producer)", "VPS: control-plane deployed-revision producer (missing_producer)", "VPS: checkout drift producer (missing_producer)"]}
-    (args.output_dir / "status.json").write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    data: dict[str, Any] = {
+        "generated_at": now(), "rows": rows, "roadmap_coverage": coverage,
+        "execution_mode": transport.mode,
+        "missing_live_adapters": [
+            "Reddit: source-frontier adapter (missing_producer)",
+            "Reddit: DB-frontier adapter (missing_producer)",
+            "Reddit: duplicate/gap adapter (missing_producer)",
+            "Reddit: archive-continuity adapter (missing_producer)",
+            "Reddit: canonicality evidence (unresolved_authority)",
+            "Reddit: backup/restore proof adapter (missing_producer)",
+            "Traderie: live exporter probe adapter (missing_producer)",
+            "Traderie: backup-age/restore adapter (missing_producer)",
+            "Traderie: timeout/progress instrumentation (unsupported_field; local source 137dd64 has it)",
+            "IH: installed-userscript source verification (unresolved_authority)",
+            "IH: acknowledgement destination/receipt adapter (unresolved_authority)",
+            "IH: replay proof (unsupported_field)",
+            "IH: durable destination contract (unresolved_authority)",
+            "IH market: PostgreSQL reconciliation (unsupported_field)",
+            "VPS: recurring capacity snapshot producer (missing_producer)",
+            "VPS: control-plane deployed-revision producer (missing_producer)",
+            "VPS: checkout drift producer (missing_producer)",
+        ],
+    }
+    (args.output_dir / "status.json").write_text(
+        json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8",
+    )
     (args.output_dir / "index.html").write_text(render(rows, coverage), encoding="utf-8")
-    print(args.output_dir / "index.html")
+    if args.json:
+        json.dump(data, sys.stdout, indent=2, sort_keys=True, default=str)
+        sys.stdout.write("\n")
+    else:
+        print(args.output_dir / "index.html")
     return 0
 
 
