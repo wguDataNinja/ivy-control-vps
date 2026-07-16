@@ -472,3 +472,69 @@ class TestAllCapacityFixtures:
         assert payload["status"] == expected_status, (
             f"{fixture_path.name}: expected {expected_status}, got {payload['status']}"
         )
+
+
+# ── Direct/Local Execution Mode ─────────────────────────────────────────────
+
+
+class TestDirectMode:
+    def test_direct_collect_imports(self) -> None:
+        from tools.producers.vps_capacity_snapshot import collect
+        from tools.producers.vps_capacity_config import DIRECT_CONFIG
+        assert collect is not None
+        assert DIRECT_CONFIG.MODE == "direct"
+        assert DIRECT_CONFIG.SSH_HOST == "ih-market-vps"
+
+
+# ── WAL Unavailability ──────────────────────────────────────────────────────
+
+
+class TestWalUnavailability:
+    def test_missing_wal_explicit_not_zero(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_MISSING_WAL_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        wal = cap.get("postgresql_wal", {})
+        assert not wal.get("available"), "WAL should be unavailable"
+        # The value must be null/None, NOT zero (which would imply measured-as-zero)
+        assert wal.get("value") is None, (
+            f"WAL value should be null when unavailable, got {wal.get('value')}"
+        )
+
+    def test_wal_available_is_int(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_HEALTHY_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        wal = cap.get("postgresql_wal", {})
+        assert wal.get("available") is True
+        assert isinstance(wal.get("value"), int), (
+            f"WAL value should be int when available, got {type(wal.get('value'))}"
+        )
+        assert wal.get("value") > 0, "WAL value should be positive when available"
+
+
+# ── Evidence Timestamps ─────────────────────────────────────────────────────
+
+
+class TestEvidenceTimestamps:
+    def test_collected_at_present_in_capacity(self) -> None:
+        payload = _run_producer("vps_capacity_snapshot.py", str(CAPACITY_OK_FIXTURE))
+        cap = _get_capacity_metadata(payload)
+        assert cap.get("collected_at"), "capacity must have collected_at"
+        assert "T" in cap["collected_at"], "collected_at must be ISO-8601"
+
+
+# ── Traderie file-based authority ────────────────────────────────────────────
+
+
+class TestTraderieFileBased:
+    def test_traderie_authority_text(self) -> None:
+        from tools.ingestion_dashboard import traderie_fallback
+        result = traderie_fallback()
+        detail = result.get("detail", {})
+        auth = detail.get("authority_type", "")
+        pg = detail.get("postgresql", "")
+        assert "file_based" in auth, (
+            f"Traderie must document file-based authority, got: {auth}"
+        )
+        assert "zero_non_system_tables" in pg, (
+            f"Traderie must document zero non-system PG tables, got: {pg}"
+        )

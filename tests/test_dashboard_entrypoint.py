@@ -230,3 +230,103 @@ class TestFailureSemantics:
             data = json.loads((Path(tmp) / "status.json").read_text(encoding="utf-8"))
             for r in data["rows"]:
                 assert isinstance(r.get("issues"), list), f"Missing issues list in {r['workload']}"
+
+
+# ── 11. Evidence timestamps ──────────────────────────────────────────────────
+
+
+class TestEvidenceTimestamps:
+    def test_every_row_has_evidence_timestamp(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _run_python(DASHBOARD_SCRIPT, ["--no-live", "--output-dir", tmp])
+            data = json.loads((Path(tmp) / "status.json").read_text(encoding="utf-8"))
+            for r in data["rows"]:
+                assert "evidence_timestamp" in r, f"Missing evidence_timestamp in {r['workload']}"
+                assert "collected_at" in r, f"Missing collected_at in {r['workload']}"
+
+    def test_evidence_timestamp_iso_format(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _run_python(DASHBOARD_SCRIPT, ["--no-live", "--output-dir", tmp])
+            data = json.loads((Path(tmp) / "status.json").read_text(encoding="utf-8"))
+            for r in data["rows"]:
+                ts = r.get("evidence_timestamp", "")
+                assert "T" in ts and ts.endswith("Z"), (
+                    f"evidence_timestamp should be ISO-8601 in {r['workload']}: {ts}"
+                )
+
+
+# ── 12. Traderie not database-backed ─────────────────────────────────────────
+
+
+class TestTraderieNotDatabaseBacked:
+    def test_traderie_authority_type(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _run_python(DASHBOARD_SCRIPT, ["--no-live", "--output-dir", tmp])
+            data = json.loads((Path(tmp) / "status.json").read_text(encoding="utf-8"))
+            traderie = next(
+                (r for r in data["rows"] if r["workload"] == "Traderie"), None,
+            )
+            assert traderie is not None
+            detail = traderie.get("detail", {})
+            auth = detail.get("authority_type", "")
+            assert "file_based" in auth, (
+                f"Traderie must document file-based authority, got: {auth}"
+            )
+            pg_status = detail.get("postgresql", "")
+            assert "zero_non_system_tables" in pg_status, (
+                f"Traderie PG must show zero non-system tables, got: {pg_status}"
+            )
+            assert traderie.get("db_freshness", "") != "unknown", (
+                "Traderie db_freshness should not be generic unknown"
+            )
+
+
+# ── 13. Reddit recovery wording ──────────────────────────────────────────────
+
+
+class TestRedditRecoveryWording:
+    def test_reddit_backup_shows_manual_proof_separate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _run_python(DASHBOARD_SCRIPT, ["--no-live", "--output-dir", tmp])
+            data = json.loads((Path(tmp) / "status.json").read_text(encoding="utf-8"))
+            reddit = next(
+                (r for r in data["rows"] if r["workload"] == "WGU Reddit"), None,
+            )
+            assert reddit is not None
+            backup_text = reddit.get("backup", "")
+            # Must contain manual recovery proof reference
+            assert "manual_recovery_proof" in backup_text, (
+                f"Reddit backup must mention manual proof, got: {backup_text}"
+            )
+            # Must contain natural_backup_pending (not imply acceptance)
+            assert "natural_backup_pending" in backup_text, (
+                f"Reddit backup must show natural backup as pending, got: {backup_text}"
+            )
+
+
+# ── 14. Missing producer details ─────────────────────────────────────────────
+
+
+class TestMissingProducerDetails:
+    def test_rows_show_missing_adapters(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _run_python(DASHBOARD_SCRIPT, ["--no-live", "--output-dir", tmp])
+            data = json.loads((Path(tmp) / "status.json").read_text(encoding="utf-8"))
+            for r in data["rows"]:
+                detail = r.get("detail", {})
+                # Each row should have some adapter status fields in detail
+                adapter_fields = [k for k in detail if "adapter" in k.lower()]
+                assert len(adapter_fields) > 0 or r["evidence_level"] != "missing_producer", (
+                    f"{r['workload']} with missing_producer should detail what adapters are missing"
+                )
+
+
+# ── 15. HTML includes collected_at column ─────────────────────────────────────
+
+
+class TestHtmlCollectedAt:
+    def test_html_table_has_collected_at_column(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _run_python(DASHBOARD_SCRIPT, ["--no-live", "--output-dir", tmp])
+            html = (Path(tmp) / "index.html").read_text(encoding="utf-8")
+            assert "<th>Collected at</th>" in html, "HTML should have Collected at column header"

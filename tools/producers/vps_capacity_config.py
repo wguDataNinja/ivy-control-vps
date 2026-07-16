@@ -37,6 +37,7 @@ class CapacityConfig:
     SSH_HOST: str = "ih-market-vps"
     SSH_TIMEOUT: int = 18
     SSH_CONNECT_TIMEOUT: str = "10"
+    MODE: str = "ssh"  # "ssh" or "direct"; direct runs probes locally without SSH
 
     thresholds: CapacityThresholds = field(default_factory=CapacityThresholds)
 
@@ -46,3 +47,4 @@ class CapacityConfig:
 
 
 DEFAULT_CONFIG: CapacityConfig = CapacityConfig()
+DIRECT_CONFIG: CapacityConfig = CapacityConfig(MODE="direct")

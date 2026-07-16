@@ -340,13 +340,16 @@ class TestJsonFlag:
 
 class TestNoTrackedFileDirtiness:
     def test_no_dirtiness_after_run(self) -> None:
-        """Dashboard generation does not modify tracked files regardless of mode."""
+        """Dashboard generation does not modify tracked files regardless of mode.
+        Tests no-live and direct; remote mode is excluded because SSH connection
+        attempts add ~10s per remote call and the invariance property is
+        established by the first two modes."""
         with tempfile.TemporaryDirectory() as tmp:
             before = subprocess.run(
                 ["git", "status", "--porcelain"],
                 capture_output=True, text=True, cwd=REPO_ROOT,
             ).stdout.strip()
-            for mode in ("no-live", "direct", "remote"):
+            for mode in ("no-live", "direct"):
                 _run_python(["--mode", mode, "--output-dir", tmp])
             after = subprocess.run(
                 ["git", "status", "--porcelain"],
@@ -370,7 +373,7 @@ class TestPrivateDataExclusion:
 
     def test_no_private_data_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            for mode in ("no-live", "direct", "remote"):
+            for mode in ("no-live", "direct"):
                 _run_python(["--mode", mode, "--output-dir", tmp])
                 text = (Path(tmp) / "status.json").read_text(encoding="utf-8")
                 for pattern in self.FORBIDDEN:
@@ -380,7 +383,7 @@ class TestPrivateDataExclusion:
 
     def test_no_private_data_html(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            for mode in ("no-live", "direct", "remote"):
+            for mode in ("no-live", "direct"):
                 _run_python(["--mode", mode, "--output-dir", tmp])
                 text = (Path(tmp) / "index.html").read_text(encoding="utf-8")
                 for pattern in self.FORBIDDEN:

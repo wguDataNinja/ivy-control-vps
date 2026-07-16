@@ -10,8 +10,11 @@ All paths in the host command are internal to the SSH session.  Output is
 sanitised — no absolute paths, credentials, or private content.
 
 Usage:
-    # Live SSH mode (Mac → VPS)
+    # Live SSH mode (Mac → VPS) — default, SSH transport is intentional
     python3 tools/producers/vps_capacity_snapshot.py
+
+    # Direct/local mode (VPS — no SSH, runs probes locally)
+    python3 tools/producers/vps_capacity_snapshot.py --direct
 
     # Fixture mode (local development / test)
     python3 tools/producers/vps_capacity_snapshot.py --fixture tests/fixtures/vps_capacity_healthy.json
@@ -38,7 +41,7 @@ _VPS_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_VPS_ROOT) not in sys.path:
     sys.path.insert(0, str(_VPS_ROOT))
 
-from tools.producers.vps_capacity_config import DEFAULT_CONFIG, CapacityConfig, CapacityThresholds
+from tools.producers.vps_capacity_config import DEFAULT_CONFIG, DIRECT_CONFIG, CapacityConfig, CapacityThresholds
 
 
 # ── SSH compound script ──────────────────────────────────────────────────────
@@ -150,6 +153,20 @@ def _ssh(command: str, cfg: CapacityConfig = DEFAULT_CONFIG) -> tuple[bool, str]
              "-o", "BatchMode=yes",
              cfg.SSH_HOST, "bash -s"],
             input=command,
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=cfg.SSH_TIMEOUT, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, str(exc)
+    if completed.returncode:
+        return False, (completed.stderr or completed.stdout).strip()
+    return True, completed.stdout.strip()
+
+
+def _direct(command: str, cfg: CapacityConfig = DEFAULT_CONFIG) -> tuple[bool, str]:
+    try:
+        completed = subprocess.run(
+            ["sh", "-c", command],
             text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             timeout=cfg.SSH_TIMEOUT, check=False,
         )
@@ -351,14 +368,21 @@ def _compute_composite_status(
     return status, error_class, incident_state
 
 
+def _exec(command: str, cfg: CapacityConfig = DEFAULT_CONFIG) -> tuple[bool, str]:
+    if cfg.MODE == "direct":
+        return _direct(command, cfg)
+    return _ssh(command, cfg)
+
+
 def collect(cfg: CapacityConfig = DEFAULT_CONFIG) -> dict[str, Any]:
     now = _utcnow()
     run_id = str(uuid.uuid4())
     generated_at = _iso(now)
 
-    ok, raw = _ssh(_SSH_SCRIPT, cfg)
+    ok, raw = _exec(_SSH_SCRIPT, cfg)
     if not ok:
-        return _skip_payload(generated_at, run_id, f"ssh_failure:{raw}")
+        transport = "direct" if cfg.MODE == "direct" else "ssh"
+        return _skip_payload(generated_at, run_id, f"{transport}_failure:{raw}")
 
     return _build_payload(generated_at, run_id, now, raw, cfg)
 
@@ -676,13 +700,15 @@ def main() -> int:
     import argparse
     parser = argparse.ArgumentParser(description="VPS capacity snapshot producer")
     parser.add_argument("--fixture", help="Read structured evidence fixture instead of live SSH")
+    parser.add_argument("--direct", action="store_true", help="Run probes locally (no SSH)")
     parser.add_argument("--pretty", action="store_true")
     args = parser.parse_args()
 
+    cfg = DIRECT_CONFIG if args.direct else DEFAULT_CONFIG
     if args.fixture:
-        payload = collect_from_fixture(args.fixture)
+        payload = collect_from_fixture(args.fixture, cfg)
     else:
-        payload = collect()
+        payload = collect(cfg)
 
     indent = 2 if args.pretty else None
     json.dump(payload, sys.stdout, indent=indent, default=str)
