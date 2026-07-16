@@ -1,19 +1,27 @@
 #!/bin/sh
 # Generate a private read-only ingestion dashboard and open it in a browser.
 # Supports macOS (open), Linux (xdg-open), and fallback to path print.
+# Passes unknown flags through to ingestion_dashboard.py (--mode, --host, --no-live, --json, --output-dir).
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 PYTHON=${PYTHON:-python3}
-HTML=$($PYTHON "$ROOT/tools/ingestion_dashboard.py")
+NO_OPEN=false
+PASSTHROUGH=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --no-open) NO_OPEN=true ;;
+    *) PASSTHROUGH="$PASSTHROUGH $arg" ;;
+  esac
+done
+
+# shellcheck disable=SC2086
+HTML=$($PYTHON "$ROOT/tools/ingestion_dashboard.py" $PASSTHROUGH)
 printf 'Dashboard: %s\n' "$HTML"
 
-if [ "${1:-}" = "--no-open" ]; then
+if $NO_OPEN; then
   exit 0
-fi
-if [ "$#" -ne 0 ]; then
-  printf 'Usage: %s [--no-open]\n' "$0" >&2
-  exit 2
 fi
 if command -v open >/dev/null 2>&1; then
   open "$HTML"

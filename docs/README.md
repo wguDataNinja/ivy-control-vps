@@ -166,7 +166,7 @@ The documentation set describes the full intended control model, but the immedia
 - **Sessions 1–2:** Bootstrap GPT workflow, Reddit Ops migration cutover, PostgreSQL frontier
 - **Session 3:** Health contract v2, Traderie production readiness, Reddit Ops closeout
 - **Session 4:** Traderie cutover (Mac→VPS), portfolio ingestion-admission matrix, Reddit Ops backup/restore remediation
-- **Session 5:** Ingestion-first roadmap rewrite, platform productization, PostgreSQL provisioning, isolated restore proof, reboot persistence proof, Idle Hacking safe-ingestion boundary
+- **Session 5:** Ingestion-first roadmap rewrite, platform productization, PostgreSQL provisioning, isolated restore proof, reboot persistence proof, idlehacking_kb / ih-market-companion safe-ingestion boundary
 - **Session 6:** Phase 0 health CLI, Hermes VPS data estate audit, Idle Hacker KB and IH Market capacity archive
 - **Session 7:** Hermes bridge bootstrap, Codex VPS-1/VPS-2 capacity recovery and execution, Git publication
 - **Session 8:** Complete Git cleanup (both repos reconciled and committed), Session 5 reconstruction, Git publication assessment, ingestion dashboard prototype

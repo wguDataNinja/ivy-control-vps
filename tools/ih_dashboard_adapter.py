@@ -17,11 +17,16 @@ Evidence semantics (evidence_level values):
 - unsupported_field: field is not yet instrumented
 - doc_fallback: derived from documentation, not live observation
 - unresolved_authority: authority decision pending (Buddy)
+
+External adapter paths are configurable via environment variables:
+    IVY_IH_MARKET_ADAPTER  — path to ih_market_companion health_adapter_market.py
+    IVY_IH_CHAT_ADAPTER    — path to idlehacking_kb health_adapter_chat.py
 """
 
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,9 +41,16 @@ if str(_ADAPTER_ROOT) not in sys.path:
 # External repos are co-located under ~/projects/ alongside ivy-control-vps.
 # This is a local development tool; when adapters are deployed to VPS the
 # path strategy will change.
-_ADAPTER_DIR = Path(__file__).resolve().parent.parent.parent
-_IH_MARKET_PATH = _ADAPTER_DIR / "ih_market_companion" / "scripts" / "health_adapter_market.py"
-_IDLEHACKING_KB_PATH = _ADAPTER_DIR / "idlehacking_kb" / "scripts" / "health_adapter_chat.py"
+# Paths can be overridden via environment variables.
+_ADAPTER_PROJECTS = Path(__file__).resolve().parent.parent.parent
+_IH_MARKET_PATH = Path(
+    os.environ.get("IVY_IH_MARKET_ADAPTER")
+    or str(_ADAPTER_PROJECTS / "ih_market_companion" / "scripts" / "health_adapter_market.py")
+)
+_IDLEHACKING_KB_PATH = Path(
+    os.environ.get("IVY_IH_CHAT_ADAPTER")
+    or str(_ADAPTER_PROJECTS / "idlehacking_kb" / "scripts" / "health_adapter_chat.py")
+)
 
 _ADAPTERS_LOADED = False
 _ADAPTER_CHAT_FN = None

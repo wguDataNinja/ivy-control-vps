@@ -113,11 +113,11 @@ def collect() -> dict[str, Any]:
     ok_dirty, dirty = _run(["git", "status", "--porcelain"], cwd=checkout)
     ok_remote, remote = _run(["git", "remote", "-v"], cwd=checkout)
     ok_ahead, ahead = _run(
-        ["git", "rev-list", "--count", "HEAD", "@{upstream}", "--"],
+        ["git", "rev-list", "--count", "@{upstream}..HEAD"],
         cwd=checkout, timeout=10,
     )
     ok_behind, behind = _run(
-        ["git", "rev-list", "--count", "@{upstream}", "HEAD", "--"],
+        ["git", "rev-list", "--count", "HEAD..@{upstream}"],
         cwd=checkout, timeout=10,
     )
 
@@ -126,12 +126,34 @@ def collect() -> dict[str, Any]:
 
     sha = rev.strip()
     is_dirty = bool(dirty.strip()) if ok_dirty else None
-    drift_state = "dirty" if is_dirty else "clean"
     ahead_count = int(ahead.strip()) if ok_ahead and ahead.strip().isdigit() else None
     behind_count = int(behind.strip()) if ok_behind and behind.strip().isdigit() else None
 
     has_origin = bool(remote.strip()) if ok_remote else False
-    status = "ok" if drift_state == "clean" and ahead_count == 0 else "warn"
+
+    # Directional drift computation.
+    # "deployed" = local checkout HEAD, "remote" = @{upstream} (origin/main).
+    if ahead_count is not None and behind_count is not None:
+        if ahead_count == 0 and behind_count == 0:
+            drift_direction = "exact_match"
+        elif ahead_count > 0 and behind_count == 0:
+            drift_direction = "local_ahead"
+        elif ahead_count == 0 and behind_count > 0:
+            drift_direction = "local_behind"
+        else:
+            drift_direction = "diverged"
+    else:
+        drift_direction = "unavailable"
+
+    # For backward compat, map to simple drift_state.
+    if is_dirty:
+        drift_state = "dirty"
+    elif drift_direction in ("exact_match", "local_ahead", "local_behind", "diverged"):
+        drift_state = "clean" if ahead_count == 0 and behind_count == 0 else "dirty"
+    else:
+        drift_state = "unknown"
+
+    status = "ok" if drift_direction == "exact_match" and not is_dirty else "warn"
     error_class = None
     incident_state = "none"
 
@@ -143,9 +165,18 @@ def collect() -> dict[str, Any]:
         issues.append("Working tree has uncommitted changes")
     if ahead_count and ahead_count > 0:
         status = "warn" if status != "fail" else "fail"
-        error_class = "ahead_of_upstream"
         incident_state = "degraded"
-        issues.append(f"Local checkout is {ahead_count} commits ahead of upstream")
+        if drift_direction == "local_ahead":
+            error_class = "ahead_of_upstream"
+            issues.append(f"Local checkout is {ahead_count} commits ahead of upstream")
+        elif drift_direction == "diverged":
+            error_class = "diverged"
+            issues.append(f"Diverged: {ahead_count} ahead, {behind_count} behind upstream")
+    if behind_count and behind_count > 0 and error_class is None:
+        status = "warn"
+        error_class = "behind_upstream"
+        incident_state = "degraded"
+        issues.append(f"Local checkout is {behind_count} commits behind upstream")
 
     result: dict[str, Any] = {
         "contract_version": 2,
@@ -172,6 +203,7 @@ def collect() -> dict[str, Any]:
             "branch": branch.strip() if ok_branch else None,
             "is_dirty": is_dirty,
             "drift_state": drift_state,
+            "drift_direction": drift_direction,
             "ahead_count": ahead_count,
             "behind_count": behind_count,
             "has_origin": has_origin,
