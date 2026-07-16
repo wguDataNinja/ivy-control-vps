@@ -438,25 +438,61 @@ def validate_target(target: Path) -> list[str]:
     if not os.access(str(resolved), os.W_OK):
         blockers.append(f"Target is not writable: {target}")
 
-    # Check encryption (macOS volume-level)
+    # Check encryption — inspect the backing image, not the mounted volume.
+    # APFS volumes inside encrypted sparse bundles report "Encrypted: No"
+    # via diskutil because encryption is at the image level.
     try:
-        # Check if the volume is encrypted via fstyp or diskutil
-        vol_name = resolved.name
-        diskutil = subprocess.run(
-            ["diskutil", "info", vol_name],
-            capture_output=True, text=True, timeout=10,
+        # Try to find the backing image for this volume
+        hdiutil = subprocess.run(
+            ["hdiutil", "imageinfo", str(resolved)],
+            capture_output=True, text=True, timeout=15,
         )
-        if "FileVault" in diskutil.stdout or "Encrypted" in diskutil.stdout:
-            if "Yes" not in diskutil.stdout and "Yes" not in diskutil.stderr:
-                pass  # May not be the right indicator
-        # Alternative: check if it's APFS (which supports encryption)
-        if "APFS" not in diskutil.stdout:
+        image_info = hdiutil.stdout + hdiutil.stderr
+        if "encrypted: YES" in image_info.lower():
+            pass  # Image-level encryption confirmed
+        elif "encrypted: NO" in image_info.lower():
             blockers.append(
-                f"Target volume does not appear to use APFS encryption. "
-                f"Full-volume encryption is required."
+                f"Target backing image is NOT encrypted. "
+                f"Image-level encryption is required."
             )
-    except (OSError, subprocess.TimeoutExpired):
-        blockers.append("Cannot verify target encryption. Volume-level encryption is required.")
+        else:
+            # hdiutil imageinfo may not work on non-image paths
+            # Fallback: check if the target path contains the volume name
+            # and try to find the sparse bundle
+            vol_name = resolved.name
+            # Check via diskutil for APFS but note encryption may be image-level
+            diskutil = subprocess.run(
+                ["diskutil", "info", vol_name],
+                capture_output=True, text=True, timeout=10,
+            )
+            disk_out = diskutil.stdout + diskutil.stderr
+            if "APFS" not in disk_out:
+                blockers.append(
+                    f"Target is not APFS. An encrypted APFS container is required."
+                )
+            # Image-level encryption check: look for the .sparsebundle
+            # by checking the mount point's parent for disk images
+            mount_path = resolved
+            parent = mount_path.parent
+            # Check if any parent directory has a .sparsebundle file
+            found_bundle = False
+            check_dir = mount_path
+            for _ in range(5):  # Walk up to 5 levels
+                for child in check_dir.glob("*.sparsebundle"):
+                    found_bundle = True
+                    break
+                if found_bundle:
+                    break
+                if check_dir.parent == check_dir:
+                    break
+                check_dir = check_dir.parent
+            if not found_bundle:
+                blockers.append(
+                    f"Cannot confirm backing image encryption for {mount_path}. "
+                    f"Ensure the volume is backed by an encrypted sparse bundle."
+                )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        blockers.append(f"Cannot verify target encryption: {exc}")
 
     # Check capacity
     try:
@@ -573,6 +609,8 @@ def build_execution_packet(
 
             # Verify command (checksum comparison)
             vcmd = ["rsync"] + VERIFY_RSYNC_FLAGS[:]
+            for pattern in resolved_excludes:
+                vcmd.extend(["--exclude", pattern])
             vcmd.append(source)
             vcmd.append(dest)
             packet["verify_commands"].append({
