@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -438,59 +439,78 @@ def validate_target(target: Path) -> list[str]:
     if not os.access(str(resolved), os.W_OK):
         blockers.append(f"Target is not writable: {target}")
 
-    # Check encryption — inspect the backing image, not the mounted volume.
-    # APFS volumes inside encrypted sparse bundles report "Encrypted: No"
-    # via diskutil because encryption is at the image level.
+    # Check encryption — find the backing image via hdiutil info relationship.
+    # The mounted volume's device can be traced back to a disk image record
+    # in the hdiutil info output, which reports the actual image-level encryption.
     try:
-        # Try to find the backing image for this volume
-        hdiutil = subprocess.run(
-            ["hdiutil", "imageinfo", str(resolved)],
-            capture_output=True, text=True, timeout=15,
+        # 1. Identify the device for the mount point
+        df_result = subprocess.run(
+            ["df", str(resolved)],
+            capture_output=True, text=True, timeout=10,
         )
-        image_info = hdiutil.stdout + hdiutil.stderr
-        if "encrypted: YES" in image_info.lower():
-            pass  # Image-level encryption confirmed
-        elif "encrypted: NO" in image_info.lower():
-            blockers.append(
-                f"Target backing image is NOT encrypted. "
-                f"Image-level encryption is required."
-            )
+        mount_device = ""
+        for line in df_result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) > 0 and parts[0].startswith("/dev/"):
+                mount_device = parts[0]
+                break
+
+        if not mount_device:
+            blockers.append(f"Cannot determine device for mount point {resolved}")
         else:
-            # hdiutil imageinfo may not work on non-image paths
-            # Fallback: check if the target path contains the volume name
-            # and try to find the sparse bundle
-            vol_name = resolved.name
-            # Check via diskutil for APFS but note encryption may be image-level
-            diskutil = subprocess.run(
-                ["diskutil", "info", vol_name],
-                capture_output=True, text=True, timeout=10,
+            # 2. Parse hdiutil info to find which image backs this device
+            hdiutil = subprocess.run(
+                ["hdiutil", "info"],
+                capture_output=True, text=True, timeout=15,
             )
-            disk_out = diskutil.stdout + diskutil.stderr
-            if "APFS" not in disk_out:
+            info_text = hdiutil.stdout
+
+            # hdiutil info output structure:
+            #   framework: ...
+            #   ================================================
+            #   image-path      : <path>
+            #   image-encrypted : TRUE|FALSE
+            #   ...
+            #   /dev/diskN      ...
+            #   /dev/diskNs1    ...  /Volumes/...
+            #
+            # Each image section is separated by a "===" line.
+            # After the image properties, the device mapping follows.
+
+            sections = info_text.split("================================================")
+            found_encrypted = False
+            found_path = ""
+            for section in sections:
+                section = section.strip()
+                if not section:
+                    continue
+                # Check if this section mentions the mount device
+                if mount_device in section:
+                    # Parse image-encrypted from this section
+                    for line in section.splitlines():
+                        line_stripped = line.strip()
+                        if line_stripped.startswith("image-encrypted"):
+                            val = line_stripped.split(":", 1)[1].strip().upper()
+                            if val == "TRUE":
+                                found_encrypted = True
+                        elif line_stripped.startswith("image-path"):
+                            found_path = line_stripped.split(":", 1)[1].strip()
+                    break
+
+            if found_encrypted:
+                # Confirm the backing image is on the external Passport volume
+                if found_path and not found_path.startswith("/Volumes/Passport"):
+                    blockers.append(
+                        f"Backing image is not on the external Passport volume: {found_path}. "
+                        f"Only Passport-hosted disk images are approved."
+                    )
+            else:
                 blockers.append(
-                    f"Target is not APFS. An encrypted APFS container is required."
+                    f"Target {resolved} (device {mount_device}) is NOT backed by an "
+                    f"encrypted disk image. The backing image must have "
+                    f"image-encrypted: TRUE."
                 )
-            # Image-level encryption check: look for the .sparsebundle
-            # by checking the mount point's parent for disk images
-            mount_path = resolved
-            parent = mount_path.parent
-            # Check if any parent directory has a .sparsebundle file
-            found_bundle = False
-            check_dir = mount_path
-            for _ in range(5):  # Walk up to 5 levels
-                for child in check_dir.glob("*.sparsebundle"):
-                    found_bundle = True
-                    break
-                if found_bundle:
-                    break
-                if check_dir.parent == check_dir:
-                    break
-                check_dir = check_dir.parent
-            if not found_bundle:
-                blockers.append(
-                    f"Cannot confirm backing image encryption for {mount_path}. "
-                    f"Ensure the volume is backed by an encrypted sparse bundle."
-                )
+
     except (OSError, subprocess.TimeoutExpired) as exc:
         blockers.append(f"Cannot verify target encryption: {exc}")
 
@@ -592,19 +612,21 @@ def build_execution_packet(
             dest_base = target / snapshot_name / "repos" / slug / rel
             dest = str(dest_base)
 
-            # Copy command
+            # Copy command — use structured args list
             cmd = ["rsync"] + BASE_RSYNC_FLAGS[:]
             for pattern in resolved_excludes:
                 cmd.extend(["--exclude", pattern])
             cmd.append(source)
             cmd.append(dest)
+            cmd_str = shlex.join(cmd)
 
             packet["copy_commands"].append({
                 "source": source,
                 "dest": dest,
                 "relative_path": rel,
                 "repo_slug": slug,
-                "command": " ".join(cmd),
+                "args": cmd,
+                "command": cmd_str,
             })
 
             # Verify command (checksum comparison)
@@ -613,12 +635,14 @@ def build_execution_packet(
                 vcmd.extend(["--exclude", pattern])
             vcmd.append(source)
             vcmd.append(dest)
+            vcmd_str = shlex.join(vcmd)
             packet["verify_commands"].append({
                 "source": source,
                 "dest": dest,
                 "relative_path": rel,
                 "repo_slug": slug,
-                "command": " ".join(vcmd),
+                "args": vcmd,
+                "command": vcmd_str,
             })
 
     # Restore-sample command (picks from all verified destinations)
