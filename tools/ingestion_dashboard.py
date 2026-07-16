@@ -164,8 +164,8 @@ def collect_reddit(_transport: Transport | None = None) -> dict:
         "recovery_proof": "UNKNOWN — no recovery proof adapter",
         "natural_run_observation": "UNKNOWN — no natural-run observation adapter",
     })
-    # Manual recovery proof known regardless of live access
-    result["backup"] = "manual_recovery_proof_valid (Session 9 report 23); natural_backup_pending (timer not yet observed live)"
+    # Manual and natural recovery proof known regardless of live access
+    result["backup"] = "BACKUP_RECOVERY_PROVEN (manual dump/restore proof from Session 9 report 23; natural timer acceptance at 2026-07-16 08:00:14 UTC)"
     t = _transport or transport
     command = (
         "systemctl --user show wgu-reddit-postgres-run.timer "
@@ -199,17 +199,17 @@ def collect_reddit(_transport: Transport | None = None) -> dict:
     result["detail"]["db_frontier"] = "UNKNOWN — requires live DB frontier adapter; PostgreSQL 45,469 posts observed; VPS lacks psycopg2 for programmatic ID extract"
     result["detail"]["duplicate_gap"] = "UNKNOWN — requires duplicate/gap adapter; manual check found 0 duplicate IDs in both sources; 561 PG-only IDs (559 later than old frontier) require review"
     result["detail"]["archive_continuity"] = "UNKNOWN — requires archive continuity adapter; no DB export records; filesystem backup inventory exists but archive check has shell defect"
-    result["detail"]["recovery_proof"] = "manual_recovery_proof_valid (Session 9 report 23: manual dump, checksum, manifest, pg_restore --list, isolated restore verified); natural_backup_pending (next timer 08:00 UTC, last natural trigger 2026-07-15 08:00:14, not yet accepted)"
-    result["detail"]["natural_run_observation"] = "natural_backup_pending (timer enabled/active, next 2026-07-16 08:00:00 UTC, not yet fired; do NOT infer acceptance from manual proof)"
+    result["detail"]["recovery_proof"] = "BACKUP_RECOVERY_PROVEN (manual dump, checksum, manifest, pg_restore --list, isolated restore from Session 9 report 23; natural timer acceptance at 2026-07-16 08:00:14 UTC)"
+    result["detail"]["natural_run_observation"] = "natural_backup_accepted (timer fired 2026-07-16 08:00:14 UTC; artifact 16,156,397 bytes, SHA-256 and manifest valid; session-9 report 38)"
     if backup and "success" not in backup:
         result["backup"] = "FAILED: systemd backup unit (daily failures since 2026-07-11)"
         result["status"] = "RED"
         result["evidence_level"] = "live"
         result["issues"].append("Backup service currently failed; manual recovery proof from Session 9 remains valid but no current restore; canonicality cannot be fully verified")
     if backup and len(backup) > 0 and backup[0] == "success":
-        result["backup"] = "manual_recovery_proof_valid; natural_backup_pending (next timer 08:00 UTC — do NOT infer acceptance)"
+        result["backup"] = "BACKUP_RECOVERY_PROVEN (manual + natural acceptance)"
         result["status"] = "YELLOW"
-        result["issues"].append("Manual recovery proof from Session 9 (report 23) is valid; natural-backup timer is active but has NOT yet fired at 08:00 UTC pending observation; archive continuity and remaining canonicality dimensions are UNKNOWN (separate adapters needed)")
+        result["issues"].append("Backup recovery proven (manual and natural); canonicality dimensions remain UNKNOWN without dedicated adapters (source frontier, DB frontier, duplicates, archive continuity); recovery alone does not constitute canonicality")
     return result
 
 
@@ -346,22 +346,17 @@ def collect_capacity(_transport: Transport | None = None) -> dict:
     return result
 
 
-def traderie_fallback() -> dict:
+def traderie_unknown() -> dict:
     result = row("Traderie", "traderie-ingest-snapshot.timer", "ROADMAP §7A-G1")
+    result["evidence_level"] = "missing_producer"
     result["detail"].update({
-        "deployed_revision": "e5ebd0f (exact SHA from VPS checkout; clean/detached)",
+        "deployed_revision": "unknown (no live probe adapter)",
         "live_exporter_adapter": "missing_producer (no live Traderie probe adapter deployed)",
-        "backup_age": "stale (last dump 2026-07-09; backup restore proof missing)",
-        "timeout_progress": "unsupported_field (instrumentation not yet deployed; local source at 137dd64 has it)",
-        "mutable_data_violation": "1.2 GB mutable data inside Git checkout (violates exact-SHA deployment model)",
-        "authority_type": "file_based (current recovery data is file-based dumps; no scheduler/timer found in scraper user-manager surface)",
-        "postgresql": "zero_non_system_tables (PG traderie DB reachable at ~9.99 MB but contains zero application tables; NOT a database-backed workload)",
-        "scheduler_owner": "unresolved_authority (no traderie unit or timer found in user-manager surface; earlier writes observed but ownership unattributed)",
+        "scheduler_owner": "missing_producer (root systemd timer confirmed by Session 9 live discovery; no live probe to report current state)",
+        "authority_type": "file_based (PG traderie DB has zero non-system tables; data is file-authoritative)",
+        "postgresql": "zero_non_system_tables (PG traderie DB reachable but contains zero application tables)",
     })
-    text = control_text("repos/traderie/CONTROL.md")
-    if "pc_hc_nl" in text and "timed out" in text:
-        result.update({"status": "RED", "evidence_level": "doc_fallback", "source_freshness": "stale (no live exporter; control doc from prior observation)", "db_freshness": "not_applicable (file-based authority; PG has zero non-system tables)", "offload": "not applicable", "backup": "stale (last backup 2026-07-09)", "capacity": "unknown", "collected_at": "doc_fallback (no live collection; control doc stale)"})
-        result["issues"].append("Control evidence records a failed natural run (pc_hc_nl timeout 2026-07-16); no fresh Traderie probe adapter; authority is file-based, NOT database-backed (PG has zero non-system tables)")
+    result["issues"].append("No live Traderie probe adapter deployed; status is UNKNOWN. Session 9 confirmed root systemd timer and file-based authority.")
     return result
 
 
@@ -420,7 +415,7 @@ def main() -> int:
     reddit = collect_reddit()
     chat, market = collect_ih()
     capacity = collect_capacity()
-    traderie = traderie_fallback()
+    traderie = traderie_unknown()
     rows = [reddit, chat, market, traderie, capacity]
     coverage = roadmap_coverage()
     args.output_dir.mkdir(parents=True, exist_ok=True)

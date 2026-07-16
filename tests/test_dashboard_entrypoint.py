@@ -276,8 +276,11 @@ class TestTraderieNotDatabaseBacked:
             assert "zero_non_system_tables" in pg_status, (
                 f"Traderie PG must show zero non-system tables, got: {pg_status}"
             )
-            assert traderie.get("db_freshness", "") != "unknown", (
-                "Traderie db_freshness should not be generic unknown"
+            assert traderie.get("evidence_level", "") == "missing_producer", (
+                "Traderie should show missing_producer without live adapter"
+            )
+            assert traderie.get("status", "") == "UNKNOWN", (
+                "Traderie should be UNKNOWN without live probe, not RED from prose"
             )
 
 
@@ -285,7 +288,7 @@ class TestTraderieNotDatabaseBacked:
 
 
 class TestRedditRecoveryWording:
-    def test_reddit_backup_shows_manual_proof_separate(self) -> None:
+    def test_reddit_backup_shows_recovery_proven(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             _run_python(DASHBOARD_SCRIPT, ["--no-live", "--output-dir", tmp])
             data = json.loads((Path(tmp) / "status.json").read_text(encoding="utf-8"))
@@ -294,13 +297,11 @@ class TestRedditRecoveryWording:
             )
             assert reddit is not None
             backup_text = reddit.get("backup", "")
-            # Must contain manual recovery proof reference
-            assert "manual_recovery_proof" in backup_text, (
-                f"Reddit backup must mention manual proof, got: {backup_text}"
+            assert "BACKUP_RECOVERY_PROVEN" in backup_text, (
+                f"Reddit backup must show BACKUP_RECOVERY_PROVEN, got: {backup_text}"
             )
-            # Must contain natural_backup_pending (not imply acceptance)
-            assert "natural_backup_pending" in backup_text, (
-                f"Reddit backup must show natural backup as pending, got: {backup_text}"
+            assert "natural" in backup_text.lower(), (
+                f"Reddit backup must still mention natural acceptance, got: {backup_text}"
             )
 
 

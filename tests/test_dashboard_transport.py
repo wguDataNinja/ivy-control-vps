@@ -185,8 +185,8 @@ class TestNoLiveMode:
                         "missing_producer", "doc_fallback",
                     ), f"{r['workload']} should not be live in no-live mode"
 
-    def test_no_live_traderie_fallback(self) -> None:
-        """Traderie still uses doc_fallback regardless of mode."""
+    def test_no_live_traderie_unknown(self) -> None:
+        """Traderie shows missing_producer without live adapter."""
         with tempfile.TemporaryDirectory() as tmp:
             _run_python(["--mode", "no-live", "--output-dir", tmp])
             data = json.loads((Path(tmp) / "status.json").read_text(encoding="utf-8"))
@@ -194,7 +194,9 @@ class TestNoLiveMode:
                 (r for r in data["rows"] if r["workload"] == "Traderie"), None,
             )
             assert traderie is not None
-            assert traderie.get("evidence_level") == "doc_fallback"
+            assert traderie.get("evidence_level") == "missing_producer", (
+                "Traderie should be missing_producer, not doc_fallback"
+            )
 
     def test_no_live_ih_separate(self) -> None:
         """Chat and market remain separate rows in no-live mode."""

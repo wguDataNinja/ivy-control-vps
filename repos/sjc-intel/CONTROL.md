@@ -9,7 +9,7 @@ repository:
   local_path: "/Users/buddy/projects/sjc_intel"
   vps_path: null
 lifecycle:
-  admission_gate: 1
+  admission_gate: null
   state: "source-only"
 github:
   visibility: null

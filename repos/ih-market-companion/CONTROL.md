@@ -9,7 +9,7 @@ repository:
   local_path: "/Users/buddy/projects/ih_market_companion"
   vps_path: null
 lifecycle:
-  admission_gate: 1
+  admission_gate: null
   state: "browser-dependent"
 github:
   visibility: public

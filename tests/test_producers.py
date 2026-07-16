@@ -527,8 +527,8 @@ class TestEvidenceTimestamps:
 
 class TestTraderieFileBased:
     def test_traderie_authority_text(self) -> None:
-        from tools.ingestion_dashboard import traderie_fallback
-        result = traderie_fallback()
+        from tools.ingestion_dashboard import traderie_unknown
+        result = traderie_unknown()
         detail = result.get("detail", {})
         auth = detail.get("authority_type", "")
         pg = detail.get("postgresql", "")
@@ -538,3 +538,5 @@ class TestTraderieFileBased:
         assert "zero_non_system_tables" in pg, (
             f"Traderie must document zero non-system PG tables, got: {pg}"
         )
+        assert result.get("evidence_level") == "missing_producer"
+        assert result.get("status") == "UNKNOWN"

@@ -1,6 +1,6 @@
 # Ivy Control VPS Roadmap
 
-**Status:** Active ingestion-first operating plan. Reconciled from current control sheets, database/health standards, the private Session 8 evidence review, and the generated local dashboard on 2026-07-15.
+**Status:** Active execution plan. Reconciled from current control sheets, database/health standards, Session 9 evidence, and the generated local dashboard on 2026-07-16.
 
 **Purpose:** This is the broad current home for agents: it states what is true, what is next, who can act, what is blocked, and which gate/evidence closes a task. Repository control sheets and release gates remain the authority for repository-specific decisions; `docs/DATABASE.md`, `docs/HEALTH_CONTRACT.md`, and `docs/PORTFOLIO_CONVENTIONS.md` remain the technical standards.
 
@@ -17,8 +17,8 @@ The dashboard is the current simple operator surface. It refreshes safe read-onl
 ### Current workload truth
 
 | Workload | Current classification | Immediate issue | Evidence |
-|---|---|---|---|
-| WGU Reddit / Reddit Ops | `CANDIDATE_CANONICAL` | Scheduled backup is broken; recent completeness and archive continuity are unproven | Live dashboard + `repos/reddit-ops/CONTROL.md` |
+|---|---|---|---|---|
+| WGU Reddit / Reddit Ops | `CANDIDATE_CANONICAL` | Backup recovery proven; natural acceptance confirmed; archive continuity and canonicality review pending | Live dashboard + `repos/reddit-ops/CONTROL.md` |
 | Idle Hacking chat | `CAPTURING_BUT_NOT_DURABLE` | Acknowledgement, replay, archive continuity, and truthful current-failure health are open | Live dashboard + Session 8 evidence |
 | Idle Hacking market | `CAPTURING_BUT_NOT_DURABLE` | Same durability gap; PostgreSQL reconciliation is also pending | Live dashboard + Session 8 evidence |
 | Traderie | `DEGRADED_BUT_BOUNDED` | Focused `pc_hc_nl` natural-run recovery only | `repos/traderie/CONTROL.md` |
@@ -26,7 +26,7 @@ The dashboard is the current simple operator surface. It refreshes safe read-onl
 
 ### Immediate P0 priorities
 
-1. Repair and re-prove WGU Reddit backup/restore; do not retire fallback paths.
+1. Progress WGU Reddit canonicality review toward Buddy gate decision.
 2. Prove WGU recent completeness, archive-to-VPS continuity, and single-writer canonicality.
 3. Make Idle Hacking chat and market health truthful, separate, acknowledged, and replayable.
 4. Add the missing dashboard adapters before claiming portfolio ingestion is trustworthy.
@@ -77,7 +77,7 @@ Stop and escalate to **Strong Codex** for technical ambiguity; escalate to **Bud
 
 **State:** `CANDIDATE_CANONICAL` / **BLOCKED BY GATE** for legacy retirement.
 
-The active authority is `wgu-reddit-postgres-run.timer` and its PostgreSQL writer. The SQLite shadow timer is disabled and Mac launchd is documented disabled. The latest observed scheduled collection succeeded, but the installed backup unit references the wrong script and currently fails. `reddit_ops` is therefore candidate canonical for recent operations, not verified canonical for the complete dataset.
+The active authority is `wgu-reddit-postgres-run.timer` and its PostgreSQL writer. The SQLite shadow timer is disabled and Mac launchd is documented disabled. Backup recovery is proven: the unit was repaired, the natural timer run at 2026-07-16 08:00:14 UTC produced a valid artifact (checksum, manifest, pg_restore --list all pass). `reddit_ops` is therefore candidate canonical for recent operations, not verified canonical for the complete dataset.
 
 | Task | State | Owner | Depends on | Completion unlocks |
 |---|---|---|---|---|
@@ -263,9 +263,9 @@ Default placement:
 ### §5A Ready — parallel OpenCode queue
 
 | Task | Depends on | Completion unlocks |
-|---|---|---|
-| Reddit corrected-backup source, tests, publication/repair packet | Source review | Strong Codex repair |
-| Reddit monitor-role canonicality and archive-continuity query/report design | Safe schema knowledge | Canonicality review |
+|---|---|---|---|
+| Reddit backup publication and clean-history strategy | Buddy decision | Git-based deployment |
+| Reddit canonicality evidence review | Evidence bundle from Session 9 | Buddy gate decision |
 | IH chat/market separate health adapters, fixtures, acknowledgement/retention fields | Source ownership decision may be deferred but must be recorded | Dashboard trust fields |
 | Database onboarding guide/checklist/templates | Existing evidence | Faster repo-local preparation |
 | SJC Intel readiness packet and source audit | Repo-local access | Gate 4 review |
@@ -276,8 +276,8 @@ Default placement:
 
 | Task | State | Requires | Completion unlocks |
 |---|---|---|---|
-| Reddit backup unit repair, fresh backup, isolated restore | REQUIRES STRONG CODEX | Buddy-approved exact packet and reviewed source | Current recovery evidence |
-| Reddit verified-canonical review | REQUIRES STRONG CODEX | Monitor report + archive continuity + repaired restore | Buddy retirement decision |
+| Reddit canonicality gate acceptance | REQUIRES BUDDY | Evidence bundle review | Canonicality declaration |
+| Reddit verified-canonical review | REQUIRES STRONG CODEX | Monitor report + archive continuity + restored backup | Buddy retirement decision |
 | IH source-to-installed userscript verification | REQUIRES STRONG CODEX / REQUIRES BUDDY | Safe browser UI/export procedure | Deployment drift evidence |
 | IH PostgreSQL import/reconciliation pilot | REQUIRES STRONG CODEX | Repo-local source/tests, manifest, capacity, backup/restore packet | Market authority-transfer review |
 | Traderie deploy/natural-run/reboot proof | REQUIRES STRONG CODEX | Focused source correction and natural-run preconditions | Production-complete review |
