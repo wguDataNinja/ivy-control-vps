@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Hermes ready-task scanner — read-only, no mutations.
-# Discover Hermes-eligible tasks from repos/<repo>/CONTROL.md files.
+# Uses the portfolio registry for lifecycle/permission data.
 # Usage: ./tools/hermes_ready_tasks.sh [--format table|json|markdown] [--repo <name>]
 set -euo pipefail
 
@@ -16,108 +16,75 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-declare -a RESULTS=()
+python3 -c "
+import json, sys
+sys.path.insert(0, '$REPO_ROOT/tools')
+from portfolio_registry import build_registry, VALID_LIFECYCLES, UNKNOWN, NA
 
-for ctrl in "$REPO_ROOT"/repos/*/CONTROL.md; do
-    [ -f "$ctrl" ] || continue
-    REPO_NAME=$(basename "$(dirname "$ctrl")")
-    [ -n "$REPO_FILTER" ] && [ "$REPO_NAME" != "$REPO_FILTER" ] && continue
+records = build_registry(include_missing=True)
+if '$REPO_FILTER':
+    records = [r for r in records if r['repo_id'] == '$REPO_FILTER']
 
-    LIFECYCLE=$(grep -E '^\*\*Lifecycle' "$ctrl" 2>/dev/null | sed -E 's/^\*\*Lifecycle[^*]*\*\*:?\s*//' | sed -E 's/[`"'"'"']//g' | head -1 || true)
-    if [ -z "$LIFECYCLE" ]; then
-        # Fallback: parse Gate 6 from ## Portfolio Admission State table
-        GATE6=$(awk '/^## Portfolio Admission State/{flag=1; next} /^## /{flag=0} flag' "$ctrl" 2>/dev/null | grep -i '6.*Operational' | head -1 || true)
-        case "$GATE6" in
-            *PASS*) LIFECYCLE="production-active" ;;
-            *BLOCKED*) LIFECYCLE="production-degraded" ;;
-            *CONDITION*) LIFECYCLE="production-stabilizing" ;;
-            *UNDEFINED*) LIFECYCLE="readiness-pending" ;;
-            *) LIFECYCLE="unknown" ;;
-        esac
-    fi
-    [ -z "$LIFECYCLE" ] && LIFECYCLE="unknown"
+def compute_permission(rec):
+    lc = rec['lifecycle'].lower()
+    blocker = rec['blocker'].lower()
+    source = rec['source']
+    is_restricted = 'restricted' in lc or 'no_launch' in lc
+    is_deferred = lc in ('downstream', 'batch', 'unknown')
+    is_browser_dependent = 'browser' in lc
+    is_source_only = lc in ('source-only', 'published')
+    is_active_prod = any(t in lc for t in ['production', 'runtime', 'active', 'stabilizing', 'degraded'])
 
-    BLOCKER=""
-    if grep -q '^## Current Blocker' "$ctrl" 2>/dev/null; then
-        BLOCKER=$(awk '/^## Current Blocker/{flag=1; next} /^## /{flag=0} flag' "$ctrl" 2>/dev/null | grep -v '^[[:space:]]*$' | head -3 | tr '\n' ' ' | xargs || true)
-        [ -z "$BLOCKER" ] && BLOCKER="present (see CONTROL.md)"
-    fi
-    [ -z "$BLOCKER" ] && BLOCKER="none"
+    # Restricted repos: Hermes may not inspect
+    if is_restricted:
+        return 'none'
+    # Deferred/downstream repos: Hermes may not inspect
+    if is_deferred and source == 'MISSING':
+        return 'none'
+    if is_deferred and blocker != 'none':
+        return 'none' if 'not yet admitted' in blocker else 'inspect'
+    # Source-only repos: read-only pilot only
+    if is_source_only:
+        return 'inspect'
+    # Browser-dependent repos: read-only inspection
+    if is_browser_dependent:
+        return 'inspect'
+    # Active production with blocker: inspect + report
+    if is_active_prod and blocker != 'none':
+        return 'inspect+report'
+    # Active production, no blocker: inspect + report + propose
+    if is_active_prod and blocker == 'none':
+        return 'inspect+report+propose'
+    # No CONTROL.md: Hermes may not inspect
+    if source == 'MISSING':
+        return 'none'
+    return 'inspect'
 
-    NEXT_WORK=$(awk '/^## Next Authorized (Work|Phase)/{flag=1; next} flag && NF{print; exit}' "$ctrl" 2>/dev/null | head -c 80 || true)
-    [ -z "$NEXT_WORK" ] && NEXT_WORK="(not defined)"
+tasks = []
+for rec in records:
+    permission = compute_permission(rec)
+    tasks.append({
+        'repo': rec['repo_id'],
+        'lifecycle': rec['lifecycle'],
+        'permission': permission,
+        'blocker': rec['blocker'][:80] if len(rec['blocker']) > 80 else rec['blocker'],
+        'next_work': rec['next_task'][:80] if len(rec['next_task']) > 80 else rec['next_task'],
+    })
 
-    PERMISSION="inspect"
-    case "$LIFECYCLE" in
-        *readiness*|*admission*)
-            PERMISSION="admit"
-            ;;
-        *stabilizing*)
-            PERMISSION="inspect+report"
-            ;;
-        *degraded*)
-            PERMISSION="inspect"
-            ;;
-        *complete*|*active*)
-            PERMISSION="inspect+report"
-            [ "$BLOCKER" = "none" ] && PERMISSION="inspect+report+propose"
-            ;;
-    esac
-
-    RESULTS+=("$REPO_NAME|$LIFECYCLE|$PERMISSION|$BLOCKER|$NEXT_WORK")
-done
-
-for repo_dir in "$REPO_ROOT"/repos/*/; do
-    [ -d "$repo_dir" ] || continue
-    REPO_NAME=$(basename "$repo_dir")
-    [ -f "$repo_dir/CONTROL.md" ] && continue
-    [ -n "$REPO_FILTER" ] && [ "$REPO_NAME" != "$REPO_FILTER" ] && continue
-    RESULTS+=("$REPO_NAME|no_control_sheet|none|missing CONTROL.md|create CONTROL.md")
-done
-
-case "$FORMAT" in
-    table)
-        printf "%-25s %-28s %-22s %-40s %-40s\n" "REPO" "LIFECYCLE" "PERMISSION" "BLOCKER" "NEXT_WORK"
-        printf '%.0s-' {1..155}
-        printf "\n"
-        for r in "${RESULTS[@]}"; do
-            IFS='|' read -r name lifecycle permission blocker nextwork <<< "$r"
-            printf "%-25s %-28s %-22s %-40s %-40s\n" "$name" "$lifecycle" "$permission" "$blocker" "$nextwork"
-        done
-        ;;
-    json)
-        printf "{\n  \"tasks\": [\n"
-        first=true
-        for r in "${RESULTS[@]}"; do
-            if $first; then first=false; else printf ",\n"; fi
-            IFS='|' read -r name lifecycle permission blocker nextwork <<< "$r"
-            name=$(echo "$name" | sed 's/"/\\"/g')
-            lifecycle=$(echo "$lifecycle" | sed 's/"/\\"/g')
-            permission=$(echo "$permission" | sed 's/"/\\"/g')
-            blocker=$(echo "$blocker" | sed 's/"/\\"/g')
-            nextwork=$(echo "$nextwork" | sed 's/"/\\"/g')
-            printf '    {"repo": "%s", "lifecycle": "%s", "permission": "%s", "blocker": "%s", "next_work": "%s"}' \
-                "$name" "$lifecycle" "$permission" "$blocker" "$nextwork"
-        done
-        printf "\n  ]\n}\n"
-        ;;
-    markdown)
-        printf "# Hermes Ready Tasks\n\n"
-        printf "| Repo | Lifecycle | Permission | Blocker | Next Work |\n"
-        printf "|------|-----------|------------|---------|-----------|\n"
-        for r in "${RESULTS[@]}"; do
-            IFS='|' read -r name lifecycle permission blocker nextwork <<< "$r"
-            name=$(echo "$name" | sed 's/|/\\|/g')
-            lifecycle=$(echo "$lifecycle" | sed 's/|/\\|/g')
-            permission=$(echo "$permission" | sed 's/|/\\|/g')
-            blocker=$(echo "$blocker" | sed 's/|/\\|/g')
-            nextwork=$(echo "$nextwork" | sed 's/|/\\|/g')
-            printf "| %s | %s | %s | %s | %s |\n" "$name" "$lifecycle" "$permission" "$blocker" "$nextwork"
-        done
-        printf "\n"
-        ;;
-    *)
-        echo "Unknown format: $FORMAT (use table, json, or markdown)" >&2
-        exit 1
-        ;;
-esac
+fmt = '$FORMAT'
+if fmt == 'json':
+    print(json.dumps({'tasks': tasks}, indent=2))
+elif fmt == 'markdown':
+    print('# Hermes Ready Tasks\n')
+    print('| Repo | Lifecycle | Permission | Blocker | Next Work |')
+    print('|------|-----------|------------|---------|-----------|')
+    for t in tasks:
+        print(f\"| {t['repo']} | {t['lifecycle'][:28]} | {t['permission']} | {t['blocker'][:60]} | {t['next_work'][:60]} |\")
+    print()
+else:
+    # table
+    print(f\"{'REPO':25s} {'LIFECYCLE':28s} {'PERMISSION':22s} {'BLOCKER':60s} {'NEXT_WORK':60s}\")
+    print('-' * 195)
+    for t in tasks:
+        print(f\"{t['repo']:25s} {t['lifecycle'][:28]:28s} {t['permission']:22s} {t['blocker'][:60]:60s} {t['next_work'][:60]:60s}\")
+" 2>&1
