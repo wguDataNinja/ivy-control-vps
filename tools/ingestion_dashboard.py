@@ -136,45 +136,15 @@ def collect_ih() -> tuple[dict, dict]:
         for item in (chat, market):
             item["issues"].append("Malformed helper health payload; treated as UNKNOWN")
         return chat, market
-    retention = payload.get("storage_retention", {}) if isinstance(payload, dict) else {}
-    for item in (chat, market):
-        item["evidence_level"] = "live"
-        item["detail"]["component"] = "Idle Hacking Collector (namespace ih-market-companion; observed v2026-05-03.3)"
-        item["detail"]["helper_service"] = service_state.strip() or "unknown"
-        item["detail"]["userscript_authority"] = "unresolved; installed-copy verification unavailable"
-        item["detail"]["helper_sha256"] = "7747c2eb…bec1020 (fresh 2026-07-15 inspection)"
-        item["capacity"] = "unknown (host adapter pending)"
-        item["backup"] = "unknown (acknowledgement is not backup)"
-    chat_data = payload.get("chat", {})
-    chat_retention = retention.get("chat", {}) if isinstance(retention, dict) else {}
-    chat["last_success"] = chat_retention.get("updated_at", "unknown")
-    chat["source_freshness"] = chat_data.get("last_message_at", "unknown")
-    chat["db_freshness"] = "unknown (metadata DB does not prove raw chat capture)"
-    chat["offload"] = chat_retention.get("archive_acknowledgement_status", "unknown")
-    chat["detail"].update({"helper_reported_status": chat_data.get("status", "unknown"), "current_durable_write": chat_retention.get("durable_local_write_status", "unknown"), "collection": chat_retention.get("collection_status", "unknown"), "lifetime_writes_ok": chat_data.get("writes_ok", "unknown"), "lifetime_writes_failed": chat_data.get("writes_failed", "unknown"), "retention": chat_retention.get("chat", {})})
-    # The known counter is lifetime cumulative.  It cannot make a current good
-    # local write red; lack of a current/consecutive-failure adapter is yellow.
-    if chat_retention.get("durable_local_write_status") == "failed":
-        chat["status"] = "RED"
-        chat["issues"].append("Current durable chat write failed")
-    elif chat_retention.get("collection_status") == "success":
-        chat["status"] = "YELLOW"
-        chat["issues"].append("Current write looks successful, but status semantics, source authority, and archive acknowledgement remain unresolved")
-    else:
-        chat["status"] = "UNKNOWN"
-    market_data = payload.get("market", {})
-    market_retention = retention.get("market", {}) if isinstance(retention, dict) else {}
-    market["last_success"] = market_data.get("last_good_capture_at", "unknown")
-    market["source_freshness"] = market_data.get("last_capture_at", "unknown")
-    market["db_freshness"] = "unknown (PostgreSQL import/reconciliation pending)"
-    market["offload"] = market_retention.get("archive_acknowledgement_status", "unknown")
-    market["detail"].update({"helper_reported_status": market_data.get("status", "unknown"), "current_durable_write": market_retention.get("durable_local_write_status", "unknown"), "collection": market_retention.get("collection_status", "unknown"), "retention": market_retention.get("market", {}), "records": {"books": market_data.get("books"), "commodities": market_data.get("commodities")}})
-    if market_retention.get("durable_local_write_status") == "failed":
-        market["status"] = "RED"
-        market["issues"].append("Current durable market write failed")
-    elif market_data.get("status") == "ok":
-        market["status"] = "YELLOW" if market["offload"] != "current" else "YELLOW"
-        market["issues"].append("Capture is current, but archive acknowledgement/source authority are unresolved")
+    if not isinstance(payload, dict):
+        for item in (chat, market):
+            item["issues"].append("Non-dict payload from helper; treated as UNKNOWN")
+        return chat, market
+    from tools.ih_dashboard_adapter import adapt_chat, adapt_market
+    helper_sha = "7747c2eb…bec1020 (fresh 2026-07-15 inspection)"
+    component = "Idle Hacking Collector (namespace ih-market-companion; observed v2026-05-03.3)"
+    chat = adapt_chat(payload, service_state=service_state.strip() or "unknown", helper_sha=helper_sha, component=component)
+    market = adapt_market(payload, service_state=service_state.strip() or "unknown", helper_sha=helper_sha, component=component)
     return chat, market
 
 
