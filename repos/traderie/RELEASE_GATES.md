@@ -11,6 +11,10 @@
 
 Each gate produces `PASS`, `PASS WITH CONDITIONS`, `BLOCKED`, or `NOT APPLICABLE`. A later gate cannot pass until earlier required gates have passed. Operational activation remains conditional until scheduled-run, health, backup-freshness, and reboot evidence are complete.
 
+### Mapping to the portfolio 6-gate model
+
+This repository predates the standardized six-gate model (`docs/REPOSITORY_CONTROL_MODEL.md`). Gates 1–5 here correspond to the portfolio Gates 1–5. The portfolio's Gate 6 (Operational Activation) is split into two sub-gates here: **Gate 6 (Scheduler)** and **Gate 7 (Operational Activation)** — both must pass for the portfolio Gate 6 to pass. The `repos/traderie/CONTROL.md` Gate table records the consolidated portfolio state.
+
 ---
 
 ## 1. Portfolio Admission Gate
