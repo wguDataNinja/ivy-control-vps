@@ -25,11 +25,12 @@
 ### 1.3 Authority and precedence
 
 | Source | Authority |
-|---|---|
+|---|---|---|
 | This document (HEALTH_CONTRACT.md) | Highest — canonical architecture authority |
 | PORTFOLIO_CONVENTIONS.md (outside §Health) | Equal — complementary conventions |
-| SHARED-003_HEALTH_CONTRACT.md | Historical reference — superseded by this document |
-| INFRA_HEALTH_DESIGN_PACKAGE.md | Historical reference — design direction superseded by this document |
+| `SHARED-003_HEALTH_CONTRACT.md` (old tree) | Historical — fully superseded by this document. Not present in this repository. |
+| `INFRA_HEALTH_DESIGN_PACKAGE.md` (old tree) | Historical — fully superseded by this document. Not present in this repository. |
+| `SHARED_HEALTH_INPUT_SYNTHESIS.md` (old tree) | Historical — fully superseded by this document. Not present in this repository. |
 | Repo-specific CONTROL.md | Repository-specific compliance, must not contradict this contract |
 
 ---
@@ -737,8 +738,8 @@ These field names are banned from all sanitized public output by exact match:
 ## 14. References and Superseded Sources
 
 | Source | Status |
-|---|---|
-| SHARED-003_HEALTH_CONTRACT.md | Superseded by this document. Its field-level detail informed this contract. |
-| INFRA_HEALTH_DESIGN_PACKAGE.md | Superseded by this document. Its storage model was adopted with modifications. |
-| PORTFOLIO_CONVENTIONS.md §Health contract | Superseded by this document. |
-| SHARED_HEALTH_INPUT_SYNTHESIS.md | Historical evidence. Fully superseded. |
+|---|---|---|
+| `SHARED-003_HEALTH_CONTRACT.md` (old tree) | Historical - fully superseded by this document. Its field-level detail informed this contract. Not present in this repository. |
+| `INFRA_HEALTH_DESIGN_PACKAGE.md` (old tree) | Historical - fully superseded by this document. Its storage model was adopted with modifications. Not present in this repository. |
+| `PORTFOLIO_CONVENTIONS.md` §Health contract | Historical - superseded by this document. Retained in-repo for context only. |
+| `SHARED_HEALTH_INPUT_SYNTHESIS.md` (old tree) | Historical - fully superseded by this document. Not present in this repository. |

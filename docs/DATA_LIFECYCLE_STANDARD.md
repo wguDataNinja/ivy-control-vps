@@ -160,7 +160,7 @@ These portfolio-wide thresholds apply to all hosts (VPS, Mac). Repository-specif
 
 When approaching or exceeding the critical threshold:
 
-1. **Deployment stop:** `DEPLOYMENT_WORKFLOW.md` stop conditions activate — deployments blocked.
+1. **Deployment stop:** `docs/REPOSITORY_CONTROL_MODEL.md` stop conditions apply — deployments blocked.
 2. **Ingestion backpressure:** Collection services SHOULD continue if they produce bounded files, but SHOULD NOT accumulate unbounded data.
 3. **Health alert:** The health export MUST report disk/volume usage as degraded or failed.
 4. **Immutable protection:** Immutable retention classes (cutover baselines, pre-migration snapshots) are never pruned to free space.
