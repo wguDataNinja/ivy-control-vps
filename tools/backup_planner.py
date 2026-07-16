@@ -120,7 +120,40 @@ EXCLUDE_GROUPS: dict[str, dict[str, Any]] = {
     },
 }
 
-# Internal disk paths — planner refuses if target resolves to these
+# Default rsync flags for content-backup policy.
+# Preserves bytes, paths, timestamps, directory structure, and symlinks.
+# Does NOT preserve extended attributes, ACLs, ownership, or macOS metadata
+# (irrelevant for corpus data — JSON, JSONL, CSV, media files).
+BASE_RSYNC_FLAGS = [
+    "-a", "--progress",
+    "--exclude", "._*",
+    "--exclude", ".DS_Store",
+]
+
+# Verification flags — checksum comparison only, no transfer
+VERIFY_RSYNC_FLAGS = [
+    "-avc", "--dry-run",
+    "--exclude", "._*",
+    "--exclude", ".DS_Store",
+]
+
+
+def relative_repo_path(absolute_path: Path, repo_local_path: Path) -> str:
+    """Compute the path of a resolved include relative to its repo root.
+
+    Example:
+        absolute_path: /Users/buddy/projects/idlehacking_kb/capture
+        repo_local_path: /Users/buddy/projects/idlehacking_kb
+        returns: capture
+    """
+    try:
+        rel = absolute_path.relative_to(repo_local_path)
+        return str(rel)
+    except ValueError:
+        # Path is outside the repo root — use basename as fallback
+        return absolute_path.name
+
+
 INTERNAL_DISK_PATHS = [
     "/",
     "/System",
@@ -442,12 +475,28 @@ def build_execution_packet(
     target: Path | None,
     blockers: list[str],
 ) -> dict[str, Any]:
-    """Build the structured execution packet for human review."""
+    """Build the structured execution packet for human review.
+
+    Each resolved include path produces its own rsync command and verify
+    command.  Source trees are never flattened into a single destination —
+    the directory hierarchy is preserved.
+
+    Content-backup policy: bytes, paths, timestamps, directory structure,
+    and symlinks are preserved.  Extended attributes, ACLs, ownership, and
+    macOS metadata are NOT preserved (irrelevant for corpus data).
+    """
     now = iso_now()
+    snapshot_name = f"snapshot-{now[:10]}"
     packet: dict[str, Any] = {
         "packet_version": "1.0",
         "generated_at": now,
+        "snapshot_name": snapshot_name,
         "planner": "tools/backup_planner.py",
+        "metadata_policy": (
+            "content_backup — preserves bytes, paths, timestamps, "
+            "directory structure, and symlinks. Extended attributes, "
+            "ACLs, ownership, and macOS metadata are not preserved."
+        ),
         "target": str(target) if target else None,
         "target_validation": {
             "valid": len(blockers) == 0,
@@ -461,18 +510,28 @@ def build_execution_packet(
         "inventory_version": "1.0",
         "estimated_total_bytes": 0,
         "estimated_total_files": 0,
+        "copy_commands": [],
+        "verify_commands": [],
+        "restore_sample_commands": [],
     }
 
     for repo in repos:
-        entry = {
-            "slug": repo["slug"],
+        slug = repo["slug"]
+        local_path = repo.get("local_path")
+        resolved_includes = repo.get("resolved_includes", [])
+        resolved_excludes = repo.get("resolved_exclude_patterns", [])
+        include_groups = repo.get("include_groups", [])
+        exclude_groups = repo.get("exclude_groups", [])
+
+        entry: dict[str, Any] = {
+            "slug": slug,
             "policy": repo["policy"],
-            "local_path": str(repo["local_path"]) if repo["local_path"] else None,
-            "local_path_exists": repo["local_path"] is not None and repo["local_path"].exists(),
-            "include_groups": repo.get("include_groups", []),
-            "exclude_groups": repo.get("exclude_groups", []),
-            "resolved_includes": [str(p) for p in repo.get("resolved_includes", [])],
-            "resolved_excludes": repo.get("resolved_exclude_patterns", []),
+            "local_path": str(local_path) if local_path else None,
+            "local_path_exists": local_path is not None and local_path.exists(),
+            "include_groups": include_groups,
+            "exclude_groups": exclude_groups,
+            "resolved_includes": [str(p) for p in resolved_includes],
+            "resolved_excludes": resolved_excludes,
             "estimated": repo.get("estimated", {}),
             "skipped_reason": repo.get("skipped_reason"),
         }
@@ -481,52 +540,76 @@ def build_execution_packet(
         packet["estimated_total_bytes"] += est.get("bytes", 0)
         packet["estimated_total_files"] += est.get("files", 0)
 
-    # Build exact rsync command (do not execute)
+        if not target:
+            continue
+        if repo.get("skipped_reason") or not resolved_includes:
+            continue
+        if not local_path:
+            continue
+
+        # Build one copy command + verify command per resolved include path
+        for inc_path in resolved_includes:
+            inc_path_obj = Path(inc_path) if isinstance(inc_path, str) else inc_path
+            rel = relative_repo_path(inc_path_obj, local_path)
+
+            source = str(inc_path_obj) + "/"
+            dest_base = target / snapshot_name / "repos" / slug / rel
+            dest = str(dest_base)
+
+            # Copy command
+            cmd = ["rsync"] + BASE_RSYNC_FLAGS[:]
+            for pattern in resolved_excludes:
+                cmd.extend(["--exclude", pattern])
+            cmd.append(source)
+            cmd.append(dest)
+
+            packet["copy_commands"].append({
+                "source": source,
+                "dest": dest,
+                "relative_path": rel,
+                "repo_slug": slug,
+                "command": " ".join(cmd),
+            })
+
+            # Verify command (checksum comparison)
+            vcmd = ["rsync"] + VERIFY_RSYNC_FLAGS[:]
+            vcmd.append(source)
+            vcmd.append(dest)
+            packet["verify_commands"].append({
+                "source": source,
+                "dest": dest,
+                "relative_path": rel,
+                "repo_slug": slug,
+                "command": " ".join(vcmd),
+            })
+
+    # Restore-sample command (picks from all verified destinations)
+    if target and packet["copy_commands"]:
+        sample_dir = f"/private/tmp/ivy-backup-verify-{now[:10]}/"
+        for copy_cmd in packet["copy_commands"]:
+            dest = copy_cmd["dest"]
+            rel = copy_cmd["relative_path"]
+            slug = copy_cmd["repo_slug"]
+            # For each copied path, pick a few large files to sample
+            # Draft restore-sample command — human should review and adjust
+            sample_cmd = (
+                f"mkdir -p {sample_dir} && "
+                f"cd {dest} && "
+                f"find . -type f -size +1M | shuf -n 5 | "
+                f"xargs -I{{}} cp --parents {{}} {sample_dir}"
+            )
+            packet["restore_sample_commands"].append({
+                "source": dest,
+                "sample_dir": sample_dir,
+                "relative_path": rel,
+                "repo_slug": slug,
+                "command": sample_cmd,
+            })
+
     if target:
-        sources = []
-        for repo in repos:
-            if repo.get("skipped_reason") or not repo.get("resolved_includes"):
-                continue
-            for inc_path in repo.get("resolved_includes", []):
-                sources.append(inc_path)
-
-        if sources:
-            dest = target / "archives" / now[:10]
-            rsync_cmd = ["rsync", "-a", "--progress"]
-            for repo in repos:
-                for pattern in repo.get("resolved_exclude_patterns", []):
-                    rsync_cmd.extend(["--exclude", pattern])
-            rsync_cmd.extend(sources)
-            rsync_cmd.append(str(dest))
-
-            packet["proposed_rsync_command"] = " ".join(rsync_cmd)
-
-            # Verification command
-            verify_cmd = [
-                "rsync",
-                "-avc",
-                "--dry-run",
-                str(dest) + "/",
-            ]
-            for src in sources:
-                verify_cmd.append(src + "/")
-            packet["proposed_verify_command"] = " ".join(verify_cmd)
-
-            # Restore sample command
-            sample_dir = f"/private/tmp/ivy-backup-verify-{now[:10]}/"
-            sample_cmd = [
-                "mkdir", "-p", sample_dir, "&&",
-            ]
-            # Pick a few files from the backup
-            sample_cmd.extend([
-                "rsync", "-a",
-                "--files-from=<(find", str(dest), "-type", "f", "-size", "+1M", "|", "shuf", "-n", "10)",
-                str(dest) + "/",
-                sample_dir,
-            ])
-            packet["proposed_restore_sample_command"] = " ".join(str(c) for c in sample_cmd)
-
-            packet["manifest_destination"] = str(target / f".backup-manifest-{now[:10]}.json")
+        packet["manifest_destination"] = str(
+            target / snapshot_name / "manifest.json"
+        )
 
     return packet
 
@@ -668,6 +751,8 @@ def main() -> int:
         print("=" * 60)
         print("PORTFOLIO BACKUP PLANNER")
         print(f"Generated: {packet['generated_at']}")
+        print(f"Snapshot: {packet.get('snapshot_name', 'N/A')}")
+        print(f"Metadata policy: {packet['metadata_policy']}")
         print(f"Target: {packet['target'] or 'NO TARGET SPECIFIED (dry-run)'}")
         print(f"Target valid: {packet['target_validation']['valid']}")
         if packet['target_validation']['blockers']:
@@ -691,13 +776,21 @@ def main() -> int:
         print()
         print(f"Total estimated: {packet['estimated_total_bytes'] / (1024**3):.1f} GB, "
               f"{packet['estimated_total_files']:,} files")
-        if packet.get("proposed_rsync_command"):
+        if packet.get("copy_commands"):
             print()
-            print("PROPOSED RSYNC COMMAND (review before executing):")
-            print(f"  {packet['proposed_rsync_command']}")
+            print(f"COPY COMMANDS ({len(packet['copy_commands'])} total — one per source path):")
             print()
-            print("PROPOSED VERIFICATION COMMAND:")
-            print(f"  {packet['proposed_verify_command']}")
+            for i, cmd in enumerate(packet["copy_commands"]):
+                print(f"  [{i+1}] {cmd['repo_slug']} — {cmd['relative_path']}")
+                print(f"      {cmd['command']}")
+                print()
+            print(f"VERIFY COMMANDS ({len(packet['verify_commands'])} total — one per source path):")
+            print()
+            for i, cmd in enumerate(packet["verify_commands"]):
+                print(f"  [{i+1}] {cmd['repo_slug']} — {cmd['relative_path']}")
+                print(f"      {cmd['command']}")
+                print()
+            print(f"Manifest destination: {packet.get('manifest_destination', 'N/A')}")
             print()
 
     return 1 if (target and has_blockers) else 0
