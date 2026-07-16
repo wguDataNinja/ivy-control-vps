@@ -59,6 +59,13 @@ def total_bytes(path: Path) -> int:
 def rsync_checksum_dry_run(source: Path, dest: Path) -> dict[str, Any]:
     """Run rsync -avc --dry-run to compare source and dest checksums.
     Returns count of mismatched files and total compared.
+
+    Parses macOS rsync output format:
+        Transfer starting: N files
+        <diff-file-1>
+        <diff-file-2>
+
+        sent N bytes ...  total size ...
     """
     result: dict[str, Any] = {
         "mismatch_count": -1,
@@ -83,34 +90,45 @@ def rsync_checksum_dry_run(source: Path, dest: Path) -> dict[str, Any]:
         )
         output = proc.stdout + proc.stderr
 
-        # rsync --dry-run -avc outputs files that would be transferred (differ)
-        # If no files differ, the output is minimal (just the summary)
-        lines = [l.strip() for l in output.split("\n") if l.strip()]
-        # Filter for actual file lines (not summary, not directory crud)
-        file_lines = [
-            l for l in lines
-            if not l.startswith("sending") and not l.startswith("receiving")
-            and not l.startswith("sent") and not l.startswith("total")
-            and not l.startswith(" ") and not l.startswith(".")
-            and not l.endswith("/")
-        ]
-        # Count mismatches — files that would be copied
-        mismatch_count = 0
-        for line in file_lines:
-            # rsync lists each differing file on its own line
-            if line and not line.startswith("Number of files"):
-                mismatch_count += 1
-
-        # Parse total from summary
+        # Parse macOS rsync output format
+        lines = output.split("\n")
+        in_file_list = False
+        diffs: list[str] = []
         total_compared = -1
-        for line in lines:
+
+        for raw_line in lines:
+            line = raw_line.strip()
+            if not line:
+                continue
+            # macOS: "Transfer starting: N files" marks the start of diffs
+            if "Transfer starting:" in line:
+                in_file_list = True
+                # Try to extract file count
+                try:
+                    total_compared = int(line.split()[-2]) if line.split()[-2].isdigit() else -1
+                except (IndexError, ValueError):
+                    total_compared = -1
+                continue
+            # GNU/Linux: "sending incremental file list" marks start
+            if "sending incremental file list" in line:
+                in_file_list = True
+                continue
+            # End of file list: "sent N bytes ..."
+            if in_file_list and line.startswith("sent "):
+                in_file_list = False
+                continue
+            # End: "Number of files: N"
             if "Number of files:" in line:
                 try:
                     total_compared = int(line.split(":")[1].strip())
                 except (IndexError, ValueError):
                     pass
+                continue
+            # Lines in the file list that don't end with / are file diffs
+            if in_file_list and not line.endswith("/") and line != ".":
+                diffs.append(line)
 
-        result["mismatch_count"] = mismatch_count
+        result["mismatch_count"] = len(diffs)
         result["total_compared"] = total_compared
         result["raw_output_preview"] = "\n".join(lines[:20])
 
