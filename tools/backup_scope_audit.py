@@ -14,10 +14,11 @@ Statuses:
   PATH_MISSING           — local_path doesn't exist on disk
   STRATEGY_MISMATCH      — has stateful data but strategy says git_remote
   HUMAN_DECISION_REQUIRED— needs Buddy review
+  VPS_REVIEW_REQUIRED    — VPS state not reviewed since last backup; requires manual review artifact
   RETIREMENT_CANDIDATE   — in last snapshot but no longer in policy
 
-NEW_CANDIDATE, POLICY_UNKNOWN, STRATEGY_MISMATCH, and HUMAN_DECISION_REQUIRED
-block backup preparation.
+NEW_CANDIDATE, POLICY_UNKNOWN, STRATEGY_MISMATCH, HUMAN_DECISION_REQUIRED,
+and VPS_REVIEW_REQUIRED block backup preparation.
 
 Usage:
     python3 tools/backup_scope_audit.py
@@ -45,6 +46,7 @@ BLOCKING_STATUSES = frozenset({
     "POLICY_UNKNOWN",
     "STRATEGY_MISMATCH",
     "HUMAN_DECISION_REQUIRED",
+    "VPS_REVIEW_REQUIRED",
 })
 
 
@@ -334,6 +336,34 @@ def audit(
                 "slug": nr["slug"],
                 "status": "NEW_CANDIDATE",
                 "detail": f"Discovered git repo at {nr['path']} not in CONTROL.md",
+            })
+
+    # VPS state review gate — requires a dated review artifact or blocks backup
+    vps_review_path = REPO_ROOT / "_internal" / "vps-backup-review-complete"
+    if not vps_review_path.exists():
+        findings.append({
+            "slug": "_vps_",
+            "status": "VPS_REVIEW_REQUIRED",
+            "detail": (
+                "VPS state has not been reviewed since last backup. "
+                f"Create {vps_review_path} with a dated JSON record after reviewing "
+                f"VPS repositories, databases, services, and exports."
+            ),
+        })
+    else:
+        try:
+            review_data = json.loads(vps_review_path.read_text(encoding="utf-8"))
+            review_date = review_data.get("reviewed_at", "")
+            findings.append({
+                "slug": "_vps_",
+                "status": "KNOWN_EXCLUDED",
+                "detail": f"VPS review completed at {review_date}",
+            })
+        except (json.JSONDecodeError, OSError):
+            findings.append({
+                "slug": "_vps_",
+                "status": "VPS_REVIEW_REQUIRED",
+                "detail": f"VPS review artifact exists but is corrupt or unreadable: {vps_review_path}",
             })
 
     return findings
