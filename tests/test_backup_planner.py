@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any
 
 from tools.backup_planner import (
     BASE_RSYNC_FLAGS,
@@ -373,3 +376,540 @@ image-encrypted : FALSE
                             found = True
                         break
         assert not found, "Falsely detected encryption in unencrypted fixture"
+
+
+# ──────────────────────────────────────────────
+# Scope audit tests
+# ──────────────────────────────────────────────
+
+
+class TestScopeAudit:
+    """Scope audit detection and blocking logic."""
+
+    def _make_ctrl_md(self, path: Path, slug: str, strategy: str,
+                      include_groups: list[str] | None = None,
+                      local_path: str | None = None) -> Path:
+        ctrl = path / slug
+        ctrl.mkdir(parents=True, exist_ok=True)
+        md = ctrl / "CONTROL.md"
+        lines = ["---",
+                 "repository:",
+                 f"  slug: {slug}"]
+        if local_path:
+            lines.append(f"  local_path: \"{local_path}\"")
+        lines.extend([
+            "backup:",
+            f"  strategy: {strategy}",
+            f"  importance: critical",
+            f"  sensitivity: private",
+            f"  priority: P0",
+        ])
+        if include_groups:
+            lines.append("  include_groups:")
+            for g in include_groups:
+                lines.append(f"    - {g}")
+        lines.append("---")
+        md.write_text("\n".join(lines) + "\n")
+        return md
+
+    def test_new_repo_detected(self, tmp_path: Path) -> None:
+        """NEW_CANDIDATE status for a git repo outside CONTROL.md."""
+        from tools.backup_scope_audit import audit, BLOCKING_STATUSES, HOST_PROJECTS
+
+        # Temporarily redirect HOST_PROJECTS to tmp_path
+        original = HOST_PROJECTS
+        try:
+            import tools.backup_scope_audit as bsa
+            fake_projects = tmp_path / "projects"
+            fake_projects.mkdir()
+            new_repo = fake_projects / "some-new-repo"
+            new_repo.mkdir()
+            (new_repo / ".git").mkdir()
+
+            bsa.HOST_PROJECTS = fake_projects
+            findings = audit(last_manifest=None, scan_new=True)
+
+            new_findings = [f for f in findings if f["status"] == "NEW_CANDIDATE"]
+            assert len(new_findings) >= 1
+            assert "NEW_CANDIDATE" in BLOCKING_STATUSES
+        finally:
+            bsa.HOST_PROJECTS = original
+
+    def test_missing_path_detected(self, tmp_path: Path) -> None:
+        """PATH_MISSING when local_path doesn't exist."""
+        from tools.backup_scope_audit import audit
+
+        repos_dir = tmp_path / "repos"
+        repos_dir.mkdir()
+        fake_src = tmp_path / "nonexistent-src"
+
+        # Build CONTROL.md pointing to a non-existent path
+        slug = "test-missing"
+        repo_dir = repos_dir / slug
+        repo_dir.mkdir()
+        ctrl = repo_dir / "CONTROL.md"
+        ctrl.write_text(
+            "---\n"
+            "repository:\n"
+            f"  slug: {slug}\n"
+            f"  local_path: \"{fake_src}\"\n"
+            "backup:\n"
+            "  strategy: file_archive\n"
+            "  importance: critical\n"
+            "  sensitivity: private\n"
+            "  priority: P0\n"
+            "  include_groups:\n"
+            "    - raw_corpus\n"
+            "---\n"
+        )
+
+        import tools.backup_scope_audit as bsa
+        original = bsa.REPOS_DIR
+        try:
+            bsa.REPOS_DIR = repos_dir
+            findings = audit(last_manifest=None, scan_new=False)
+            missing = [f for f in findings if f["status"] == "PATH_MISSING"]
+            assert len(missing) == 1
+            assert missing[0]["slug"] == slug
+        finally:
+            bsa.REPOS_DIR = original
+
+    def test_policy_unknown(self, tmp_path: Path) -> None:
+        """POLICY_UNKNOWN when no backup fields defined."""
+        from tools.backup_scope_audit import audit
+
+        repos_dir = tmp_path / "repos-policy-unknown"
+        repos_dir.mkdir()
+        slug = "test-no-policy"
+        repo_dir = repos_dir / slug
+        repo_dir.mkdir()
+        ctrl = repo_dir / "CONTROL.md"
+        ctrl.write_text(
+            "---\n"
+            "repository:\n"
+            f"  slug: {slug}\n"
+            "---\n"
+        )
+
+        import tools.backup_scope_audit as bsa
+        original = bsa.REPOS_DIR
+        try:
+            bsa.REPOS_DIR = repos_dir
+            findings = audit(last_manifest=None, scan_new=False)
+            unknown = [f for f in findings if f["status"] == "POLICY_UNKNOWN"]
+            assert len(unknown) == 1
+            assert unknown[0]["slug"] == slug
+        finally:
+            bsa.REPOS_DIR = original
+
+    def test_strategy_mismatch_git_remote_with_stateful(self, tmp_path: Path) -> None:
+        """STRATEGY_MISMATCH when git_remote repo has stateful data."""
+        from tools.backup_scope_audit import audit
+
+        repos_dir = tmp_path / "repos-strategy-mismatch"
+        repos_dir.mkdir()
+
+        src_path = tmp_path / "src-git-remote"
+        src_path.mkdir()
+        (src_path / "_internal").mkdir()
+        (src_path / "_internal" / "state.txt").write_text("stateful")
+
+        slug = "test-git-stateful"
+        repo_dir = repos_dir / slug
+        repo_dir.mkdir()
+        ctrl = repo_dir / "CONTROL.md"
+        ctrl.write_text(
+            "---\n"
+            "repository:\n"
+            f"  slug: {slug}\n"
+            f"  local_path: \"{src_path}\"\n"
+            "backup:\n"
+            "  strategy: git_remote\n"
+            "  importance: important\n"
+            "  sensitivity: public\n"
+            "  priority: P3\n"
+            "---\n"
+        )
+
+        import tools.backup_scope_audit as bsa
+        original = bsa.REPOS_DIR
+        try:
+            bsa.REPOS_DIR = repos_dir
+            findings = audit(last_manifest=None, scan_new=False)
+            mismatch = [f for f in findings if f["status"] == "STRATEGY_MISMATCH"]
+            assert len(mismatch) == 1
+            assert mismatch[0]["slug"] == slug
+        finally:
+            bsa.REPOS_DIR = original
+
+    def test_known_and_covered(self, tmp_path: Path) -> None:
+        """KNOWN_AND_COVERED for a properly configured file_archive repo."""
+        from tools.backup_scope_audit import audit
+
+        repos_dir = tmp_path / "repos-covered"
+        repos_dir.mkdir()
+
+        src_path = tmp_path / "src-covered"
+        src_path.mkdir()
+        (src_path / "capture").mkdir()
+
+        slug = "test-covered"
+        repo_dir = repos_dir / slug
+        repo_dir.mkdir()
+        ctrl = repo_dir / "CONTROL.md"
+        ctrl.write_text(
+            "---\n"
+            "repository:\n"
+            f"  slug: {slug}\n"
+            f"  local_path: \"{src_path}\"\n"
+            "backup:\n"
+            "  strategy: file_archive\n"
+            "  importance: critical\n"
+            "  sensitivity: private\n"
+            "  priority: P0\n"
+            "  include_groups:\n"
+            "    - raw_corpus\n"
+            "  exclude_groups:\n"
+            "    - cache\n"
+            "---\n"
+        )
+
+        import tools.backup_scope_audit as bsa
+        original = bsa.REPOS_DIR
+        try:
+            bsa.REPOS_DIR = repos_dir
+            findings = audit(last_manifest=None, scan_new=False)
+            covered = [f for f in findings if f["status"] == "KNOWN_AND_COVERED"]
+            assert len(covered) == 1
+            assert covered[0]["slug"] == slug
+        finally:
+            bsa.REPOS_DIR = original
+
+    def test_no_blockers_allow_prepare(self, tmp_path: Path) -> None:
+        """All resolved findings allow --prepare to proceed."""
+        from tools.backup_scope_audit import audit, BLOCKING_STATUSES
+
+        repos_dir = tmp_path / "repos-clean"
+        repos_dir.mkdir()
+        src_path = tmp_path / "src-clean"
+        src_path.mkdir()
+        (src_path / "capture").mkdir()
+
+        slug = "test-clean"
+        repo_dir = repos_dir / slug
+        repo_dir.mkdir()
+        ctrl = repo_dir / "CONTROL.md"
+        ctrl.write_text(
+            "---\n"
+            "repository:\n"
+            f"  slug: {slug}\n"
+            f"  local_path: \"{src_path}\"\n"
+            "backup:\n"
+            "  strategy: file_archive\n"
+            "  importance: critical\n"
+            "  sensitivity: private\n"
+            "  priority: P0\n"
+            "  include_groups:\n"
+            "    - raw_corpus\n"
+            "  exclude_groups:\n"
+            "    - cache\n"
+            "---\n"
+        )
+
+        import tools.backup_scope_audit as bsa
+        original = bsa.REPOS_DIR
+        try:
+            bsa.REPOS_DIR = repos_dir
+            findings = audit(last_manifest=None, scan_new=False)
+            blocking = [f for f in findings if f["status"] in BLOCKING_STATUSES]
+            assert len(blocking) == 0
+        finally:
+            bsa.REPOS_DIR = original
+
+
+# ──────────────────────────────────────────────
+# Executor packet integrity tests
+# ──────────────────────────────────────────────
+
+
+class TestExecutorPacket:
+    """Execution packet parsing and integrity."""
+
+    def test_valid_packet_parses(self, tmp_path: Path) -> None:
+        """A well-formed packet should parse and verify integrity."""
+        from tools.backup_execute import hash_packet
+
+        packet = {
+            "packet_version": "1.0",
+            "created_at": "2026-07-17T12:00:00Z",
+            "snapshot_id": "snapshot-2026-07-17",
+            "snapshot_path": str(tmp_path / "snapshot-2026-07-17"),
+            "target": {
+                "mount_path": str(tmp_path),
+                "device": "/dev/disk6s1",
+                "backing_image": "/Volumes/Passport/B/ivy-portfolio.sparsebundle",
+                "encrypted": True,
+            },
+            "repositories": [],
+            "exclusions": [".DS_Store"],
+            "forbidden_flags": ["--delete"],
+        }
+        h = hash_packet(packet)
+        assert len(h) == 64
+        assert isinstance(h, str)
+
+        # Same content produces same hash
+        h2 = hash_packet(packet)
+        assert h == h2
+
+    def test_corrupt_packet_rejected(self, tmp_path: Path) -> None:
+        """A corrupt packet should fail integrity check."""
+        from tools.backup_execute import hash_packet
+
+        packet = {
+            "packet_version": "1.0",
+            "snapshot_id": "snapshot-2026-07-17",
+            "repositories": [],
+        }
+        h = hash_packet(packet)
+
+        # Tamper with packet
+        packet["snapshot_id"] = "snapshot-2026-07-18"
+        h2 = hash_packet(packet)
+        assert h != h2
+
+    def test_wrong_target_rejected(self, tmp_path: Path) -> None:
+        """Packet targeting /Volumes/X should refuse /Volumes/Y."""
+        from tools.backup_execute import execute
+
+        snapshot_path = tmp_path / "snapshot-2026-07-17"
+        snapshot_path.mkdir()
+
+        packet = {
+            "packet_version": "1.0",
+            "created_at": "2026-07-17T12:00:00Z",
+            "snapshot_id": "snapshot-2026-07-17",
+            "snapshot_path": str(snapshot_path),
+            "target": {
+                "mount_path": "/Volumes/Wrong-Volume",
+                "device": "/dev/disk99s1",
+                "backing_image": "/Volumes/Passport/B/wrong.sparsebundle",
+                "encrypted": True,
+            },
+            "repositories": [],
+            "exclusions": [],
+            "forbidden_flags": [],
+        }
+        import tools.backup_execute as be
+        h = be.hash_packet(packet)
+        packet["integrity_hash"] = h
+
+        packet_file = tmp_path / "bad-packet.json"
+        packet_file.write_text(json.dumps(packet))
+
+        result = execute(packet_file)
+        assert result.get("final_state") != "FINALIZED", (
+            "Should not finalize when target doesn't exist"
+        )
+
+
+# ──────────────────────────────────────────────
+# Retention tests
+# ──────────────────────────────────────────────
+
+
+class TestRetention:
+    """Capacity and retention decision logic."""
+
+    def _mock_disk_usage(self, _path: str, /, free: int = 500_000_000_000) -> shutil._ntuple_diskusage:
+        return shutil._ntuple_diskusage(
+            total=1_000_000_000_000,
+            used=free,
+            free=free,
+        )
+
+    def test_no_existing_snapshots(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Zero snapshots: backup should be allowed if capacity fits."""
+        monkeypatch.setattr(shutil, "disk_usage", lambda p: self._mock_disk_usage(p, free=500_000_000_000))
+        from tools.backup_execute import check_capacity_and_retention
+
+        estimated = 1_000_000_000  # 1 GB
+        result = check_capacity_and_retention(tmp_path, estimated)
+        retention = result["retention"]
+        assert retention["existing_snapshots"] == 0
+        assert result["fits"] is True
+        assert retention["action_required"] is False
+
+    def test_one_snapshot_fits(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """One existing snapshot: second backup should be allowed."""
+        monkeypatch.setattr(shutil, "disk_usage", lambda p: self._mock_disk_usage(p, free=500_000_000_000))
+        from tools.backup_execute import check_capacity_and_retention
+
+        (tmp_path / "snapshot-2026-07-16").mkdir()
+        estimated = 1_000_000_000
+
+        result = check_capacity_and_retention(tmp_path, estimated)
+        retention = result["retention"]
+        assert retention["existing_snapshots"] == 1
+        assert retention["action_required"] is False
+
+    def test_two_snapshots_no_third(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Two existing snapshots: third should flag retention action."""
+        monkeypatch.setattr(shutil, "disk_usage", lambda p: self._mock_disk_usage(p, free=500_000_000_000))
+        from tools.backup_execute import check_capacity_and_retention
+
+        (tmp_path / "snapshot-2026-07-15").mkdir()
+        (tmp_path / "snapshot-2026-07-16").mkdir()
+        estimated = 1_000_000_000
+
+        result = check_capacity_and_retention(tmp_path, estimated)
+        retention = result["retention"]
+        assert retention["existing_snapshots"] >= 2
+        assert retention["action_required"] is True
+        assert "RETENTION" in retention["status"]
+
+    def test_no_auto_delete(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Retention should never auto-delete — always require manual action."""
+        monkeypatch.setattr(shutil, "disk_usage", lambda p: self._mock_disk_usage(p, free=500_000_000_000))
+        from tools.backup_execute import check_capacity_and_retention
+
+        for snap_count in range(4):
+            target = tmp_path / f"test-no-delete-{snap_count}"
+            target.mkdir()
+            for i in range(snap_count):
+                (target / f"snapshot-2026-07-{16 - i:02d}").mkdir()
+            result = check_capacity_and_retention(target, 1_000_000_000)
+            retention = result["retention"]
+            assert "delete" not in str(retention).lower()
+
+
+# ──────────────────────────────────────────────
+# Restore test tests
+# ──────────────────────────────────────────────
+
+
+class TestRestoreTest:
+    """Restore test selection and checksum logic."""
+
+    def test_deterministic_selection(self, tmp_path: Path) -> None:
+        """Sample file selection should be deterministic (same order)."""
+        from tools.backup_restore_test import select_samples
+
+        snapshot_path = tmp_path / "snapshot-2026-07-17"
+        snapshot_path.mkdir()
+        repo_dest = snapshot_path / "repos" / "test-repo"
+        repo_dest.mkdir(parents=True)
+
+        # Create 20 test files of different sizes
+        for i in range(20):
+            f = repo_dest / f"file_{i:03d}.bin"
+            f.write_bytes(b"x" * (1024 * 1024 * (i + 1)))  # 1 MB increments
+
+        repo_config = {
+            "slug": "test-repo",
+            "backup_path": "repos/test-repo/",
+        }
+
+        samples1 = select_samples(repo_config, snapshot_path, count=5)
+        samples2 = select_samples(repo_config, snapshot_path, count=5)
+
+        paths1 = [s["relative_path"] for s in samples1]
+        paths2 = [s["relative_path"] for s in samples2]
+        assert paths1 == paths2, "Selection should be deterministic"
+
+    def test_checksum_match(self, tmp_path: Path) -> None:
+        """Restored file should match source SHA-256."""
+        from tools.backup_restore_test import run_restore_test
+
+        snapshot_path = tmp_path / "snapshot-2026-07-17"
+        snapshot_path.mkdir()
+
+        source_root = tmp_path / "source"
+        source_root.mkdir()
+        (source_root / "capture").mkdir()
+        (source_root / "capture" / "test.txt").write_text("hello world")
+
+        repo_dest = snapshot_path / "repos" / "test-repo" / "capture"
+        repo_dest.mkdir(parents=True)
+        (repo_dest / "test.txt").write_text("hello world")
+
+        manifest = {
+            "manifest_version": "1.0",
+            "repositories": [
+                {
+                    "slug": "test-repo",
+                    "source_path": str(source_root),
+                    "backup_path": "repos/test-repo/",
+                    "backup_policy": {"strategy": "file_archive"},
+                }
+            ],
+        }
+        (snapshot_path / "manifest.json").write_text(json.dumps(manifest))
+
+        result = run_restore_test(snapshot_path, sample_count=1)
+        assert result["status"] == "RESTORE_PROVEN"
+        for r in result.get("repos", []):
+            assert r["checksum_mismatch"] == 0
+            assert r["checksum_match"] >= 1
+
+    def test_mismatch_detection(self, tmp_path: Path) -> None:
+        """Mismatched files should be detected."""
+        from tools.backup_restore_test import run_restore_test
+
+        snapshot_path = tmp_path / "snapshot-mismatch"
+        snapshot_path.mkdir()
+
+        source_root = tmp_path / "source-mismatch"
+        source_root.mkdir()
+        (source_root / "capture").mkdir()
+        (source_root / "capture" / "test.txt").write_text("original content")
+
+        repo_dest = snapshot_path / "repos" / "test-repo" / "capture"
+        repo_dest.mkdir(parents=True)
+        (repo_dest / "test.txt").write_text("MODIFIED content")
+
+        manifest = {
+            "manifest_version": "1.0",
+            "repositories": [
+                {
+                    "slug": "test-repo",
+                    "source_path": str(source_root),
+                    "backup_path": "repos/test-repo/",
+                    "backup_policy": {"strategy": "file_archive"},
+                }
+            ],
+        }
+        (snapshot_path / "manifest.json").write_text(json.dumps(manifest))
+
+        result = run_restore_test(snapshot_path, sample_count=1)
+        assert result["status"] == "RESTORE_FAILED"
+        for r in result.get("repos", []):
+            assert r["checksum_mismatch"] >= 1
+
+    def test_no_source_no_crash(self, tmp_path: Path) -> None:
+        """Missing source file should produce error, not crash."""
+        from tools.backup_restore_test import run_restore_test
+
+        snapshot_path = tmp_path / "snapshot-no-source"
+        snapshot_path.mkdir()
+
+        repo_dest = snapshot_path / "repos" / "test-repo"
+        repo_dest.mkdir(parents=True)
+        (repo_dest / "orphan.txt").write_text("no source for this")
+
+        manifest = {
+            "manifest_version": "1.0",
+            "repositories": [
+                {
+                    "slug": "test-repo",
+                    "source_path": str(tmp_path / "nonexistent"),
+                    "backup_path": "repos/test-repo/",
+                    "backup_policy": {"strategy": "file_archive"},
+                }
+            ],
+        }
+        (snapshot_path / "manifest.json").write_text(json.dumps(manifest))
+
+        # Should not raise
+        result = run_restore_test(snapshot_path, sample_count=1)
+        assert result["status"] in ("RESTORE_FAILED", "RESTORE_PROVEN")

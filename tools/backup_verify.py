@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -20,6 +21,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from tools.backup_planner import EXCLUDE_GROUPS, BASE_RSYNC_FLAGS, VERIFY_RSYNC_FLAGS
 
 UTC = timezone.utc
 
@@ -264,6 +267,158 @@ def restore_sample(source: Path, dest: Path, count: int = 10, min_size_mb: int =
     return result
 
 
+def parse_rsync_diffs(output: str) -> list[str]:
+    """Parse rsync -avc --dry-run output for differing files."""
+    diffs: list[str] = []
+    in_file_list = False
+    for raw_line in output.split("\n"):
+        line = raw_line.strip()
+        if not line:
+            continue
+        if "Transfer starting:" in line or "sending incremental file list" in line:
+            in_file_list = True
+            continue
+        if in_file_list and line.startswith("sent "):
+            in_file_list = False
+            continue
+        if in_file_list and not line.endswith("/") and line != "." and not line.startswith("Transfer starting:"):
+            diffs.append(line)
+    return diffs
+
+
+def verify_root(
+    source: str,
+    dest: str,
+    verify_args: list[str] | None,
+) -> dict[str, Any]:
+    """Verify a single source/dest pair. Returns a finding."""
+    finding: dict[str, Any] = {
+        "source": source,
+        "dest": dest,
+        "status": "clean",
+        "diff_count": 0,
+        "error": None,
+    }
+
+    source_stripped = source.rstrip("/")
+    dest_stripped = dest.rstrip("/")
+
+    if not Path(source_stripped).exists():
+        finding["status"] = "missing_source"
+        finding["error"] = f"Source does not exist: {source_stripped}"
+        return finding
+
+    if not Path(dest_stripped).exists():
+        finding["status"] = "missing_dest"
+        finding["error"] = f"Destination does not exist: {dest_stripped}"
+        return finding
+
+    if verify_args:
+        try:
+            proc = subprocess.run(
+                verify_args, capture_output=True, text=True, timeout=600,
+            )
+            output = proc.stdout + proc.stderr
+            diffs = parse_rsync_diffs(output)
+
+            if proc.returncode != 0 and proc.returncode != 1:
+                # rsync returns 0 for identical, 1 for differences, >1 for errors
+                finding["status"] = "timeout"
+                finding["error"] = f"rsync exit code {proc.returncode}: {output[:500]}"
+                return finding
+
+            finding["diff_count"] = len(diffs)
+            if len(diffs) > 0:
+                finding["status"] = "mismatch"
+                finding["diffs"] = diffs[:50]
+                finding["error"] = f"{len(diffs)} differing file(s)"
+            else:
+                finding["status"] = "clean"
+                finding["diff_count"] = 0
+
+        except subprocess.TimeoutExpired:
+            finding["status"] = "timeout"
+            finding["error"] = "rsync timed out after 600s"
+        except OSError as exc:
+            finding["status"] = "timeout"
+            finding["error"] = str(exc)
+    else:
+        # No verify args — basic existence check only
+        finding["status"] = "clean"
+
+    return finding
+
+
+def verify_from_packet(packet_path: Path) -> dict[str, Any]:
+    """Verify all copy roots from an execution packet."""
+    packet = json.loads(packet_path.read_text(encoding="utf-8"))
+
+    stored_hash = packet.get("integrity_hash", "")
+    if stored_hash:
+        clean = {k: v for k, v in packet.items() if k != "integrity_hash"}
+        serialized = json.dumps(clean, sort_keys=True, default=str)
+        computed = hashlib.sha256(serialized.encode()).hexdigest()
+        if computed != stored_hash:
+            return {
+                "verifier": "tools/backup_verify.py",
+                "verified_at": iso_now(),
+                "packet": str(packet_path),
+                "integrity_verified": False,
+                "findings": [],
+                "all_pass": False,
+                "error": f"Integrity hash mismatch: stored={stored_hash[:16]}..., "
+                         f"computed={computed[:16]}...",
+            }
+
+    findings: list[dict[str, Any]] = []
+    all_pass = True
+
+    for repo in packet.get("repositories", []):
+        slug = repo.get("slug", "unknown")
+        source_path = repo.get("source_path", "")
+
+        for root in repo.get("copy_roots", []):
+            source = root.get("source", "")
+            dest = root.get("dest", "")
+            verify_args = root.get("verify_args", [])
+            rel = root.get("relative_path", "")
+
+            finding = verify_root(source, dest, verify_args)
+            finding["slug"] = slug
+            finding["relative_path"] = rel
+
+            if finding["status"] != "clean":
+                all_pass = False
+
+            findings.append(finding)
+
+    # Verify manifest integrity
+    snapshot_path = packet.get("snapshot_path", "")
+    if snapshot_path:
+        manifest_path = Path(snapshot_path) / "manifest.json"
+        if manifest_path.exists():
+            manifest_result = verify_manifest(manifest_path)
+            findings.append({
+                "slug": "manifest",
+                "relative_path": "",
+                "source": "",
+                "dest": str(manifest_path),
+                "status": "clean" if manifest_result.get("parses") and manifest_result.get("sha256_sidecar_match") else "mismatch",
+                "manifest_result": manifest_result,
+            })
+            if not manifest_result.get("parses") or not manifest_result.get("sha256_sidecar_match"):
+                all_pass = False
+
+    return {
+        "verifier": "tools/backup_verify.py",
+        "verified_at": iso_now(),
+        "packet": str(packet_path),
+        "integrity_verified": bool(stored_hash),
+        "findings": findings,
+        "all_pass": all_pass,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Portfolio backup verifier — independent post-copy validation"
@@ -277,10 +432,49 @@ def main() -> int:
         "--manifest", type=str,
         help="Path to backup manifest JSON to validate",
     )
+    parser.add_argument(
+        "--packet", type=str,
+        help="Path to execution packet JSON (takes precedence over --source/--dest)",
+    )
     parser.add_argument("--json", action="store_true", help="Output JSON to stdout")
     parser.add_argument("--restore-sample", type=int, default=0,
                         help="Number of files to sample-restore and checksum (0 = skip)")
     args = parser.parse_args()
+
+    # Packet mode takes precedence
+    if args.packet:
+        packet_path = Path(args.packet)
+        if not packet_path.exists():
+            print(f"Packet not found: {packet_path}", file=sys.stderr)
+            return 1
+        results = verify_from_packet(packet_path)
+        if args.json:
+            json.dump(results, sys.stdout, indent=2, default=str)
+            sys.stdout.write("\n")
+        else:
+            print("=" * 60)
+            print("PORTFOLIO BACKUP VERIFIER — PACKET MODE")
+            print(f"Verified at: {results['verified_at']}")
+            print(f"Packet: {results['packet']}")
+            print(f"Integrity: {'✓' if results.get('integrity_verified') else '✗ NOT VERIFIED'}")
+            print(f"Result: {'✓ ALL PASS' if results['all_pass'] else '✗ FAILURES DETECTED'}")
+            print()
+            for f in results.get("findings", []):
+                marker = "✓" if f["status"] == "clean" else "✗"
+                slug = f.get("slug", "")
+                rel = f.get("relative_path", "")
+                label = f"{slug}/{rel}" if rel else slug
+                if f["status"] == "clean":
+                    print(f"  [{marker}] {label}: {f['status']}")
+                else:
+                    print(f"  [{marker}] {label}: {f['status']}")
+                    if f.get("error"):
+                        print(f"         {f['error']}")
+                    if f.get("diff_count", 0) > 0:
+                        print(f"         {f['diff_count']} differing file(s)")
+            print()
+
+        return 0 if results["all_pass"] else 1
 
     results: dict[str, Any] = {
         "verifier": "tools/backup_verify.py",
