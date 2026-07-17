@@ -301,3 +301,51 @@ A repository is not ready for Ivy VPS merely because it can run. Admission requi
 | Archive or implement 14 idlehacking_kb draft prompt-only stages | Significant designed but unimplemented work |
 | Archive WGU-Reddit experimental scripts before GitHub push | 12 scripts with hardcoded paths and varying quality |
 | Decouple cross-repo credential dependencies | Reckless Ben → chive_gate, Idle Hacking KB → ivy-control |
+
+---
+
+## §8 Backup Posture
+
+**Status:** Encrypted portfolio backup operational as of 2026-07-17.
+
+### Baseline snapshot
+
+| Property | Value |
+|---|---|
+| Snapshot | `snapshot-2026-07-17` |
+| Location | `/Volumes/Ivy-Portfolio-Backup/snapshot-2026-07-17/` |
+| Backing image | `/Volumes/Passport/B/ivy-portfolio.sparsebundle` (AES-256) |
+| Total files | 13,484 |
+| Corpus files | 13,477 |
+| Allocated size | 135 GiB |
+| Bundle logical capacity | 400 GiB |
+| Classification | VERIFIED — RESTORE PROVEN |
+| Ivy Control SHA | `87cc24b` |
+
+### Protected scope
+
+| Repository | Source roots | Size |
+|---|---|---|
+| idlehacking-kb | capture/, data/kb, data/chat, data/derived, data/imports | ~135 GB |
+| ih-market-companion | _internal/, _outbox/ | ~0.4 GB |
+
+### Retention
+
+Retain the two newest verified snapshots. Never overwrite or automatically delete. A third full snapshot requires a forced retention decision (resize bundle, second drive, incremental strategy, archive, or explicit deletion approval).
+
+### Coverage gaps
+
+- **VPS state:** requires dated manual review artifact before backup preparation
+- **Database dumps:** not yet included in snapshot workflow
+- **Second drive / offsite:** not yet configured
+- **Recovery-confidence derivation:** documented, not yet automated
+- **Passport git remote:** not configured (local commit only)
+
+### Key tools
+
+Backup preparation: `python3 tools/backup_execute.py --target /Volumes/Ivy-Portfolio-Backup --prepare`
+Backup execution: `python3 tools/backup_execute.py --packet <packet-path> --execute`
+Scope audit: `python3 tools/backup_scope_audit.py`
+Verifier: `python3 tools/backup_verify.py --packet <packet-path>`
+Restore test: `python3 tools/backup_restore_test.py --snapshot <path>`
+Passport operating doc: `~/projects/passport/docs/IVY_PORTFOLIO_BACKUP.md`
