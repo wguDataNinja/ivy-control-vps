@@ -135,6 +135,8 @@ For private notes:
 4. Commit locally.
 5. Do not push.
 
+For the full task-to-promotion sequence, including result reports, logs, journal entries, and canonical-document promotion, follow `docs/REPOSITORY_WORK_PROTOCOL.md`. This document owns Git boundaries; it does not replace the work-continuity protocol.
+
 ## Local implementation agents
 
 OpenCode, Codex, and similar agents must:

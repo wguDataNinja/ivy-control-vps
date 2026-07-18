@@ -35,6 +35,8 @@ Agents must:
 
 ## Development behavior
 
+For a tracked change, follow the public change path in `docs/REPOSITORY_WORK_PROTOCOL.md`: identify authority and scope, preserve the working tree, use an authorized branch, validate, record substantial work, then route exact-file Git packaging through `git-steward`. Do not treat chat history, a result report, or a private note as canonical authority.
+
 Agents may perform ordinary development work explicitly required by the task, including:
 
 - reading repository files;

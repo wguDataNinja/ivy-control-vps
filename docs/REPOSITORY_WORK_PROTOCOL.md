@@ -139,6 +139,20 @@ An inbox artifact is preferred for multi-step or cross-session work, but a direc
 
 ## 7. Minimum Start-of-Work Checks
 
+### How to make a tracked change
+
+For a normal, non-production change, use this path:
+
+1. Identify the relevant authority document and task scope. Do not use a result report or chat history as substitute authority.
+2. Inspect the current working tree and preserve unrelated or protected work.
+3. Use a bounded task branch unless an explicitly authorized exception applies; select the branch prefix from `docs/GIT_WORKFLOW.md`.
+4. Implement only the approved scope and run task-appropriate validation.
+5. Create a result report and an execution log when the work is substantial or creates a durable artifact.
+6. Have the authorized Git writer package the exact public files after reviewing the diff. Agents do not self-merge or push private history.
+7. After review, record the journal entry and promote only settled truth into the appropriate roadmap, control record, or canonical standard.
+
+For a production, VPS, database, destructive, privacy-sensitive, or authority-changing action, stop at step 1 until the applicable control record, gate, and task authorization permit the action. `agents/VPS_ORCHESTRATION.md` defines the VPS interaction modes.
+
 Before beginning substantial work:
 
 1. Confirm the repository path.

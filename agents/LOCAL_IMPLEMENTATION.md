@@ -42,6 +42,12 @@ For substantive work, produce a brief plan before editing that includes:
 
 A separate planning artifact is not required for trivial edits unless the task asks for one.
 
+## 4A. Change lifecycle
+
+For a tracked change, follow `docs/REPOSITORY_WORK_PROTOCOL.md` as the canonical task-to-promotion path. In practical terms: identify authority and scope, protect unrelated work, use an authorized branch, implement and validate, write the required result/report evidence, then hand exact public paths to `git-steward` when Git packaging is authorized.
+
+Do not promote a result report, execution log, private session note, or chat conclusion into a standard, roadmap, or CONTROL record without explicit task scope and review.
+
 ## 5. Editing rules
 
 - Make the smallest coherent change that satisfies the task.
