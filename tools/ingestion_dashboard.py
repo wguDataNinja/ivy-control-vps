@@ -34,6 +34,7 @@ ROADMAP = ROOT / "ROADMAP.md"
 UTC = dt.timezone.utc
 STATUSES = ("GREEN", "YELLOW", "RED", "UNKNOWN")
 EVIDENCE_LEVELS = ("live", "stale", "missing_producer", "unsupported_field", "doc_fallback", "unresolved_authority")
+SUMMARY_ORDER = {"UNKNOWN": 0, "RED": 1, "YELLOW": 2, "GREEN": 3}
 
 # Ensure the repository root is on sys.path so that 'from tools.*' imports
 # work regardless of the caller's working directory.
@@ -360,6 +361,28 @@ def traderie_unknown() -> dict:
     return result
 
 
+def passport_recovery_unknown() -> dict:
+    """Represent missing dated backup evidence without treating policy as proof."""
+    result = row("Passport / backup", "recovery-confidence review", "ROADMAP P0")
+    result["detail"].update({
+        "recovery_confidence_adapter": "missing_producer (dated recovery-confidence observation needed)",
+        "recovery_confidence": "UNKNOWN — no dated recovery-confidence observation supplied",
+        "evidence_requirement": "verified snapshot, restore proof, review date, policy hash, and expiry",
+    })
+    result["issues"].append(
+        "No dated Passport recovery-confidence evidence is available to this read-only view."
+    )
+    return result
+
+
+def collect_rows(active_transport: Transport) -> list[dict]:
+    """Collect the bounded, read-only portfolio observation set."""
+    reddit = collect_reddit(active_transport)
+    chat, market = collect_ih(active_transport)
+    capacity = collect_capacity(active_transport)
+    return [reddit, chat, market, traderie_unknown(), passport_recovery_unknown(), capacity]
+
+
 def roadmap_coverage() -> dict:
     try:
         text = ROADMAP.read_text(encoding="utf-8")
@@ -372,6 +395,30 @@ def roadmap_coverage() -> dict:
         if any(term in low for term in ("health", "backup", "canonical", "browser", "ingestion")) and (line.startswith("- ") or line.startswith("1.") or line.startswith("2.")):
             priorities.append(line.strip())
     return {"roadmap_read": True, "unmapped": missing, "priorities": priorities[:12]}
+
+
+def format_summary(rows: list[dict]) -> str:
+    """Render a concise operator/Hermes surface from normalized dashboard rows."""
+    attention = [row for row in rows if row["status"] != "GREEN"]
+    attention.sort(key=lambda item: (SUMMARY_ORDER.get(item["status"], 99), item["workload"]))
+    lines = ["Ivy Control Portfolio Health", "", "P0 attention:"]
+    for item in attention:
+        reason = item["issues"][0] if item["issues"] else "No current evidence reason supplied."
+        lines.extend(["", f"{item['workload']}", item["status"], f"Reason: {reason}"])
+
+    recommendations = {
+        "WGU Reddit": "Verify current Reddit recovery, canonicality, and single-writer evidence.",
+        "Idle Hacking chat": "Review Idle Hacking chat capture, acknowledgement, and replay evidence.",
+        "Idle Hacking market": "Review Idle Hacking market collector and durable-offload evidence.",
+        "Traderie": "Collect a current Traderie exporter, backup, and natural-run observation.",
+        "Passport / backup": "Refresh Passport recovery-confidence evidence with an explicit expiry.",
+        "VPS / control plane": "Collect a current VPS capacity and control-plane observation.",
+    }
+    lines.extend(["", "Recommended next actions:"])
+    for index, item in enumerate(attention, start=1):
+        action = recommendations.get(item["workload"], "Collect current evidence and route the next bounded action.")
+        lines.append(f"{index}. {action}")
+    return "\n".join(lines) + "\n"
 
 
 def render(rows: list[dict], coverage: dict) -> str:
@@ -387,9 +434,9 @@ def render(rows: list[dict], coverage: dict) -> str:
     details = "\n".join("<details><summary><strong>{}</strong> — {} ({})</summary><pre>{}</pre><p>{}</p></details>".format(cell(r["workload"]), cell(r["status"]), cell(r["evidence_level"]), cell(json.dumps(r["detail"], indent=2, sort_keys=True)), cell("; ".join(r["issues"]) or "No additional issue text")) for r in rows)
     priorities = "".join(f"<li>{cell(item)}</li>" for item in coverage["priorities"]) or "<li>No matching roadmap priority lines found.</li>"
     unmapped = ", ".join(coverage["unmapped"]) if coverage["unmapped"] else "None"
-    return f"""<!doctype html><html><head><meta charset='utf-8'><title>Ivy ingestion dashboard</title><style>
+    return f"""<!doctype html><html><head><meta charset='utf-8'><title>Ivy Control Portfolio Health</title><style>
 body{{font-family:system-ui,sans-serif;margin:2rem;color:#171717}} table{{border-collapse:collapse;width:100%;font-size:.9rem}}th,td{{border:1px solid #bbb;padding:.55rem;text-align:left;vertical-align:top}}th{{background:#eee}}.GREEN{{background:#e8f5e9}}.YELLOW{{background:#fff8d8}}.RED{{background:#ffe5e5}}.UNKNOWN{{background:#eeeeee}}pre{{white-space:pre-wrap;word-break:break-word}}small{{color:#555}}.ev-live{{color:#2e7d32}}.ev-stale{{color:#e65100}}.ev-missing_producer{{color:#c62828;font-weight:bold}}.ev-unsupported_field{{color:#6a1b9a}}.ev-doc_fallback{{color:#e65100;font-style:italic}}.ev-unresolved_authority{{color:#6a1b9a;font-style:italic}}.notice{{padding:.75rem;background:#fff8d8;border-left:4px solid #b8860b}}</style></head><body>
-<h1>Ivy ingestion dashboard</h1><p class='notice'>Generated {cell(now())}. Evidence levels: <strong class='ev-live'>live</strong> (fresh observation) · <strong class='ev-stale'>stale</strong> (exceeds freshness) · <strong class='ev-missing_producer'>missing_producer</strong> · <strong class='ev-unsupported_field'>unsupported_field</strong> · <strong class='ev-doc_fallback'>doc_fallback</strong> (not live) · <strong class='ev-unresolved_authority'>unresolved_authority</strong> (needs Buddy). Doc_fallback evidence cannot render GREEN. Browser/helper process health does not prove chat or market capture and offload.</p>
+<h1>Ivy Control Portfolio Health</h1><p class='notice'>Generated {cell(now())}. Evidence levels: <strong class='ev-live'>live</strong> (fresh observation) · <strong class='ev-stale'>stale</strong> (exceeds freshness) · <strong class='ev-missing_producer'>missing_producer</strong> · <strong class='ev-unsupported_field'>unsupported_field</strong> · <strong class='ev-doc_fallback'>doc_fallback</strong> (not live) · <strong class='ev-unresolved_authority'>unresolved_authority</strong> (needs Buddy). Doc_fallback evidence cannot render GREEN. Browser/helper process health does not prove chat or market capture and offload.</p>
 <p><strong>Summary:</strong> GREEN {counts['GREEN']} · YELLOW {counts['YELLOW']} · RED {counts['RED']} · UNKNOWN {counts['UNKNOWN']}. <strong>Highest priority:</strong> {cell(highest['workload'] + ': ' + '; '.join(highest['issues'])) if highest else 'none'}</p>
 <table><thead><tr><th>Workload</th><th>Collector</th><th>Last success</th><th>Source freshness</th><th>DB freshness</th><th>Offload / sync</th><th>Backup</th><th>Capacity</th><th>Collected at</th><th>Status</th></tr></thead><tbody>{table}</tbody></table>
 <h2>Details</h2>{details}<h2>ROADMAP.md coverage</h2><p>Expected ingestion workload labels missing from roadmap: <strong>{cell(unmapped)}</strong>.</p><h3>Open priority items</h3><ul>{priorities}</ul>
@@ -407,18 +454,17 @@ def main() -> int:
                         help="Alias for --mode=no-live")
     parser.add_argument("--json", action="store_true",
                         help="Output JSON to stdout (machine-readable)")
+    parser.add_argument("--summary", action="store_true",
+                        help="Output a concise read-only operator/Hermes health summary")
+    parser.add_argument("--stdout-only", action="store_true",
+                        help="Do not write dashboard files; emit only requested stdout output")
     args = parser.parse_args()
     if args.no_live:
         args.mode = args.mode or "no-live"
     global transport
     transport = Transport(mode=args.mode, host=args.host)
-    reddit = collect_reddit()
-    chat, market = collect_ih()
-    capacity = collect_capacity()
-    traderie = traderie_unknown()
-    rows = [reddit, chat, market, traderie, capacity]
+    rows = collect_rows(transport)
     coverage = roadmap_coverage()
-    args.output_dir.mkdir(parents=True, exist_ok=True)
     data: dict[str, Any] = {
         "generated_at": now(), "rows": rows, "roadmap_coverage": coverage,
         "execution_mode": transport.mode,
@@ -437,19 +483,26 @@ def main() -> int:
             "IH: replay proof (unsupported_field)",
             "IH: durable destination contract (unresolved_authority)",
             "IH market: PostgreSQL reconciliation (unsupported_field)",
+            "Passport: dated recovery-confidence observation (missing_producer)",
             "VPS: recurring capacity snapshot producer (missing_producer)",
             "VPS: control-plane deployed-revision producer (missing_producer)",
             "VPS: checkout drift producer (missing_producer)",
         ],
     }
-    (args.output_dir / "status.json").write_text(
-        json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8",
-    )
-    (args.output_dir / "index.html").write_text(render(rows, coverage), encoding="utf-8")
-    if args.json:
+    if not args.stdout_only and not args.summary:
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        (args.output_dir / "status.json").write_text(
+            json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8",
+        )
+        (args.output_dir / "index.html").write_text(render(rows, coverage), encoding="utf-8")
+    if args.summary:
+        sys.stdout.write(format_summary(rows))
+    elif args.json:
         json.dump(data, sys.stdout, indent=2, sort_keys=True, default=str)
         sys.stdout.write("\n")
     else:
+        if args.stdout_only:
+            parser.error("--stdout-only requires --json or --summary")
         print(args.output_dir / "index.html")
     return 0
 

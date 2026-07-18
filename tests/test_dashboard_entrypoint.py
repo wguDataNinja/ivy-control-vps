@@ -331,3 +331,21 @@ class TestHtmlCollectedAt:
             _run_python(DASHBOARD_SCRIPT, ["--no-live", "--output-dir", tmp])
             html = (Path(tmp) / "index.html").read_text(encoding="utf-8")
             assert "<th>Collected at</th>" in html, "HTML should have Collected at column header"
+
+
+# ── 16. Read-only terminal summary ─────────────────────────────────────────
+
+
+class TestTerminalSummary:
+    def test_summary_is_stdout_only_and_routes_passport_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp) / "must-not-exist"
+            result = _run_python(
+                DASHBOARD_SCRIPT,
+                ["--no-live", "--summary", "--stdout-only", "--output-dir", str(output_dir)],
+            )
+            assert result.returncode == 0, result.stderr
+            assert "Ivy Control Portfolio Health" in result.stdout
+            assert "Passport / backup\nUNKNOWN" in result.stdout
+            assert "Refresh Passport recovery-confidence evidence" in result.stdout
+            assert not output_dir.exists(), "stdout-only summary must not write dashboard artifacts"

@@ -6,13 +6,19 @@
 
 ## §0 Operator Summary
 
-### Current dashboard
+### Current observation surface
 
 ```sh
 ./tools/open_ingestion_dashboard.sh
 ```
 
-The dashboard is the current simple operator surface. It refreshes safe read-only evidence and writes a private local HTML/JSON view. Evidence precedence is: live measurement, validated producer payload, read-only database/service inspection, control document, roadmap, placeholder, then unknown. A control- or roadmap-only claim can never be green; missing evidence is **UNKNOWN**, not healthy. Idle Hacking chat and market are separate lanes.
+For a read-only terminal summary suitable for a future Hermes healthcheck, run:
+
+```sh
+python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only
+```
+
+The dashboard and terminal summary are current read-only operator surfaces. The dashboard refreshes safe evidence and writes a private local HTML/JSON view; the summary writes no files. Evidence precedence is: live measurement, validated producer payload, read-only database/service inspection, control document, roadmap, placeholder, then unknown. A control- or roadmap-only claim can never be green; missing evidence is **UNKNOWN**, not healthy. Idle Hacking chat and market are separate lanes.
 
 ### Current workload truth
 

@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 
 from tools.ih_dashboard_adapter import adapt_chat, adapt_market
+from tools.ingestion_dashboard import format_summary, passport_recovery_unknown
 
 from tests.fixtures.ih_helper_payloads import (
     both_healthy_payload,
@@ -291,3 +292,26 @@ class TestBoundedOutput:
         payload = both_healthy_payload()
         row = adapt_market(payload)
         assert row["offload"] != "unknown"
+
+
+class TestPortfolioSummary:
+    def test_passport_is_unknown_without_dated_evidence(self) -> None:
+        row = passport_recovery_unknown()
+        assert row["workload"] == "Passport / backup"
+        assert row["status"] == "UNKNOWN"
+        assert "dated Passport recovery-confidence evidence" in row["issues"][0]
+
+    def test_summary_routes_actions_without_claiming_health(self) -> None:
+        rows = [
+            passport_recovery_unknown(),
+            {
+                "workload": "Traderie",
+                "status": "UNKNOWN",
+                "issues": ["No live Traderie probe adapter deployed."],
+            },
+        ]
+        output = format_summary(rows)
+        assert "Ivy Control Portfolio Health" in output
+        assert "Passport / backup\nUNKNOWN" in output
+        assert "Refresh Passport recovery-confidence evidence" in output
+        assert "Collect a current Traderie exporter" in output
