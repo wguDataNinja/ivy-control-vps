@@ -425,12 +425,74 @@ def passport_recovery_evidence(evidence_path: Path | None = None) -> dict:
     return result
 
 
-def collect_rows(active_transport: Transport, passport_evidence: Path | None = None) -> list[dict]:
+WORKLOAD_EVIDENCE_CARDS = {
+    "WGU Reddit": ("reddit-ops-operational.json", "reddit-ops", "operational_confidence"),
+    "Idle Hacking chat": ("idlehacking-kb-durability.json", "idlehacking-kb", "durability_confidence"),
+    "Idle Hacking market": ("idlehacking-kb-durability.json", "idlehacking-kb", "durability_confidence"),
+    "Traderie": ("traderie-operational.json", "traderie", "operational_confidence"),
+}
+
+
+def apply_evidence_card(result: dict, evidence_path: Path, *, expected_asset: str,
+                        expected_evidence_type: str) -> dict:
+    """Overlay one explicit, validated card on the workload it covers.
+
+    The card is responsible for the specific confidence claim it makes; the
+    existing row details remain visible rather than being replaced by Git or
+    documentation-derived health.
+    """
+    from tools.evidence_cards import evaluate_card, load_card, validate_card
+
+    try:
+        card = load_card(evidence_path)
+    except ValueError as exc:
+        result["issues"].append(f"Supplied evidence card is unreadable: {exc}")
+        return result
+    errors = validate_card(card, expected_asset=expected_asset,
+                           expected_evidence_type=expected_evidence_type)
+    if errors:
+        result["issues"].append("Supplied evidence card is invalid: " + "; ".join(errors))
+        return result
+    confidence_state, reason = evaluate_card(card)
+    result["evidence_level"] = "evidence_card"
+    result["confidence_state"] = confidence_state
+    result["status"] = {"VERIFIED": "GREEN", "DEGRADED": "YELLOW", "UNKNOWN": "UNKNOWN"}[confidence_state]
+    result["evidence_timestamp"] = card["observed_at"]
+    result["detail"].update({
+        "evidence_card": "explicit local input",
+        "evidence_card_observed_at": card["observed_at"],
+        "evidence_card_expires_at": card["expires_at"],
+        "evidence_card_method": card["verification_method"],
+        "evidence_card_disposition": card["disposition"],
+    })
+    result["issues"] = [reason]
+    return result
+
+
+def apply_workload_evidence(rows: list[dict], evidence_dir: Path | None) -> list[dict]:
+    """Apply cards from an explicitly supplied directory; never search for it."""
+    if evidence_dir is None:
+        return rows
+    for result in rows:
+        specification = WORKLOAD_EVIDENCE_CARDS.get(result["workload"])
+        if specification is None:
+            continue
+        filename, asset, evidence_type = specification
+        candidate = evidence_dir / filename
+        if candidate.is_file():
+            apply_evidence_card(result, candidate, expected_asset=asset,
+                                expected_evidence_type=evidence_type)
+    return rows
+
+
+def collect_rows(active_transport: Transport, passport_evidence: Path | None = None,
+                 evidence_dir: Path | None = None) -> list[dict]:
     """Collect the bounded, read-only portfolio observation set."""
     reddit = collect_reddit(active_transport)
     chat, market = collect_ih(active_transport)
     capacity = collect_capacity(active_transport)
-    return [reddit, chat, market, traderie_unknown(), passport_recovery_evidence(passport_evidence), capacity]
+    rows = [reddit, chat, market, traderie_unknown(), passport_recovery_evidence(passport_evidence), capacity]
+    return apply_workload_evidence(rows, evidence_dir)
 
 
 def roadmap_coverage() -> dict:
@@ -514,6 +576,8 @@ def main() -> int:
                         help="Output a concise read-only operator/Hermes health summary")
     parser.add_argument("--passport-evidence", type=Path,
                         help="explicit local Passport recovery-confidence JSON card; never searched automatically")
+    parser.add_argument("--evidence-dir", type=Path,
+                        help="explicit local directory of sanitized workload evidence cards; never searched automatically")
     parser.add_argument("--stdout-only", action="store_true",
                         help="Do not write dashboard files; emit only requested stdout output")
     args = parser.parse_args()
@@ -521,7 +585,8 @@ def main() -> int:
         args.mode = args.mode or "no-live"
     global transport
     transport = Transport(mode=args.mode, host=args.host)
-    rows = collect_rows(transport, passport_evidence=args.passport_evidence)
+    rows = collect_rows(transport, passport_evidence=args.passport_evidence,
+                        evidence_dir=args.evidence_dir)
     coverage = roadmap_coverage()
     missing_live_adapters = [
         "Reddit: source-frontier adapter (missing_producer)",

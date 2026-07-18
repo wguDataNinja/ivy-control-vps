@@ -22,6 +22,7 @@ import pytest
 
 from tools.ih_dashboard_adapter import adapt_chat, adapt_market
 from tools.ingestion_dashboard import (
+    apply_workload_evidence,
     format_summary,
     passport_recovery_evidence,
     passport_recovery_unknown,
@@ -335,3 +336,32 @@ class TestPortfolioSummary:
         assert row["status"] == "UNKNOWN"
         assert row["confidence_state"] == "UNKNOWN"
         assert "expired" in row["issues"][0]
+
+    def test_explicit_reddit_card_overlays_only_its_workload(self, tmp_path: Path) -> None:
+        card = {
+            "schema_version": "1.0",
+            "asset": "reddit-ops",
+            "evidence_type": "operational_confidence",
+            "observed_at": "2030-07-18T12:00:00Z",
+            "expires_at": "2030-08-17T12:00:00Z",
+            "host_identity": "sanitized-test-host",
+            "ivy_revision": "test-revision",
+            "policy_reference": "docs/HEALTH_CONTRACT.md",
+            "backup_scope": "bounded test scope",
+            "verification_method": ["fixture review"],
+            "result": "VERIFIED",
+            "findings": ["Fixture only."],
+            "disposition": "No production action.",
+            "review_owner": "test",
+        }
+        (tmp_path / "reddit-ops-operational.json").write_text(json.dumps(card), encoding="utf-8")
+        rows = [
+            {"workload": "WGU Reddit", "status": "UNKNOWN", "evidence_level": "missing_producer",
+             "evidence_timestamp": "unknown", "detail": {}, "issues": ["missing"]},
+            {"workload": "Traderie", "status": "UNKNOWN", "evidence_level": "missing_producer",
+             "evidence_timestamp": "unknown", "detail": {}, "issues": ["missing"]},
+        ]
+        updated = apply_workload_evidence(rows, tmp_path)
+        assert updated[0]["confidence_state"] == "VERIFIED"
+        assert updated[0]["status"] == "GREEN"
+        assert updated[1]["status"] == "UNKNOWN"

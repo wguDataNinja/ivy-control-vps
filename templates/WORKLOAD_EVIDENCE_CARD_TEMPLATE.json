@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "asset": "<managed-repository-slug>",
+  "evidence_type": "<operational_confidence-or-durability_confidence>",
+  "observed_at": "<RFC-3339-UTC-observation-time>",
+  "expires_at": "<RFC-3339-UTC-expiry-time>",
+  "host_identity": "<local-or-redacted-host-identity>",
+  "ivy_revision": "<Ivy-Control-revision-observed>",
+  "policy_reference": "docs/HEALTH_CONTRACT.md",
+  "backup_scope": "<bounded-workload-scope-reviewed>",
+  "verification_method": [
+    "<actual read-only verification method>"
+  ],
+  "result": "UNKNOWN",
+  "findings": [
+    "<bounded factual finding; do not include secrets, private paths, or raw data>"
+  ],
+  "disposition": "<next safe action or accepted state>",
+  "review_owner": "<human review owner>"
+}

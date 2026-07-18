@@ -342,6 +342,37 @@ Allowed sources:
 - deployment registry or exact-SHA evidence when that artifact exists;
 - static placeholder metadata for readiness candidates.
 
+### Explicit evidence cards
+
+The reusable evidence-card schema is
+`docs/health/schemas/evidence-card.schema.json`. A card is a dated observation,
+not a policy statement and not a replacement for a repository `CONTROL.md`.
+Use `templates/WORKLOAD_EVIDENCE_CARD_TEMPLATE.json` as the non-evidence
+starting shape for workload cards; it must be completed from a real bounded
+review before validation.
+The health summary reads cards only from paths supplied by the operator; it must
+never search `_internal/`, backup media, a VPS, or an arbitrary filesystem path.
+
+Current supported inputs are:
+
+```sh
+# Passport only
+python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only \
+  --passport-evidence /safe/local/passport-recovery.json
+
+# Explicit directory containing any of these sanitized, local card names
+python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only \
+  --evidence-dir /safe/local/ivy-evidence
+# reddit-ops-operational.json      asset=reddit-ops, evidence_type=operational_confidence
+# idlehacking-kb-durability.json   asset=idlehacking-kb, evidence_type=durability_confidence
+# traderie-operational.json        asset=traderie, evidence_type=operational_confidence
+```
+
+Cards carry their own observation and expiry. A missing, unreadable, invalid, or
+expired card must remain `UNKNOWN`; it cannot inherit a healthy state from a
+control sheet or Git activity. The resulting summary is read-only and reports
+confidence, not authorization to remediate.
+
 ### Normalized internal model
 
 Each row normalizes to:

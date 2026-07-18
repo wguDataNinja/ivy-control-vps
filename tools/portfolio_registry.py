@@ -367,6 +367,7 @@ def parse_control_md(
     rec: dict[str, str] = {
         "repo_id": repo_id,
         "display_name": UNKNOWN,
+        "purpose": UNKNOWN,
         "source": MISSING,
         "_yaml_present": "false",
         "lifecycle": UNKNOWN,
@@ -405,8 +406,12 @@ def parse_control_md(
     if yaml_meta:
         rec["_yaml_present"] = "true"
         rec["repo_id"] = yaml_meta.get("repository.slug", repo_id)
+        rec["purpose"] = yaml_meta.get("repository.purpose", UNKNOWN)
+        body_title = next((line for line in body.splitlines() if line.startswith("# ")), "")
         rec["display_name"] = yaml_meta.get("display_name", yaml_meta.get("name",
-            yaml_meta.get("repository.purpose", UNKNOWN)))
+            display_name_from_title(body_title)))
+        if rec["display_name"] == UNKNOWN:
+            rec["display_name"] = rec["purpose"]
         rec["lifecycle"] = yaml_meta.get("lifecycle.state",
             yaml_meta.get("lifecycle", yaml_meta.get("lifecycle_state", UNKNOWN)))
         rec["admission"] = yaml_meta.get("lifecycle.admission_gate",
@@ -489,6 +494,7 @@ def parse_control_md(
     table = extract_table(control_text)
 
     rec["display_name"] = display_name_from_title(control_text.split("\n")[0]) if rec["display_name"] == UNKNOWN else rec["display_name"]
+    rec["purpose"] = bold.get("purpose", UNKNOWN)
     rec["lifecycle"] = extract_lifecycle(control_text, bold)
     rec["github_url"] = bold.get("canonical remote", rec["github_url"])
     rec["default_branch"] = bold.get("default branch", UNKNOWN)
@@ -566,7 +572,7 @@ def format_table(records: list[dict[str, str]], no_color: bool = False) -> str:
     headers = [
         "REPO_ID", "DISPLAY_NAME", "LIFECYCLE", "GATE",
         "APPROVED_SHA", "RUNTIME", "SCHEDULER/WRITER",
-        "DATABASE", "HEALTH", "BLOCKER", "NEXT_TASK",
+        "DATABASE", "CONTROL_HEALTH", "CONTROL_REVIEW", "BLOCKER", "NEXT_TASK",
     ]
     data = []
     for rec in records:
@@ -580,6 +586,7 @@ def format_table(records: list[dict[str, str]], no_color: bool = False) -> str:
             rec["scheduler_writer"][:30],
             rec["database"][:20],
             rec["health"][:20],
+            rec["last_verified"][:14],
             rec["blocker"][:40],
             rec["next_task"][:40],
         ])

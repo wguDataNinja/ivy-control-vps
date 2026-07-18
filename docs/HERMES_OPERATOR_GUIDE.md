@@ -10,6 +10,36 @@ Hermes is a resident VPS operations assistant. It observes, inspects, summarizes
 
 Hermes is not required for routine deterministic production operation. Core fetchers, timers, backups, and health checks remain implemented through deterministic scripts, PostgreSQL, and systemd.
 
+## Portfolio orientation workflow
+
+For a portfolio question, Hermes must use the same bounded route as a fresh
+engineer rather than searching repositories or inferring status from activity:
+
+```text
+user question
+  → managed portfolio status view
+  → dated health/evidence summary
+  → affected repos/<repo>/CONTROL.md
+  → ROADMAP.md and ready-work view
+  → bounded recommendation or explicit UNKNOWN
+```
+
+In an authorized checkout, the read-only orientation commands are:
+
+```sh
+./tools/show_portfolio_status.sh --no-color
+python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only
+./tools/show_ready_work.sh
+```
+
+`PORTFOLIO_UNIVERSE.md` answers what is known; a `CONTROL.md` answers what is
+authorized for one managed repository; dated evidence answers what is currently
+proven; and `ROADMAP.md` answers sequencing. Generated output routes an
+investigation but never overrides those authorities. Hermes may identify missing
+evidence and recommend the next bounded review. It may not create a health
+claim, alter a control record, restart a service, change permissions, or act on
+its recommendation without a separately authorized task.
+
 ## Installation layout
 
 Hermes Agent (`v0.18.2`, upstream `226e8de8`) was installed via the official per-user Linux installer:

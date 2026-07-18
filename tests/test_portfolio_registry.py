@@ -274,6 +274,12 @@ class TestParseControlMd:
         assert rec["hermes_scope"] == "read-only"
         assert rec["blocker"] == "none"
 
+    def test_yaml_uses_body_title_and_preserves_purpose(self):
+        text = "---\nrepository:\n  slug: test\n  purpose: A durable test system\nlifecycle:\n  state: source-only\n---\n# Test System — Repository Control"
+        rec = parse_control_md("test", text)
+        assert rec["display_name"] == "Test System"
+        assert rec["purpose"] == "A durable test system"
+
     def test_with_baseline_info(self):
         baseline = {"repo_id": "traderie", "display_name": "Traderie"}
         rec = parse_control_md("traderie", TRADERIE, baseline)
@@ -316,6 +322,7 @@ class TestFormat:
         records = build_registry(repo_filter="traderie")
         output = format_table(records, no_color=True)
         assert "REPO_ID" in output
+        assert "CONTROL_REVIEW" in output
         assert "traderie" in output
 
     def test_json_includes_fields(self):
