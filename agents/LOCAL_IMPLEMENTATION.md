@@ -16,7 +16,7 @@ If the path or assigned role does not match, stop before write actions and repor
 2. `agents/LOCAL_IMPLEMENTATION.md` — this file
 3. `docs/README.md` — documentation index
 4. Task-relevant standards: `docs/GIT_WORKFLOW.md`, `docs/LOGGING_STANDARD.md`
-5. `_internal/README_INTERNAL.md` (or legacy `internal/README_INTERNAL.md`) when available locally
+5. A clearly identified private local supplement when it is relevant and available
 6. Task-specific private logs under `_internal/logs/` (or legacy `internal/logs/`) only when relevant
 
 Do not load every file for every task. Read enough context to understand authority, scope, validation, and logging obligations.

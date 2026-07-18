@@ -4,7 +4,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 
 ## Documents
 
-### Core governance and operating model
+### Active authority — read first
 
 | Document | Purpose |
 |----------|---------|
@@ -12,20 +12,20 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`ROADMAP.md`](../ROADMAP.md) | Portfolio-wide roadmap — ingestion-first readiness campaign, shared VPS platform workstreams, and controlled cutover waves |
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
 | [`PORTFOLIO_UNIVERSE.md`](PORTFOLIO_UNIVERSE.md) | Curated known portfolio universe — asset relationship, classification, value context, and discovery confidence; not live operational status |
-| [`RESIDENT_AGENT_MODEL.md`](RESIDENT_AGENT_MODEL.md) | Resident Agent Interface (RAI) architecture — why resident agents exist, file-backed bridge, verification principle, separation of interface from implementation |
 | [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md) | Portfolio repository-control model — governance mechanism, standards applicability, gate framework, approved SHA tracking |
 | [`REPOSITORY_WORK_PROTOCOL.md`](REPOSITORY_WORK_PROTOCOL.md) | Work-continuity protocol — task identity, result reports, logs, journals, review, and promotion into canonical documentation |
 | [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Git workflow — branch naming, commits, PRs, agents, VPS provisional rules, git-steward delegation |
+| [`HEALTH_CONTRACT.md`](HEALTH_CONTRACT.md) | Canonical health/evidence semantics for operational workloads |
 
-### Standards and conventions
+### Supporting technical reference — read when the task needs it
 
 | Document | Purpose |
 |----------|---------|
 | [`PORTFOLIO_CONVENTIONS.md`](PORTFOLIO_CONVENTIONS.md) | Cross-repo conventions and VPS admission requirements — PostgreSQL naming, backup/restore, systemd, health contract, deployment prerequisites, gates, and stop conditions |
-| [`HEALTH_CONTRACT.md`](HEALTH_CONTRACT.md) | Canonical portfolio health contract v2 — current-state, consecutive-failure, cumulative-failure, and recovery state; producer registry contract; alert boundaries |
 | [`DATA_LIFECYCLE_STANDARD.md`](DATA_LIFECYCLE_STANDARD.md) | Portfolio data-lifecycle principles — data classes, retention, growth measurement, disk thresholds, health metrics |
 | [`LOGGING_STANDARD.md`](LOGGING_STANDARD.md) | Three-layer logging standard — machine/runtime, agent work, and GPT/planning logs |
 | [`LLM_TENETS.md`](LLM_TENETS.md) | Design tenets for auditable, constrained, portable, and data-efficient LLM systems |
+| [`RESIDENT_AGENT_MODEL.md`](RESIDENT_AGENT_MODEL.md) | Resident Agent Interface architecture — supporting architecture for Hermes-style resident assistance |
 
 ### Operations and access
 
@@ -73,19 +73,19 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`repos/reddit-ops/STABILIZATION.md`](../repos/reddit-ops/STABILIZATION.md) | Reddit Ops stabilization checklist — 13 gates remaining to production-complete |
 | [`repos/reddit-ops/RUNBOOK.md`](../repos/reddit-ops/RUNBOOK.md) | Reddit Ops operational runbook — health checks, manual run, rollback, drift detection |
 
-### Workflows
+### Public workflows
 
 | Document | Purpose |
 |----------|---------|
-| [`../workflows/session-close.md`](../workflows/session-close.md) | Session close workflow — preserving important decisions, closing without losing context |
-| [`../_internal/GPT_ORCHESTRATED_WORKFLOW.md`](../_internal/GPT_ORCHESTRATED_WORKFLOW.md) | Private GPT-orchestrated workflow authority — numbered handoffs, gates, session logs, ad-hoc tasks, session close |
-| [`../_internal/vps-inventory-and-runbook.md`](../_internal/vps-inventory-and-runbook.md) | Private VPS inventory and runbook — host identity, SSH access, workload map, capacity evidence, read-only procedures |
+| [`../workflows/README.md`](../workflows/README.md) | Public engineering-work lifecycle — task, result, log, journal, and intentional promotion |
+| [`../workflows/session-close.md`](../workflows/session-close.md) | Supporting safe-close procedure |
 
-### Portfolio inventory and assessment
+### Historical public reference
 
 | Document | Purpose |
 |----------|---------|
 | [`PORTFOLIO_BASELINE.md`](PORTFOLIO_BASELINE.md) | Dated portfolio assessment baseline — historical inventory, patterns, and gaps; current state remains in ROADMAP and CONTROL records |
+| [`historical/FOUNDATION_SESSIONS_1_8.md`](historical/FOUNDATION_SESSIONS_1_8.md) | Completed foundation sessions and period priorities — preserved historical public evidence |
 
 ## Core reading path
 
@@ -113,8 +113,8 @@ Read these only when applicable to the assigned work:
    - `GIT_WORKFLOW.md` — Git branch naming, commits, agent rules
    - `LLM_TENETS.md` — LLM system design principles
 - Detailed gate evidence or phase packet only when the task requires gate-specific detail.
-- For GPT-orchestrated session work, read `_internal/GPT_ORCHESTRATED_WORKFLOW.md` (private) for numbered handoffs, gate packets, session logging, and session close.
-- For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures.
+- For public work lifecycle, read [`../workflows/README.md`](../workflows/README.md) and `REPOSITORY_WORK_PROTOCOL.md`. A locally provisioned private supplement may add private mechanics but is not required for clone orientation.
+- For VPS operational work, read `agents/VPS_ORCHESTRATION.md` first. A private local runbook may provide approved host-specific procedures when it is provisioned.
 - For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification.
 
 ## Fresh-agent repository intelligence route
@@ -144,7 +144,8 @@ For the authoritative distinction and refresh rules, see [`REPOSITORY_CONTROL_MO
 | What proves workload health and evidence confidence? | `docs/HEALTH_CONTRACT.md` plus dated producer/evidence artifacts |
 | How do humans and agents perform and preserve work? | `docs/REPOSITORY_WORK_PROTOCOL.md` |
 | How are tracked changes branched, reviewed, and integrated? | `docs/GIT_WORKFLOW.md` |
-| What is private and how is private orchestration handled? | `_internal/GPT_ORCHESTRATED_WORKFLOW.md` |
+| How is the public work lifecycle organized? | `workflows/README.md` and `docs/REPOSITORY_WORK_PROTOCOL.md` |
+| What is private? | Local-only supplements may exist, but they are not public-clone authority or dependencies. |
 
 `ROADMAP.md` is the portfolio-wide execution authority. Per-repo `CONTROL.md` files govern individual repository lifecycle, production authority, and gate status. Portfolio standards (`PORTFOLIO_CONVENTIONS.md`, `HEALTH_CONTRACT.md`, `DATA_LIFECYCLE_STANDARD.md`, etc.) define cross-repo conventions that CONTROL.md records must comply with or explicitly deviate from.
 
@@ -177,7 +178,7 @@ A repository without a CONTROL.md is not yet under active portfolio governance.
 
 The **managed registry** is a derived/aggregated view of CONTROL.md records, generated by a tool such as `tools/portfolio_registry.py` or an extended health view. It does not replace CONTROL.md as the per-repo source of truth, and it is not the complete portfolio universe.
 
-### Session artifacts
+### Private session artifacts
 
 `_internal/outbox/` contains ignored session artifacts — execution packets, evidence files, and intermediate reports produced during GPT-orchestrated work. These files are not durable Git authority. They are retained for provenance and traceability but must not be treated as active standards, policy, or configuration. The authority table above, including root `ROADMAP.md` and per-repository control records, identifies the current sources of truth.
 
@@ -187,54 +188,13 @@ The `ivy-control/vps/` directory in the old `ivy-control` repository contains hi
 
 The current authority set lives in this repository. Old-tree material is reference-only unless explicitly cited by a current CONTROL.md, RELEASE_GATES.md, or phase packet. No old-tree document overrides an active document in this repository.
 
-Private VPS access details, workload map, and read-only assessment procedures are consolidated at:
-
-`_internal/vps-inventory-and-runbook.md`
-
-Read that file before any VPS inspection work.
+Private VPS access details and local evidence may be provisioned separately for an authorized VPS task. They are not part of the public repository or normal clone reading path; `agents/VPS_ORCHESTRATION.md` defines the public interaction boundary first.
 
 ## New documents
 
 A new document must serve a distinct durable authority role that no existing document can absorb. Before creating a file, identify its unique purpose, why an existing document cannot hold the material, and which current document it supersedes or complements. Index it here on creation.
 
 
-## Historical operating context (Sessions 1–8)
+## Historical public material
 
-This section preserves the foundation history and the priorities recorded at the time. It is supporting reference only; `ROADMAP.md` owns current execution priority.
-
-### Completed foundation (Sessions 1–8)
-
-- **Sessions 1–2:** Bootstrap GPT workflow, Reddit Ops migration cutover, PostgreSQL frontier
-- **Session 3:** Health contract v2, Traderie production readiness, Reddit Ops closeout
-- **Session 4:** Traderie cutover (Mac→VPS), portfolio ingestion-admission matrix, Reddit Ops backup/restore remediation
-- **Session 5:** Ingestion-first roadmap rewrite, platform productization, PostgreSQL provisioning, isolated restore proof, reboot persistence proof, idlehacking_kb / ih-market-companion safe-ingestion boundary
-- **Session 6:** Phase 0 health CLI, Hermes VPS data estate audit, Idle Hacker KB and IH Market capacity archive
-- **Session 7:** Hermes bridge bootstrap, Codex VPS-1/VPS-2 capacity recovery and execution, Git publication
-- **Session 8:** Complete Git cleanup (both repos reconciled and committed), Session 5 reconstruction, Git publication assessment, ingestion dashboard prototype
-
-### Priorities recorded at Session 8
-
-1. **Stabilize ingestion health visibility.** Health contract v2 is defined; producers are registered (Traderie, Reddit Ops). Build the portfolio aggregator and normalized views so all workloads have observable current-state health.
-2. **Complete remaining stabilization gates.** Reddit Ops has 13 unresolved stabilization gates (STABILIZATION.md). Close these to move from `PRODUCTION_ACTIVE` to `PRODUCTION_COMPLETE`.
-3. **Admit SJC Intel.** Next deterministic admission candidate — has systemd units, 11 migrations, health scripts, `.env.example`. Admission packet is ready from Session 5.
-4. **Publish sanitized Reddit Ops history.** Local history contains a credential-bearing root commit. Cherry-pick clean commits onto a sanitized publication branch and push.
-5. **Continue repository publication and standards work** after the ingestion foundation is observable and stable.
-6. **Keep Hermes read-only** for production operations today. Plan a later reviewed pull-request workflow for bounded repository maintenance.
-
-### Monitoring and operations
-
-- Verify all VPS ingestion workloads and identify the sole scheduler and writer for each.
-- Confirm recent successful database writes and source-data freshness.
-- Monitor disk, memory, database growth, backups, and restore readiness on the small Hetzner VPS.
-- Treat workloads as deployed but untrusted until health and recovery evidence are visible.
-
-### Decision record
-
-| Date | Decision | Source |
-|------|----------|--------|
-| 2026-07-12 | Traderie approved SHA `e5ebd0f` deployed via systemd timer | Session 5 |
-| 2026-07-12 | PostgreSQL provisioned on VPS; Idle Hacking KB boundaries defined | Session 5 |
-| 2026-07-13 | Idle Hacker KB capacity archive completed; Hermes estate audit completed | Session 6 |
-| 2026-07-14 | Hermes bridge operational as read-only resident assistant | Session 7 |
-| 2026-07-14 | Codex VPS-1 (capacity archive) and VPS-2 (live execution) completed | Session 7 |
-| 2026-07-15 | Both repos fully reconciled and committed; Sessions 1–7 durably recorded | Session 8 |
+The completed foundation narrative formerly held in this navigation page is preserved at [`historical/FOUNDATION_SESSIONS_1_8.md`](historical/FOUNDATION_SESSIONS_1_8.md). It is not current execution authority.

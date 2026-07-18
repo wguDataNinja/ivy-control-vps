@@ -149,6 +149,6 @@ The following areas have defined standards; remaining implementation details are
 - **Data lifecycle and storage** — foundational principles defined in `docs/DATA_LIFECYCLE_STANDARD.md`. Repository-specific retention windows, pruning configurations, and growth thresholds are set in each repo's `CONTROL.md` or local retention policy.
 - **Portfolio-level LLM strategy** — foundational design tenets defined in `docs/LLM_TENETS.md`. Operational adoption, benchmarking, provider interfaces, validation patterns, and repository-specific implementation remain pending.
 - **Repository-specific templates** — conventions for `README.md`, `AGENTS.md`, `.gitignore`, and other files tailored to project types.
-- **Private orchestration workflow** — GPT-orchestrated roadmap work, numbered handoffs, high-reasoning gates, and session-close procedures are defined in `_internal/GPT_ORCHESTRATED_WORKFLOW.md`.
+- **Work lifecycle** — the public task-to-promotion model is defined in `workflows/README.md` and `docs/REPOSITORY_WORK_PROTOCOL.md`. Locally provisioned private orchestration may add mechanics for GPT sessions and evidence, but does not replace public authority.
 
 None of these should be treated as final — they evolve with operational experience. Repository protection settings, VPS deployment details, and Hermes recurring-loop behavior remain explicitly future work.

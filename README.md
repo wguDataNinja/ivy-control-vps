@@ -23,7 +23,7 @@ An engineer new to the control plane should read:
 2. [`docs/OPERATING_MODEL.md`](docs/OPERATING_MODEL.md) — mission, boundaries, roles, and independent portfolio dimensions.
 3. [`docs/PORTFOLIO_UNIVERSE.md`](docs/PORTFOLIO_UNIVERSE.md) — known assets and their portfolio relationship.
 4. [`docs/REPOSITORY_CONTROL_MODEL.md`](docs/REPOSITORY_CONTROL_MODEL.md) — managed repository controls and support gates.
-5. [`docs/REPOSITORY_WORK_PROTOCOL.md`](docs/REPOSITORY_WORK_PROTOCOL.md) and [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) — how changes are made and promoted.
+5. [`workflows/README.md`](workflows/README.md), [`docs/REPOSITORY_WORK_PROTOCOL.md`](docs/REPOSITORY_WORK_PROTOCOL.md), and [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) — how changes are made, preserved, and promoted.
 6. [`docs/HEALTH_CONTRACT.md`](docs/HEALTH_CONTRACT.md) — health/evidence semantics when a task concerns an operational workload.
 7. The relevant `repos/<project>/CONTROL.md` — current repository-specific authority.
 

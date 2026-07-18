@@ -1,6 +1,6 @@
 # Logging Standard
 
-**Status:** Current authority. Revised to clarify public/private boundaries per `_internal/GPT_ORCHESTRATED_WORKFLOW.md` §16.
+**Status:** Current authority. Includes public/private logging boundaries.
 
 ## 1. Purpose
 
@@ -83,10 +83,8 @@ _internal/logs/sessions/GPT-<number>-<session-slug>.md
 
 ### 4C. Session close
 
-Session close follows a two-part model: repository-side closeout by an agent, then discussion-side capture by GPT. The detailed procedure is defined in the private orchestration workflow at `_internal/GPT_ORCHESTRATED_WORKFLOW.md` §13.
+Session close follows a two-part model: repository-side closeout by an agent, then discussion-side capture by GPT. A locally provisioned private supplement may define exact session mechanics; it does not replace the public work protocol.
 
 ### 4D. Templates and detailed mechanics
 
-Detailed GPT session-log templates, append behavior, and GPT-versus-agent responsibilities are defined in the private orchestration workflow:
-
-`_internal/GPT_ORCHESTRATED_WORKFLOW.md` §12
+Detailed private session-log templates and append mechanics may be locally provisioned. Public artifact roles and boundaries remain defined here and in `docs/REPOSITORY_WORK_PROTOCOL.md`.

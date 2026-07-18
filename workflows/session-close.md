@@ -1,6 +1,8 @@
 # Session Close Workflow
 
-Close a session without losing important decisions.
+**Status:** Supporting procedure. [`docs/REPOSITORY_WORK_PROTOCOL.md`](../docs/REPOSITORY_WORK_PROTOCOL.md) is the current authority for work lifecycle and artifact roles.
+
+Close a session without losing important decisions. Start with [`README.md`](README.md) for the public lifecycle and use this page only for closeout-specific guidance.
 
 ## Two-part closeout
 
@@ -26,10 +28,6 @@ Before invoking git-steward or attempting to make the repository clean:
 
 The session is not considered safely closed if the next-session TODO has been lost, truncated, or reverted.
 
-## Private workflow
+## Locally provisioned private supplement
 
-The detailed closeout procedure, including the exact steps for each part, is defined in the private workflow:
-
-`_internal/GPT_ORCHESTRATED_WORKFLOW.md` §13
-
-That document governs the private orchestration mechanics and is the authoritative procedure for session close.
+A locally provisioned private supplement may define exact closeout mechanics for private session evidence. It must not replace the public work protocol as authority or be required for a normal clone to understand how work is closed.

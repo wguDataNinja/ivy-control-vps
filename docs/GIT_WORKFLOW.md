@@ -301,7 +301,7 @@ Before a repository is published on GitHub, the following must be verified:
 ### Documentation and README
 - `README.md` describes purpose, status, and basic usage — no placeholder content
 - `AGENTS.md` exists if agent interaction is expected
-- `README_INTERNAL.md` exists if durable memory content is needed
+- a clearly identified private local supplement exists if durable memory content is needed
 - No TODO, FIXME, or placeholder stubs in public-facing text
 - LICENSE present or documented lack of license
 

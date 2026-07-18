@@ -79,7 +79,7 @@ The report is the primary handoff artifact between the executing agent, GPT, Bud
 | SJC Intel | (none defined) | `_outbox/` | `logs/agents/` |
 | Other repos | `_inbox/`, `inbox/`, or documented equivalent | `_outbox/`, `outbox/`, or documented equivalent | `logs/` or documented equivalent |
 
-A repository using an alternative path must document it in AGENTS.md, README_INTERNAL.md, or CONTROL.md.
+A repository using an alternative path must document it in AGENTS.md, CONTROL.md, or a clearly identified private local supplement.
 
 ---
 
@@ -207,7 +207,7 @@ Before closing a session:
 
 ## 11. Session Journals
 
-Each managed repository must declare its journal location in AGENTS.md, README_INTERNAL.md, or CONTROL.md.
+Each managed repository must declare its journal location in AGENTS.md, CONTROL.md, or a clearly identified private local supplement.
 
 - The portfolio journal (`_internal/logs/sessions/SESSION_JOURNAL.md` in ivy-control-vps) records one row per substantial reviewed agent result across all managed repositories.
 - Repository journals record repository-local history of reviewed results with the same semantic fields.

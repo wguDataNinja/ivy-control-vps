@@ -228,13 +228,11 @@ Before any VPS work, read these files in order:
 
 "Check the VPS" always means Mode 2 (read-only SSH inspection). It never authorizes cleanup, deployment, restart, migration, or service activation. See `agents/VPS_ORCHESTRATION.md` §1a for the complete mode model.
 
-## Private orchestration workflow
+## Work lifecycle and private supplements
 
-For GPT-orchestrated roadmap work, numbered handoffs, high-reasoning gates, private outbox packets, ad-hoc task artifacts, GPT session logs, and session close, follow:
+The public lifecycle is defined by `workflows/README.md` and `docs/REPOSITORY_WORK_PROTOCOL.md`. `ROADMAP.md` defines project direction and phase status; `docs/` and `repos/*/CONTROL.md` hold promoted current authority.
 
-`_internal/GPT_ORCHESTRATED_WORKFLOW.md`
-
-The public `ROADMAP.md` defines project direction and phase status when it exists. Private orchestration details remain under `_internal/`.
+For locally provisioned GPT orchestration, a private supplement may define numbered handoffs, gate packets, session logs, and close mechanics. It remains protected local evidence and must not become a public-clone dependency or public Git content.
 
 ## Work Tracking
 

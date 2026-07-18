@@ -119,7 +119,7 @@ A repository is admitted as managed when it satisfies:
 
 - **Repository identity** — purpose, canonical remote, default branch, approved SHA
 - **Repo and GitHub readiness** — secret/history risk assessed, gitignore coverage, dependency manifests, license or documented private status, known track/un track clutter
-- **Minimal durable docs** — README.md, AGENTS.md (if agent interaction is expected), README_INTERNAL.md with START HERE section, comprehensive .gitignore
+- **Minimal durable docs** — README.md, AGENTS.md (if agent interaction is expected), and comprehensive `.gitignore`; add a private local supplement only when durable context cannot safely be public
 - **Report consolidation** — current reports indexed or consolidated, superseded reports marked, no uncontrolled reporting/archive/log growth
 - **Logging and observability** — durable activity log, current session state, worker report contract
 - **Collector efficiency** (if applicable) — inventory of scheduled collectors with cadence, concurrency lock, timeout, retry, quota posture
@@ -217,7 +217,7 @@ CONTROL.md must be reviewed or updated when:
 | `repos/<repo>/RELEASE_GATES.md` | Detailed gate evidence. Referenced by CONTROL.md. |
 | `repos/<repo>/STATUS.md` | **Deprecated** once CONTROL.md exists. Retained as historical reference, not updated. |
 | `repos/<repo>/<phase-packet>.md` | Bounded execution instructions for the next authorized phase. Not a governance document. Public. |
-| `_internal/outbox/` and `_internal/tasks/` | Private gate-evidence packets and ad-hoc task artifacts. Not governance; evidence only. See `_internal/GPT_ORCHESTRATED_WORKFLOW.md`. |
+| Locally provisioned private evidence packets | Private gate evidence and ad-hoc task artifacts. Not governance; evidence only. |
 | `docs/PORTFOLIO_CONVENTIONS.md` | Durable cross-repo conventions. Referenced by CONTROL.md applicability matrix. |
 | `docs/DATA_LIFECYCLE_STANDARD.md` | Portfolio data-lifecycle principles. Referenced by CONTROL.md. |
 | `docs/PORTFOLIO_UNIVERSE.md` | Curated known asset universe and portfolio relationship. It may acknowledge assets that do not have and should not receive a CONTROL.md record. |
