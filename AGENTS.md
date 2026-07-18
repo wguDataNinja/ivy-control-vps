@@ -179,6 +179,7 @@ Before declaring completion:
 - confirm no secrets or private content are staged;
 - confirm `TODO.md` was not changed by the agent;
 - confirm any required private agent log was created or updated before completion;
+- confirm required result report exists (see `docs/REPOSITORY_WORK_PROTOCOL.md` §4);
 - report the final branch and working-tree status;
 - report anything that still truly requires Buddy.
 
@@ -220,3 +221,29 @@ For GPT-orchestrated roadmap work, numbered handoffs, high-reasoning gates, priv
 `_internal/GPT_ORCHESTRATED_WORKFLOW.md`
 
 The public `ROADMAP.md` defines project direction and phase status when it exists. Private orchestration details remain under `_internal/`.
+
+## Work Tracking
+
+This repository follows the Ivy portfolio work protocol (`docs/REPOSITORY_WORK_PROTOCOL.md`) as the governing repository:
+
+- **Governing protocol:** Ivy portfolio work protocol
+- **Current planning authority:** `ROADMAP.md` (portfolio-wide) + `TODO.md` (session-scoped)
+- **Task-prompt location:** `_internal/inbox/session-<N>/` (optional — direct handoffs accepted)
+- **Task-result location:** `_internal/outbox/session<N>/`
+- **Session record:** `_internal/logs/sessions/GPT-<N>-<slug>.md`
+- **Agent execution logs:** `_internal/logs/agents/YYYY-MM-DD/<slug>.md`
+- **Portfolio journal:** `_internal/logs/sessions/SESSION_JOURNAL.md`
+- **Canonical project authority:** `docs/` (standards), `repos/*/CONTROL.md` (per-repo policy)
+- **Git writer:** `git-steward` subagent (explicitly authorized operations only)
+- **Closeout requirements:** Result report in outbox, agent log if applicable, Git commit via git-steward, session log updated, journal entry recorded
+
+### Journal workflow
+
+1. Before starting a new substantial task, write the journal entry supplied by GPT for the previous reviewed result.
+2. Link the journal row to the previous result report.
+3. Preserve GPT's acceptance status, summary, issues, and follow-up faithfully.
+4. Write the final journal row during session close when there is no next task.
+5. Maintain the detailed GPT session log separately — the journal is a navigation summary, not a replacement for session memory.
+6. Do not treat the journal as architecture or implementation authority.
+7. Do not claim completion without verifying that required journal entries and result reports exist.
+8. Do not stage or commit Ivy Control `_internal/` material.
