@@ -65,3 +65,32 @@ def compute_confidence(
 Confidence is recorded in `execution-result.json` under the key `recovery_confidence`. The confidence value is computed after the final state is reached.
 
 Confidence is never user-configurable. To increase confidence, produce more evidence: run a restore test, verify checksums, or create a fresh snapshot.
+
+## 5. Evidence-card integration
+
+This policy is not recovery evidence. The portfolio health summary can consume one
+explicitly supplied, dated recovery-confidence card using the reusable schema at
+[`docs/health/schemas/evidence-card.schema.json`](health/schemas/evidence-card.schema.json).
+Use the non-evidence starting shape at
+[`templates/PASSPORT_RECOVERY_CONFIDENCE_EVIDENCE_CARD_TEMPLATE.json`](../templates/PASSPORT_RECOVERY_CONFIDENCE_EVIDENCE_CARD_TEMPLATE.json);
+it must be completed from a real bounded review before it can validate. The
+first implementation is Passport:
+
+```sh
+python3 tools/validate_evidence_card.py /safe/local/passport-recovery.json \
+  --asset passport --evidence-type recovery_confidence
+python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only \
+  --passport-evidence /safe/local/passport-recovery.json
+```
+
+The card records the observation time, expiry, verification method, bounded
+findings, disposition, and review owner. It may also contain local host identity
+and revision detail; the health summary intentionally does not render host
+identity or the supplied path. An expired, missing, unreadable, or invalid card
+must render `UNKNOWN`, not a retained healthy claim. A card with `DEGRADED`
+result renders degraded attention; a current `VERIFIED` card renders verified
+confidence.
+
+The command never searches backup disks, `_internal/`, or private evidence
+directories. Supplying a card is an operator decision, and the normal fresh-clone
+state remains `UNKNOWN` until a bounded review supplies current evidence.

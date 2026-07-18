@@ -33,7 +33,7 @@ OUTPUT = ROOT / "_internal" / "generated" / "ingestion-dashboard"
 ROADMAP = ROOT / "ROADMAP.md"
 UTC = dt.timezone.utc
 STATUSES = ("GREEN", "YELLOW", "RED", "UNKNOWN")
-EVIDENCE_LEVELS = ("live", "stale", "missing_producer", "unsupported_field", "doc_fallback", "unresolved_authority")
+EVIDENCE_LEVELS = ("live", "evidence_card", "stale", "missing_producer", "unsupported_field", "doc_fallback", "unresolved_authority")
 SUMMARY_ORDER = {"UNKNOWN": 0, "RED": 1, "YELLOW": 2, "GREEN": 3}
 
 # Ensure the repository root is on sys.path so that 'from tools.*' imports
@@ -375,12 +375,62 @@ def passport_recovery_unknown() -> dict:
     return result
 
 
-def collect_rows(active_transport: Transport) -> list[dict]:
+def passport_recovery_evidence(evidence_path: Path | None = None) -> dict:
+    """Evaluate one explicitly supplied Passport evidence card, if present.
+
+    The path is intentionally opt-in: this read-only surface never searches
+    backup locations or private workflow directories for evidence.
+    """
+    if evidence_path is None:
+        return passport_recovery_unknown()
+
+    from tools.evidence_cards import evaluate_card, load_card, validate_card
+
+    result = row("Passport / backup", "recovery-confidence review", "ROADMAP P0")
+    try:
+        card = load_card(evidence_path)
+    except ValueError as exc:
+        result["detail"]["recovery_confidence_adapter"] = "evidence_card (unreadable)"
+        result["detail"]["recovery_confidence"] = "UNKNOWN — supplied evidence card could not be read"
+        result["issues"].append(f"Passport recovery-confidence evidence card is unreadable: {exc}")
+        return result
+
+    errors = validate_card(card, expected_asset="passport", expected_evidence_type="recovery_confidence")
+    if errors:
+        result["detail"]["recovery_confidence_adapter"] = "evidence_card (invalid)"
+        result["detail"]["recovery_confidence"] = "UNKNOWN — supplied evidence card is invalid"
+        result["issues"].append("Passport recovery-confidence evidence card is invalid: " + "; ".join(errors))
+        return result
+
+    confidence_state, reason = evaluate_card(card)
+    result["evidence_level"] = "evidence_card"
+    result["confidence_state"] = confidence_state
+    result["status"] = {"VERIFIED": "GREEN", "DEGRADED": "YELLOW", "UNKNOWN": "UNKNOWN"}[confidence_state]
+    result["last_success"] = card["observed_at"]
+    result["source_freshness"] = "dated evidence card"
+    result["backup"] = confidence_state
+    result["evidence_timestamp"] = card["observed_at"]
+    result["collected_at"] = card["observed_at"]
+    result["detail"].update({
+        "recovery_confidence_adapter": "evidence_card (explicit local input)",
+        "recovery_confidence": confidence_state,
+        "observed_at": card["observed_at"],
+        "expires_at": card["expires_at"],
+        "verification_method": card["verification_method"],
+        "policy_reference": card["policy_reference"],
+        "disposition": card["disposition"],
+        "evidence_requirement": "dated observation, verification method, findings, disposition, and expiry",
+    })
+    result["issues"].append(reason)
+    return result
+
+
+def collect_rows(active_transport: Transport, passport_evidence: Path | None = None) -> list[dict]:
     """Collect the bounded, read-only portfolio observation set."""
     reddit = collect_reddit(active_transport)
     chat, market = collect_ih(active_transport)
     capacity = collect_capacity(active_transport)
-    return [reddit, chat, market, traderie_unknown(), passport_recovery_unknown(), capacity]
+    return [reddit, chat, market, traderie_unknown(), passport_recovery_evidence(passport_evidence), capacity]
 
 
 def roadmap_coverage() -> dict:
@@ -400,11 +450,17 @@ def roadmap_coverage() -> dict:
 def format_summary(rows: list[dict]) -> str:
     """Render a concise operator/Hermes surface from normalized dashboard rows."""
     attention = [row for row in rows if row["status"] != "GREEN"]
+    verified = [row for row in rows if row.get("confidence_state") == "VERIFIED"]
     attention.sort(key=lambda item: (SUMMARY_ORDER.get(item["status"], 99), item["workload"]))
     lines = ["Ivy Control Portfolio Health", "", "P0 attention:"]
     for item in attention:
         reason = item["issues"][0] if item["issues"] else "No current evidence reason supplied."
-        lines.extend(["", f"{item['workload']}", item["status"], f"Reason: {reason}"])
+        lines.extend(["", f"{item['workload']}", item.get("confidence_state", item["status"]), f"Reason: {reason}"])
+
+    if verified:
+        lines.extend(["", "Current verified evidence:"])
+        for item in verified:
+            lines.append(f"- {item['workload']}: VERIFIED (expires {item['detail'].get('expires_at', 'unknown')})")
 
     recommendations = {
         "WGU Reddit": "Verify current Reddit recovery, canonicality, and single-writer evidence.",
@@ -435,8 +491,8 @@ def render(rows: list[dict], coverage: dict) -> str:
     priorities = "".join(f"<li>{cell(item)}</li>" for item in coverage["priorities"]) or "<li>No matching roadmap priority lines found.</li>"
     unmapped = ", ".join(coverage["unmapped"]) if coverage["unmapped"] else "None"
     return f"""<!doctype html><html><head><meta charset='utf-8'><title>Ivy Control Portfolio Health</title><style>
-body{{font-family:system-ui,sans-serif;margin:2rem;color:#171717}} table{{border-collapse:collapse;width:100%;font-size:.9rem}}th,td{{border:1px solid #bbb;padding:.55rem;text-align:left;vertical-align:top}}th{{background:#eee}}.GREEN{{background:#e8f5e9}}.YELLOW{{background:#fff8d8}}.RED{{background:#ffe5e5}}.UNKNOWN{{background:#eeeeee}}pre{{white-space:pre-wrap;word-break:break-word}}small{{color:#555}}.ev-live{{color:#2e7d32}}.ev-stale{{color:#e65100}}.ev-missing_producer{{color:#c62828;font-weight:bold}}.ev-unsupported_field{{color:#6a1b9a}}.ev-doc_fallback{{color:#e65100;font-style:italic}}.ev-unresolved_authority{{color:#6a1b9a;font-style:italic}}.notice{{padding:.75rem;background:#fff8d8;border-left:4px solid #b8860b}}</style></head><body>
-<h1>Ivy Control Portfolio Health</h1><p class='notice'>Generated {cell(now())}. Evidence levels: <strong class='ev-live'>live</strong> (fresh observation) · <strong class='ev-stale'>stale</strong> (exceeds freshness) · <strong class='ev-missing_producer'>missing_producer</strong> · <strong class='ev-unsupported_field'>unsupported_field</strong> · <strong class='ev-doc_fallback'>doc_fallback</strong> (not live) · <strong class='ev-unresolved_authority'>unresolved_authority</strong> (needs Buddy). Doc_fallback evidence cannot render GREEN. Browser/helper process health does not prove chat or market capture and offload.</p>
+body{{font-family:system-ui,sans-serif;margin:2rem;color:#171717}} table{{border-collapse:collapse;width:100%;font-size:.9rem}}th,td{{border:1px solid #bbb;padding:.55rem;text-align:left;vertical-align:top}}th{{background:#eee}}.GREEN{{background:#e8f5e9}}.YELLOW{{background:#fff8d8}}.RED{{background:#ffe5e5}}.UNKNOWN{{background:#eeeeee}}pre{{white-space:pre-wrap;word-break:break-word}}small{{color:#555}}.ev-live,.ev-evidence_card{{color:#2e7d32}}.ev-stale{{color:#e65100}}.ev-missing_producer{{color:#c62828;font-weight:bold}}.ev-unsupported_field{{color:#6a1b9a}}.ev-doc_fallback{{color:#e65100;font-style:italic}}.ev-unresolved_authority{{color:#6a1b9a;font-style:italic}}.notice{{padding:.75rem;background:#fff8d8;border-left:4px solid #b8860b}}</style></head><body>
+<h1>Ivy Control Portfolio Health</h1><p class='notice'>Generated {cell(now())}. Evidence levels: <strong class='ev-live'>live</strong> (fresh observation) · <strong class='ev-evidence_card'>evidence_card</strong> (explicit dated local observation) · <strong class='ev-stale'>stale</strong> (exceeds freshness) · <strong class='ev-missing_producer'>missing_producer</strong> · <strong class='ev-unsupported_field'>unsupported_field</strong> · <strong class='ev-doc_fallback'>doc_fallback</strong> (not live) · <strong class='ev-unresolved_authority'>unresolved_authority</strong> (needs Buddy). Doc_fallback evidence cannot render GREEN. Browser/helper process health does not prove chat or market capture and offload.</p>
 <p><strong>Summary:</strong> GREEN {counts['GREEN']} · YELLOW {counts['YELLOW']} · RED {counts['RED']} · UNKNOWN {counts['UNKNOWN']}. <strong>Highest priority:</strong> {cell(highest['workload'] + ': ' + '; '.join(highest['issues'])) if highest else 'none'}</p>
 <table><thead><tr><th>Workload</th><th>Collector</th><th>Last success</th><th>Source freshness</th><th>DB freshness</th><th>Offload / sync</th><th>Backup</th><th>Capacity</th><th>Collected at</th><th>Status</th></tr></thead><tbody>{table}</tbody></table>
 <h2>Details</h2>{details}<h2>ROADMAP.md coverage</h2><p>Expected ingestion workload labels missing from roadmap: <strong>{cell(unmapped)}</strong>.</p><h3>Open priority items</h3><ul>{priorities}</ul>
@@ -456,6 +512,8 @@ def main() -> int:
                         help="Output JSON to stdout (machine-readable)")
     parser.add_argument("--summary", action="store_true",
                         help="Output a concise read-only operator/Hermes health summary")
+    parser.add_argument("--passport-evidence", type=Path,
+                        help="explicit local Passport recovery-confidence JSON card; never searched automatically")
     parser.add_argument("--stdout-only", action="store_true",
                         help="Do not write dashboard files; emit only requested stdout output")
     args = parser.parse_args()
@@ -463,31 +521,34 @@ def main() -> int:
         args.mode = args.mode or "no-live"
     global transport
     transport = Transport(mode=args.mode, host=args.host)
-    rows = collect_rows(transport)
+    rows = collect_rows(transport, passport_evidence=args.passport_evidence)
     coverage = roadmap_coverage()
+    missing_live_adapters = [
+        "Reddit: source-frontier adapter (missing_producer)",
+        "Reddit: DB-frontier adapter (missing_producer)",
+        "Reddit: duplicate/gap adapter (missing_producer)",
+        "Reddit: archive-continuity adapter (missing_producer)",
+        "Reddit: canonicality evidence (unresolved_authority)",
+        "Reddit: backup/restore proof adapter (missing_producer)",
+        "Traderie: live exporter probe adapter (missing_producer)",
+        "Traderie: backup-age/restore adapter (missing_producer)",
+        "Traderie: timeout/progress instrumentation (unsupported_field; local source 137dd64 has it)",
+        "IH: installed-userscript source verification (unresolved_authority)",
+        "IH: acknowledgement destination/receipt adapter (unresolved_authority)",
+        "IH: replay proof (unsupported_field)",
+        "IH: durable destination contract (unresolved_authority)",
+        "IH market: PostgreSQL reconciliation (unsupported_field)",
+        "VPS: recurring capacity snapshot producer (missing_producer)",
+        "VPS: control-plane deployed-revision producer (missing_producer)",
+        "VPS: checkout drift producer (missing_producer)",
+    ]
+    passport_row = next(row for row in rows if row["workload"] == "Passport / backup")
+    if passport_row["evidence_level"] != "evidence_card":
+        missing_live_adapters.append("Passport: dated recovery-confidence observation (missing_producer)")
     data: dict[str, Any] = {
         "generated_at": now(), "rows": rows, "roadmap_coverage": coverage,
         "execution_mode": transport.mode,
-        "missing_live_adapters": [
-            "Reddit: source-frontier adapter (missing_producer)",
-            "Reddit: DB-frontier adapter (missing_producer)",
-            "Reddit: duplicate/gap adapter (missing_producer)",
-            "Reddit: archive-continuity adapter (missing_producer)",
-            "Reddit: canonicality evidence (unresolved_authority)",
-            "Reddit: backup/restore proof adapter (missing_producer)",
-            "Traderie: live exporter probe adapter (missing_producer)",
-            "Traderie: backup-age/restore adapter (missing_producer)",
-            "Traderie: timeout/progress instrumentation (unsupported_field; local source 137dd64 has it)",
-            "IH: installed-userscript source verification (unresolved_authority)",
-            "IH: acknowledgement destination/receipt adapter (unresolved_authority)",
-            "IH: replay proof (unsupported_field)",
-            "IH: durable destination contract (unresolved_authority)",
-            "IH market: PostgreSQL reconciliation (unsupported_field)",
-            "Passport: dated recovery-confidence observation (missing_producer)",
-            "VPS: recurring capacity snapshot producer (missing_producer)",
-            "VPS: control-plane deployed-revision producer (missing_producer)",
-            "VPS: checkout drift producer (missing_producer)",
-        ],
+        "missing_live_adapters": missing_live_adapters,
     }
     if not args.stdout_only and not args.summary:
         args.output_dir.mkdir(parents=True, exist_ok=True)

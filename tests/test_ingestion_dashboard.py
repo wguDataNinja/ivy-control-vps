@@ -15,12 +15,17 @@ collect_ih() in the dashboard.  Covers:
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 from tools.ih_dashboard_adapter import adapt_chat, adapt_market
-from tools.ingestion_dashboard import format_summary, passport_recovery_unknown
+from tools.ingestion_dashboard import (
+    format_summary,
+    passport_recovery_evidence,
+    passport_recovery_unknown,
+)
 
 from tests.fixtures.ih_helper_payloads import (
     both_healthy_payload,
@@ -315,3 +320,18 @@ class TestPortfolioSummary:
         assert "Passport / backup\nUNKNOWN" in output
         assert "Refresh Passport recovery-confidence evidence" in output
         assert "Collect a current Traderie exporter" in output
+
+    def test_current_passport_evidence_is_verified_without_identity_leak(self) -> None:
+        evidence = Path(__file__).parent / "fixtures" / "passport_recovery_confidence_verified.json"
+        row = passport_recovery_evidence(evidence)
+        assert row["status"] == "GREEN"
+        assert row["confidence_state"] == "VERIFIED"
+        assert row["detail"]["observed_at"] == "2030-07-18T12:00:00Z"
+        assert "host_identity" not in row["detail"]
+
+    def test_expired_passport_evidence_returns_unknown(self) -> None:
+        evidence = Path(__file__).parent / "fixtures" / "passport_recovery_confidence_expired.json"
+        row = passport_recovery_evidence(evidence)
+        assert row["status"] == "UNKNOWN"
+        assert row["confidence_state"] == "UNKNOWN"
+        assert "expired" in row["issues"][0]

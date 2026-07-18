@@ -349,3 +349,23 @@ class TestTerminalSummary:
             assert "Passport / backup\nUNKNOWN" in result.stdout
             assert "Refresh Passport recovery-confidence evidence" in result.stdout
             assert not output_dir.exists(), "stdout-only summary must not write dashboard artifacts"
+
+    def test_summary_uses_explicit_passport_evidence_card(self) -> None:
+        evidence = REPO_ROOT / "tests" / "fixtures" / "passport_recovery_confidence_verified.json"
+        result = _run_python(
+            DASHBOARD_SCRIPT,
+            ["--no-live", "--summary", "--stdout-only", "--passport-evidence", str(evidence)],
+        )
+        assert result.returncode == 0, result.stderr
+        assert "Passport / backup: VERIFIED" in result.stdout
+        assert "sanitized-test-host" not in result.stdout
+
+    def test_summary_treats_expired_passport_evidence_as_unknown(self) -> None:
+        evidence = REPO_ROOT / "tests" / "fixtures" / "passport_recovery_confidence_expired.json"
+        result = _run_python(
+            DASHBOARD_SCRIPT,
+            ["--no-live", "--summary", "--stdout-only", "--passport-evidence", str(evidence)],
+        )
+        assert result.returncode == 0, result.stderr
+        assert "Passport / backup\nUNKNOWN" in result.stdout
+        assert "expired" in result.stdout

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivy-control.local/schemas/evidence-card-1.0.json",
+  "title": "Ivy Control evidence card",
+  "description": "A dated, bounded observation. It is evidence, not policy or a source of authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "asset", "evidence_type", "observed_at", "expires_at",
+    "host_identity", "ivy_revision", "policy_reference", "backup_scope",
+    "verification_method", "result", "findings", "disposition", "review_owner"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "asset": {"type": "string", "minLength": 1},
+    "evidence_type": {"type": "string", "minLength": 1},
+    "observed_at": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "expires_at": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "host_identity": {"type": "string", "minLength": 1},
+    "ivy_revision": {"type": "string", "minLength": 1},
+    "policy_reference": {"type": "string", "minLength": 1},
+    "backup_scope": {"type": "string", "minLength": 1},
+    "verification_method": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "result": {"enum": ["VERIFIED", "DEGRADED", "UNKNOWN"]},
+    "findings": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "disposition": {"type": "string", "minLength": 1},
+    "review_owner": {"type": "string", "minLength": 1}
+  }
+}

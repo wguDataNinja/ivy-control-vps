@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "asset": "passport",
+  "evidence_type": "recovery_confidence",
+  "observed_at": "<RFC-3339-UTC-observation-time>",
+  "expires_at": "<RFC-3339-UTC-expiry-time>",
+  "host_identity": "<local-or-redacted-host-identity>",
+  "ivy_revision": "<Ivy-Control-revision-observed>",
+  "policy_reference": "docs/BACKUP_RECOVERY_CONFIDENCE.md",
+  "backup_scope": "<bounded-scope-reviewed>",
+  "verification_method": [
+    "<manifest/checksum/restore/review method actually performed>"
+  ],
+  "result": "UNKNOWN",
+  "findings": [
+    "<bounded factual finding; do not include secrets or private paths>"
+  ],
+  "disposition": "<next safe action or accepted state>",
+  "review_owner": "<human review owner>"
+}
