@@ -1,8 +1,8 @@
 # Ivy Control VPS Roadmap
 
-**Status:** Active execution plan. Reconciled from current control sheets, database/health standards, Session 9 evidence, and the generated local dashboard on 2026-07-16.
+**Status:** Active execution and portfolio-maturity roadmap. Reconciled from current control sheets, database/health standards, Session 9 evidence, and the generated local dashboard on 2026-07-16.
 
-**Purpose:** This is the broad current home for agents: it states what is true, what is next, who can act, what is blocked, and which gate/evidence closes a task. Repository control sheets and release gates remain the authority for repository-specific decisions; `docs/DATABASE.md`, `docs/HEALTH_CONTRACT.md`, and `docs/PORTFOLIO_CONVENTIONS.md` remain the technical standards.
+**Purpose:** This is the broad current home for agents: it states what is true, what is next, who can act, what is blocked, and which gate/evidence closes a task. It is an engineering execution and maturity roadmap, not a session transcript or a portfolio-value ranking. Repository control sheets and release gates remain the authority for repository-specific decisions; `docs/DATABASE.md`, `docs/HEALTH_CONTRACT.md`, and `docs/PORTFOLIO_CONVENTIONS.md` remain the technical standards.
 
 ## §0 Operator Summary
 

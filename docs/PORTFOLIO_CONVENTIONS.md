@@ -278,9 +278,9 @@ VPS config files live at `/home/scraper/config/{project}.env` (outside Git). Rep
 
 ---
 
-## Health contract
+## Historical health contract (v1, superseded)
 
-The canonical portfolio health contract is now defined in `docs/HEALTH_CONTRACT.md` (v2.0.0).
+The canonical portfolio health contract is `docs/HEALTH_CONTRACT.md` (v2.0.0). This retained v1 material is supporting historical reference only; it must not be used for new producers, adapters, health evaluation, or alert work.
 
 This section is superseded. The old 18-field model below is retained as historical context but is no longer authoritative. All new health work must follow `docs/HEALTH_CONTRACT.md`.
 

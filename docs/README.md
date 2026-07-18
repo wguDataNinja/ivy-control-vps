@@ -14,6 +14,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`PORTFOLIO_UNIVERSE.md`](PORTFOLIO_UNIVERSE.md) | Curated known portfolio universe — asset relationship, classification, value context, and discovery confidence; not live operational status |
 | [`RESIDENT_AGENT_MODEL.md`](RESIDENT_AGENT_MODEL.md) | Resident Agent Interface (RAI) architecture — why resident agents exist, file-backed bridge, verification principle, separation of interface from implementation |
 | [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md) | Portfolio repository-control model — governance mechanism, standards applicability, gate framework, approved SHA tracking |
+| [`REPOSITORY_WORK_PROTOCOL.md`](REPOSITORY_WORK_PROTOCOL.md) | Work-continuity protocol — task identity, result reports, logs, journals, review, and promotion into canonical documentation |
 | [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Git workflow — branch naming, commits, PRs, agents, VPS provisional rules, git-steward delegation |
 
 ### Standards and conventions
@@ -86,25 +87,35 @@ This index is the operational map for agents and maintainers working with IvyCon
 |----------|---------|
 | [`PORTFOLIO_BASELINE.md`](PORTFOLIO_BASELINE.md) | Dated portfolio assessment baseline — historical inventory, patterns, and gaps; current state remains in ROADMAP and CONTROL records |
 
-## Reading order for a new maintainer or agent
+## Core reading path
 
-1. `README.md` — what this repository is and is not
-2. `ROADMAP.md` — what requires attention now and why
-3. `OPERATING_MODEL.md` — why the control plane exists and how the portfolio is governed
-4. `PORTFOLIO_UNIVERSE.md` — what is known to exist; read this before inferring importance from admission
-5. `REPOSITORY_CONTROL_MODEL.md` — how portfolio standards apply to each managed repository
-6. Applicable portfolio standards (read per task):
+Read these first to understand the control plane. Do not read every supporting document unless the task needs it.
+
+1. [`README.md`](../README.md) — what this repository is and is not
+2. [`ROADMAP.md`](../ROADMAP.md) — what requires attention now and why
+3. [`OPERATING_MODEL.md`](OPERATING_MODEL.md) — why the control plane exists and how the portfolio is governed
+4. [`PORTFOLIO_UNIVERSE.md`](PORTFOLIO_UNIVERSE.md) — what is known to exist; read this before inferring importance from admission
+5. [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md) — how portfolio standards apply to each managed repository
+6. [`REPOSITORY_WORK_PROTOCOL.md`](REPOSITORY_WORK_PROTOCOL.md) — how substantial work becomes reviewed, durable evidence
+7. [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) — how tracked changes are branched, packaged, and reviewed
+8. [`HEALTH_CONTRACT.md`](HEALTH_CONTRACT.md) — how operational evidence is represented and evaluated
+9. The relevant `repos/<repo>/CONTROL.md` — current repository-specific authority
+
+## Task-specific reading
+
+Read these only when applicable to the assigned work:
+
+- Applicable portfolio standards:
    - `PORTFOLIO_CONVENTIONS.md` — shared technical conventions and VPS admission requirements
    - `HEALTH_CONTRACT.md` — health reporting contract and producer registry
    - `DATA_LIFECYCLE_STANDARD.md` — retention, pruning, storage thresholds
    - `LOGGING_STANDARD.md` — logging for machine, agent, and planning work
    - `GIT_WORKFLOW.md` — Git branch naming, commits, agent rules
    - `LLM_TENETS.md` — LLM system design principles
-7. Repository control sheet — `repos/<repo>/CONTROL.md` for repo-specific evidence, exceptions, blockers, and current support state
-8. Detailed gate evidence or phase packet only when the task requires gate-specific detail
-9. For GPT-orchestrated session work, read `_internal/GPT_ORCHESTRATED_WORKFLOW.md` (private) for numbered handoffs, gate packets, session logging, and session close
-10. For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures
-11. For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification
+- Detailed gate evidence or phase packet only when the task requires gate-specific detail.
+- For GPT-orchestrated session work, read `_internal/GPT_ORCHESTRATED_WORKFLOW.md` (private) for numbered handoffs, gate packets, session logging, and session close.
+- For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures.
+- For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification.
 
 ## Authority model
 
@@ -118,6 +129,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | What is currently authorized or true for one managed repository? | `repos/<repo>/CONTROL.md` |
 | What proves workload health and evidence confidence? | `docs/HEALTH_CONTRACT.md` plus dated producer/evidence artifacts |
 | How do humans and agents perform and preserve work? | `docs/REPOSITORY_WORK_PROTOCOL.md` |
+| How are tracked changes branched, reviewed, and integrated? | `docs/GIT_WORKFLOW.md` |
 | What is private and how is private orchestration handled? | `_internal/GPT_ORCHESTRATED_WORKFLOW.md` |
 
 `ROADMAP.md` is the portfolio-wide execution authority. Per-repo `CONTROL.md` files govern individual repository lifecycle, production authority, and gate status. Portfolio standards (`PORTFOLIO_CONVENTIONS.md`, `HEALTH_CONTRACT.md`, `DATA_LIFECYCLE_STANDARD.md`, etc.) define cross-repo conventions that CONTROL.md records must comply with or explicitly deviate from.
@@ -133,7 +145,7 @@ A repo `CONTROL.md` may grant a standards exception; the standards may not overr
 
 ### Active vs historical materials
 
-Every document in `docs/` is either active authority, supporting reference, or explicitly marked historical/superseded. Old-tree documents (from the predecessor `ivy-control/vps/` path) are not present in this repository. Any reference to an old-tree file is a historical marker, not an active-reading link. Documents in `repos/<repo>/` with "deprecated" or "superseded" status (e.g., `STATUS.md`) are retained for provenance only.
+The core governance documents above are active authority. Technical standards and runbooks are supporting reference unless their own status line says otherwise; dated baselines, deprecated status files, and completed phase packets are historical evidence. Old-tree documents (from the predecessor `ivy-control/vps/` path) are not present in this repository. Any reference to an old-tree file is a historical marker, not an active-reading link.
 
 ### CONTROL.md role
 
@@ -153,7 +165,7 @@ The **managed registry** is a derived/aggregated view of CONTROL.md records, gen
 
 ### Session artifacts
 
-`_internal/outbox/` contains ignored session artifacts — execution packets, evidence files, and intermediate reports produced during GPT-orchestrated work. These files are not durable Git authority. They are retained for provenance and traceability but must not be treated as active standards, policy, or configuration. The current live document set in `docs/` is the authoritative source.
+`_internal/outbox/` contains ignored session artifacts — execution packets, evidence files, and intermediate reports produced during GPT-orchestrated work. These files are not durable Git authority. They are retained for provenance and traceability but must not be treated as active standards, policy, or configuration. The authority table above, including root `ROADMAP.md` and per-repository control records, identifies the current sources of truth.
 
 ## Predecessor tree
 
@@ -172,9 +184,9 @@ Read that file before any VPS inspection work.
 A new document must serve a distinct durable authority role that no existing document can absorb. Before creating a file, identify its unique purpose, why an existing document cannot hold the material, and which current document it supersedes or complements. Index it here on creation.
 
 
-## Current Operating Emphasis
+## Historical operating context (Sessions 1–8)
 
-The documentation set describes the full intended control model, but the immediate program priority is narrower.
+This section preserves the foundation history and the priorities recorded at the time. It is supporting reference only; `ROADMAP.md` owns current execution priority.
 
 ### Completed foundation (Sessions 1–8)
 
@@ -186,7 +198,7 @@ The documentation set describes the full intended control model, but the immedia
 - **Session 7:** Hermes bridge bootstrap, Codex VPS-1/VPS-2 capacity recovery and execution, Git publication
 - **Session 8:** Complete Git cleanup (both repos reconciled and committed), Session 5 reconstruction, Git publication assessment, ingestion dashboard prototype
 
-### Active priorities
+### Priorities recorded at Session 8
 
 1. **Stabilize ingestion health visibility.** Health contract v2 is defined; producers are registered (Traderie, Reddit Ops). Build the portfolio aggregator and normalized views so all workloads have observable current-state health.
 2. **Complete remaining stabilization gates.** Reddit Ops has 13 unresolved stabilization gates (STABILIZATION.md). Close these to move from `PRODUCTION_ACTIVE` to `PRODUCTION_COMPLETE`.

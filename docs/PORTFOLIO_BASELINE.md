@@ -1,7 +1,7 @@
 # Portfolio Baseline
 
-**Status:** Current authority for portfolio-wide repository inventory and baseline classification. Current operational status is reconciled through `ROADMAP.md` and repository control sheets.
-**Purpose:** Compact reference for roadmap authoring and portfolio management. Derived from per-repository audits (2026-07-05), current-state inspection (2026-07-08), and the ivy-control-vps control documents.
+**Status:** Supporting reference — dated baseline assessment. It is not current authority for inventory, operational state, or priority.
+**Purpose:** Preserve audit-derived inventory, patterns, and gaps observed during the 2026-07-05 to 2026-07-08 baseline work. `docs/PORTFOLIO_UNIVERSE.md` owns the current known-universe view; `ROADMAP.md` and repository control sheets own current priority and managed-repository state.
 **Source audits:** `ivy-control/vps/archive/audits/` (historical — not current authority).
 
 ---
@@ -25,7 +25,7 @@
 
 ---
 
-### §1B Per-Repository Current Status
+### §1B Dated per-repository observations
 
 #### Traderie
 

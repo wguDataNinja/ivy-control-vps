@@ -1,5 +1,7 @@
 # VPS Repository Admission Checklist
 
+**Status:** Supporting checklist. `docs/PORTFOLIO_CONVENTIONS.md` and `docs/REPOSITORY_CONTROL_MODEL.md` remain the active authorities for VPS admission requirements and gate semantics.
+
 Use this checklist before admitting any portfolio repository (for example,
 palworld_kb or sts-workbench). It is an evidence checklist, not deployment
 authority.
