@@ -16,26 +16,24 @@ This contract governs Hermes when tasked with discovering and proposing bounded 
 
 ---
 
-## 2. Deterministic Hermes Reading Order
+## 2. Deterministic Hermes Reading and Observation Route
 
-Before any Hermes bounded-work discovery, read these files **in order**:
+Before any Hermes bounded-work discovery, establish orientation through the smallest sufficient route:
 
 | Step | File | Purpose |
 |------|------|---------|
 | 1 | `AGENTS.md` | Repository-level agent rules, protected data, Git constraints |
 | 2 | `agents/VPS_ORCHESTRATION.md` | Interaction modes, role boundaries, allowed/prohibited actions |
 | 3 | `agents/HERMES_AGENT_CONTRACT.md` | This file — bounded work contract |
-| 4 | `docs/README.md` | Documentation index; navigation map |
-| 5 | `docs/OPERATING_MODEL.md` | Hermes role, work ownership, public/private boundary |
-| 6 | `docs/HERMES_OPERATOR_GUIDE.md` | Hermes installation, launch, bridge protocol, validation commands |
-| 7 | `docs/REPOSITORY_CONTROL_MODEL.md` | Gate model, CONTROL.md schema, Hermes-relevant fields |
-| 8 | `docs/GIT_WORKFLOW.md` | Branch naming, commit rules, agent Git authority |
-| 9 | `docs/LOGGING_STANDARD.md` | Logging requirements for Hermes work products |
-| 10 | `ROADMAP.md` §8 | Hermes Evolution — current stage, next gated stage, prohibitions |
-| 11 | `repos/<target-repo>/CONTROL.md` | Per-repo governance, permissions, blockers, next work |
-| 12 | `repos/<target-repo>/RELEASE_GATES.md` | Detailed gate evidence for the target repo |
+| 4 | `docs/README.md` and `docs/OPERATING_MODEL.md` | Authority map, navigation, role and public/private boundary |
+| 5 | `docs/PORTFOLIO_UNIVERSE.md` and `ROADMAP.md` | Known assets and current portfolio priority |
+| 6 | `tools/show_portfolio_status.sh --no-color` | Generated managed-record orientation; not authority |
+| 7 | `python3 tools/ingestion_dashboard.py --summary --stdout-only` | Permitted read-only evidence summary; inspect mode must follow `VPS_ORCHESTRATION.md` |
+| 8 | `repos/<target-repo>/CONTROL.md` | Per-repo governance, permissions, blockers, next work |
+| 9 | `repos/<target-repo>/RELEASE_GATES.md` | Detailed gate evidence for the target repo |
+| 10 | `docs/HEALTH_CONTRACT.md`, `docs/GIT_WORKFLOW.md`, and `docs/LOGGING_STANDARD.md` | Read only when the proposed work concerns health, tracked change, or durable work record |
 
-Steps 1–10 are one-time orientation. Steps 11–12 are per-repo discovery.
+Steps 1–7 establish portfolio orientation. Steps 8–10 are target- and task-specific. Generated command output routes attention; it cannot authorize an action or override `CONTROL.md`, evidence, or a gate.
 
 ---
 

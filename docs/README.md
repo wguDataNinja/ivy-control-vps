@@ -117,6 +117,20 @@ Read these only when applicable to the assigned work:
 - For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures.
 - For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification.
 
+## Fresh-agent repository intelligence route
+
+After the core reading path, a new agent can orient using three read-only generated views:
+
+```sh
+./tools/show_portfolio_status.sh --no-color
+python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only
+./tools/show_ready_work.sh
+```
+
+The first view is a **derived managed-record summary**: purpose, lifecycle, control-record state, blocker, and next task. The second is a **derived observation summary**: current evidence or an explicit `UNKNOWN`, never a status inferred from Git activity. The third is a filtered task convenience view, not a replacement for `ROADMAP.md` or a repository's authorized next work.
+
+For the authoritative distinction and refresh rules, see [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md#portfolio-intelligence-and-refresh). Generated output is for orientation and routing; confirm a decision in the relevant `CONTROL.md`, health evidence, and roadmap before acting. For public recent-work context, use `ROADMAP.md` completed milestones and Git history; private reports and journals are not assumed to be available in a clone.
+
 ## Authority model
 
 ### Hierarchy

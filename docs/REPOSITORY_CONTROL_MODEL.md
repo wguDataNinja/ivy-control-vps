@@ -224,6 +224,29 @@ CONTROL.md must be reviewed or updated when:
 
 ---
 
+## Portfolio intelligence and refresh
+
+The control plane answers different questions through different sources. Do not create a second registry or promote generated output into authority.
+
+| Need | Authority or generated view | Refresh meaning |
+|---|---|---|
+| What assets are known, including ungoverned, private, historical, and infrastructure assets? | `docs/PORTFOLIO_UNIVERSE.md` | Deliberately update when an asset relationship is learned or changed. `DISCOVERY_INCOMPLETE` remains explicit until separately authorized discovery occurs. |
+| What is true and authorized for a managed repository? | `repos/<repo>/CONTROL.md` and its gate evidence | Update when a gate, approved SHA, support state, blocker, next authorized work, or evidence basis changes. |
+| What managed records currently say in aggregate? | `tools/portfolio_registry.py` / `tools/show_portfolio_status.sh` | Re-run the generator. It reads CONTROL metadata; it does not write it or discover untracked repositories. |
+| What does current operational evidence show? | `tools/ingestion_dashboard.py` summary/JSON and `docs/HEALTH_CONTRACT.md` | Run a permitted read-only collection. Freshness and `UNKNOWN` are evidence outcomes, not documentation failures. |
+| What should happen next? | `ROADMAP.md`, then the target `CONTROL.md` | Refresh by review and authorized roadmap/control updates, never by a generated task list alone. |
+
+### How a repository enters the control plane
+
+1. Acknowledgement begins in `PORTFOLIO_UNIVERSE.md`; it does not grant inspection, publication, VPS, or runtime authority.
+2. When an operational support relationship is deliberately accepted, create a managed `repos/<repo>/CONTROL.md` record and state applicable standards, support state, boundaries, and next authorized work.
+3. The registry generator may then expose the CONTROL metadata as a derived summary. A source-only, restricted, or deferred asset receives only the controls proportional to its role.
+4. Health producers or adapters are added only for a workload that actually needs operational evidence. Their output remains subject to the health contract and evidence freshness rules.
+
+**Refresh is not discovery and is not Git activity.** A refresh either re-runs a generated view from existing records or collects permitted operational evidence. It never silently changes an authority document, upgrades an asset's importance, or makes an incomplete inventory complete.
+
+---
+
 ## Machine-readable metadata block
 
 Every CONTROL.md begins with a YAML front-matter block. This block is the machine-readable identity and state record consumed by portfolio tooling (registry scripts, Hermes inspectors, dashboard generators).

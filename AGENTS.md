@@ -22,6 +22,18 @@ Before acting:
 
 A request to read a file authorizes no Git or filesystem mutation.
 
+## Fresh-agent orientation
+
+For a new substantive task, read the root `README.md`, `docs/README.md`, `docs/OPERATING_MODEL.md`, `docs/PORTFOLIO_UNIVERSE.md`, `docs/REPOSITORY_WORK_PROTOCOL.md`, and `docs/GIT_WORKFLOW.md` before expanding into task-specific standards. Then use these read-only views for orientation:
+
+```sh
+./tools/show_portfolio_status.sh --no-color
+python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only
+./tools/show_ready_work.sh
+```
+
+They are generated routing aids, not authority. Confirm portfolio relationship in `PORTFOLIO_UNIVERSE.md`, managed state in the relevant `repos/<repo>/CONTROL.md`, operational evidence in the health contract and evidence artifacts, and execution priority in `ROADMAP.md` before acting.
+
 ## TODO.md
 
 `TODO.md` is task input written by Buddy or GPT.

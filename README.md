@@ -29,6 +29,23 @@ An engineer new to the control plane should read:
 
 [`docs/README.md`](docs/README.md) classifies the rest of the documentation into active authority, supporting technical reference, historical material, and private workflow context.
 
+## First agent orientation
+
+After the reading path, use the existing generated views to orient without treating them as authority:
+
+```sh
+# Managed repositories: purpose, lifecycle, control-record state, and next work.
+./tools/show_portfolio_status.sh --no-color
+
+# Operational evidence: current observations and explicit UNKNOWN states.
+python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only
+
+# Control-record tasks that are not currently blocked.
+./tools/show_ready_work.sh
+```
+
+These commands do not discover the entire filesystem, change repository state, or make a health claim from Git activity. `docs/PORTFOLIO_UNIVERSE.md` remains the known-asset authority, each `repos/<repo>/CONTROL.md` remains the managed-repository authority, and `ROADMAP.md` remains the next-work authority. `ROADMAP.md` completed milestones and public Git history provide public chronology; private result reports and journals are not assumed to be present in a clone. For a substantial task, follow `docs/REPOSITORY_WORK_PROTOCOL.md`: task → execution → result report → agent log → review/journal → intentional canonical update.
+
 ## Current stage
 
 This repository is in controlled stabilization and authority-alignment. Core control, workflow, health, and backup foundations exist; the immediate priority is reducing P0 operational uncertainty before broad portfolio migration or automation.
