@@ -42,6 +42,9 @@ python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only
 
 # Control-record tasks that are not currently blocked.
 ./tools/show_ready_work.sh
+
+# For an ambiguous “resume <repo>” question, generate context from its control record.
+./tools/show_portfolio_status.sh --context --repo palworld-kb
 ```
 
 These commands do not discover the entire filesystem, change repository state, or make a health claim from Git activity. `CONTROL_HEALTH` and `CONTROL_REVIEW` in the managed view describe the current control record, not live proof; use the health summary and dated evidence cards for current confidence. `docs/PORTFOLIO_UNIVERSE.md` remains the known-asset authority, each `repos/<repo>/CONTROL.md` remains the managed-repository authority, and `ROADMAP.md` remains the next-work authority. `ROADMAP.md` completed milestones and public Git history provide public chronology; private result reports and journals are not assumed to be present in a clone. For a substantial task, follow `docs/REPOSITORY_WORK_PROTOCOL.md`: task → execution → result report → agent log → review/journal → intentional canonical update.

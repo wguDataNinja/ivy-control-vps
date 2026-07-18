@@ -293,6 +293,11 @@ roadmap:
   gates: []
   blockers: []
   next_task: "<next-authorized-work-reference>"
+continuity:
+  current_focus: "<current bounded workstream>"
+  recent_milestone: "<most recent durable outcome; not a health claim>"
+  recent_reference: "<public commit, report, or canonical artifact reference>"
+  long_horizon: "<durable product or operational direction>"
 hermes:
   scope: "<read-only|read-only-with-pr|none>"
 codex_stops: []
@@ -305,6 +310,36 @@ evidence_basis: "<path-to-gate-evidence>"
 ### Field semantics
 
 Every field is defined in the field reference table below. The front matter is **required** for every CONTROL.md. Fields marked `optional` may be omitted or set to `null`. Fields marked `private` must not appear in public GitHub copies of CONTROL.md (use a tracked-but-redacted or `.gitignore`-excluded copy if needed). Fields marked `live-verification-dependent` must be refreshed from live inspection, not copied from a prior snapshot.
+
+### Continuity metadata
+
+The optional `continuity` block is the lightweight orientation layer for a
+managed repository. It belongs in `CONTROL.md`, not in a second README, TODO,
+registry, or private-memory file. It lets a fresh engineer or Hermes answer
+"what were we doing?" while retaining the existing authority split:
+
+| Field | Meaning | Must not replace |
+|---|---|---|
+| `current_focus` | The bounded workstream currently being advanced | `roadmap.next_task` / current authorization |
+| `recent_milestone` | Most recent durable, reviewable outcome | Git history, result reports, or dated evidence |
+| `recent_reference` | Public pointer that lets an agent verify the milestone | The underlying commit or artifact |
+| `long_horizon` | Stable product or operational direction | `ROADMAP.md` portfolio sequencing |
+
+Continuity text is orientation metadata, not a health claim, task queue, or
+permission grant. It must agree with `roadmap.blockers`, `roadmap.next_task`,
+the current CONTROL body, and the portfolio roadmap. Update it only when the
+focus or durable milestone changes; never update it merely because Git activity
+occurred. A repository without this optional block remains governed normally.
+
+#### Incremental migration
+
+Do not mass-fill continuity metadata from memory. Migrate one repository after
+checking its current `CONTROL.md`, public README/roadmap, relevant Git history,
+and any permissible dated evidence. Start with an actively supported workstream
+where the next bounded task is known. Use public commit or canonical-artifact
+references only; private session paths, sensitive data, and raw logs do not
+belong in the block. Revisit the block during the same review that changes a
+blocker, next authorized work, or durable milestone.
 
 ---
 
@@ -366,6 +401,7 @@ Managed-registry scripts consume the following fields from the metadata block fo
 | `database.present` | Whether the repo uses PostgreSQL |
 | `scheduler.active` | Description of active scheduler |
 | `hermes.scope` | Hermes authorization level |
+| `continuity.*` | Generated orientation context; advisory routing only |
 
 These fields are consumed by `tools/portfolio_registry.py` (or equivalent). They must be updated whenever a gate passes, the SHA changes, or the health state changes. A managed-registry update does not replace reading CONTROL.md for detailed governance, and it does not replace `PORTFOLIO_UNIVERSE.md` as the broader asset inventory.
 

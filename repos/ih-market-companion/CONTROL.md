@@ -50,6 +50,11 @@ roadmap:
   gates: [1]
   blockers: ["Userscript source authority unresolved (pending Buddy decision)"]
   next_task: "Buddy decides canonical userscript source; resolve acknowledgement destination and archive authority"
+continuity:
+  current_focus: "Resolve the canonical userscript, acknowledgement destination, and archive authority before market durability work."
+  recent_milestone: "Bounded collector manifest metadata was added; public market-site and private collection boundaries remain separate."
+  recent_reference: "Local commit ae50fd47; use the public README health checks only within their documented limits."
+  long_horizon: "A trustworthy public Idle Hacking market companion backed by explicit source, freshness, and archive contracts."
 hermes:
   scope: "read-only"
 codex_stops:

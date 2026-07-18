@@ -28,12 +28,13 @@ Before any Hermes bounded-work discovery, establish orientation through the smal
 | 4 | `docs/README.md` and `docs/OPERATING_MODEL.md` | Authority map, navigation, role and public/private boundary |
 | 5 | `docs/PORTFOLIO_UNIVERSE.md` and `ROADMAP.md` | Known assets and current portfolio priority |
 | 6 | `tools/show_portfolio_status.sh --no-color` | Generated managed-record orientation; not authority |
-| 7 | `python3 tools/ingestion_dashboard.py --summary --stdout-only` | Permitted read-only evidence summary; inspect mode must follow `VPS_ORCHESTRATION.md` |
-| 8 | `repos/<target-repo>/CONTROL.md` | Per-repo governance, permissions, blockers, next work |
-| 9 | `repos/<target-repo>/RELEASE_GATES.md` | Detailed gate evidence for the target repo |
-| 10 | `docs/HEALTH_CONTRACT.md`, `docs/GIT_WORKFLOW.md`, and `docs/LOGGING_STANDARD.md` | Read only when the proposed work concerns health, tracked change, or durable work record |
+| 7 | `python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only` | Local read-only evidence summary; a live inspection requires the separate VPS interaction mode |
+| 8 | `tools/show_portfolio_status.sh --context --repo <target>` | Generated continuity route: focus, recent milestone, short-term work, long horizon, and risk |
+| 9 | `repos/<target-repo>/CONTROL.md` | Per-repo governance, permissions, blockers, next work |
+| 10 | `repos/<target-repo>/RELEASE_GATES.md` | Detailed gate evidence for the target repo |
+| 11 | `docs/HEALTH_CONTRACT.md`, `docs/GIT_WORKFLOW.md`, and `docs/LOGGING_STANDARD.md` | Read only when the proposed work concerns health, tracked change, or durable work record |
 
-Steps 1–7 establish portfolio orientation. Steps 8–10 are target- and task-specific. Generated command output routes attention; it cannot authorize an action or override `CONTROL.md`, evidence, or a gate.
+Steps 1–7 establish portfolio orientation. Steps 8–11 are target- and task-specific. The context view is generated from optional `CONTROL.md` continuity metadata; it is not a second task system or authority. Generated command output routes attention; it cannot authorize an action or override `CONTROL.md`, evidence, or a gate.
 
 ---
 

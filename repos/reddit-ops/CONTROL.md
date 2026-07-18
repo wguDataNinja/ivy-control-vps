@@ -2,7 +2,7 @@
 control_model_version: "1.0"
 repository:
   slug: reddit-ops
-  purpose: "Active governance authority for Reddit Ops (WGU-Reddit PostgreSQL collector)."
+  purpose: "WGU Reddit PostgreSQL collector and corpus operations workload."
   remote: "git@github.com:wguDataNinja/WGU-Reddit-Feedback-Analyzer.git"
   default_branch: main
   approved_sha: "70474003444def9c6426a27d9ec73b11ee0e2340"
@@ -50,6 +50,11 @@ roadmap:
   gates: [1, 4, 5]
   blockers: ["Credential-bearing commit e4acae0 blocks Git publication", "VPS backup unit ExecStart drift (wrong script)"]
   next_task: "Strong Codex deploys corrected backup unit; OpenCode prepares monitor-role canonicality query design"
+continuity:
+  current_focus: "Repair the drifted backup unit through an approved packet and prepare monitor-only canonicality evidence."
+  recent_milestone: "Session 9 recorded natural backup/canonicality evidence and identified the installed backup-unit script drift."
+  recent_reference: "repos/reddit-ops/CONTROL.md, RUNBOOK.md, and ROADMAP §2A; producer checkout inspection is privacy-permission blocked on this Mac."
+  long_horizon: "A reliable, recoverable WGU Reddit corpus with one documented writer and evidence-backed canonicality."
 hermes:
   scope: "read-only"
 codex_stops:

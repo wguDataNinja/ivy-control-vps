@@ -37,6 +37,11 @@ roadmap:
   gates: [1]
   blockers: ["No remote configured for local checkout"]
   next_task: "Establish canonical remote and publication-readiness review; prepare Gate 4 readiness packet"
+continuity:
+  current_focus: "Establish a canonical remote and publication-readiness baseline before any scheduler or VPS readiness work."
+  recent_milestone: "Search-profile registry and recurring discovery prompt integration were added to the local intelligence workflow."
+  recent_reference: "Local commit 35a0246; repository remains local-only with unassessed private/outbox material."
+  long_horizon: "A reproducible public-information intelligence system with source monitoring, verification, and structured local reporting."
 hermes:
   scope: "read-only"
 codex_stops:

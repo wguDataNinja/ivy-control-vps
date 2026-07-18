@@ -52,6 +52,11 @@ roadmap:
   gates: []
   blockers: ["Privacy/publication and userscript authority gating issues", "IH ownership and acknowledgement decisions UNRESOLVED"]
   next_task: "Resolve IH ownership and acknowledgement decisions"
+continuity:
+  current_focus: "Resolve source ownership and acknowledgement authority before advancing metadata continuity or LLM work."
+  recent_milestone: "PostgreSQL archive metadata persistence was added while the replayable chat baseline and bounded manifests were preserved."
+  recent_reference: "Local commit 61379d382; verify current corpus/privacy state in the repository before any action."
+  long_horizon: "A privacy-safe, provenance-preserving Idle Hacking knowledge system with replayable capture and bounded LLM workflows."
 hermes:
   scope: "read-only"
 codex_stops:

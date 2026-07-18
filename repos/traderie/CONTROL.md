@@ -2,7 +2,7 @@
 control_model_version: "1.0"
 repository:
   slug: traderie
-  purpose: "Active governance authority for Traderie within IvyControlVPS."
+  purpose: "Diablo II market-data pipeline for transparent, segment-separated completed-trade analysis."
   remote: "git@github.com:wguDataNinja/d2-market-helper.git"
   default_branch: master
   approved_sha: "e5ebd0f6dd41bcb4e1d8a88f272be89b225cfd40"
@@ -50,6 +50,11 @@ roadmap:
   gates: [1, 2, 3, 4, 5]
   blockers: ["pc_hc_nl timeout on 2026-07-16 natural run"]
   next_task: "Session 5 §7A — Traderie production recovery"
+continuity:
+  current_focus: "Focused pc_hc_nl natural-run timeout recovery with runtime/progress evidence; do not reopen architecture."
+  recent_milestone: "Bounded instrumentation markers and error classification were added for the segmented generation path."
+  recent_reference: "Local commit 2967f8e; verify the next action against repos/traderie/CONTROL.md and ROADMAP §2E."
+  long_horizon: "A reliable, transparent multi-source Diablo II market intelligence pipeline with separated in-game and cash evidence."
 hermes:
   scope: "read-only"
 codex_stops:

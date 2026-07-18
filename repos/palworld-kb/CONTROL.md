@@ -2,7 +2,7 @@
 control_model_version: "1.0"
 repository:
   slug: palworld-kb
-  purpose: "Active governance authority for Palworld KB within IvyControlVPS."
+  purpose: "Provenance-backed Palworld gameplay knowledge base with human-gated canonical promotion."
   remote: "https://github.com/wguDataNinja/palworld-kb.git"
   default_branch: main
   approved_sha: "1c8d411406ce45cf948390e82f1e8494ca0352b6"
@@ -47,6 +47,11 @@ roadmap:
   gates: [1, 2, 3]
   blockers: []
   next_task: "ROADMAP.md §6F — footprint review, Hermes admission packet, source-only VPS clone"
+continuity:
+  current_focus: "Workflow remediation and bounded source-only admission preparation; content quality remains the main product work."
+  recent_milestone: "Promotion foundation is implemented and a workflow-readiness audit identified remaining lifecycle remediation."
+  recent_reference: "Local commit 004e996 and agent-reports/SESSION_JOURNAL.md; review acceptance remains pending."
+  long_horizon: "A provenance-backed, agent-ready Palworld knowledge base with human-gated canonical promotion."
 hermes:
   scope: "read-only"
 codex_stops:

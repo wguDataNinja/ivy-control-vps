@@ -24,6 +24,7 @@ from tools.portfolio_registry import (
     display_name_from_title,
     build_registry,
     format_table,
+    format_context,
     format_json,
     validate_registry,
     normalize_repo_id,
@@ -280,6 +281,13 @@ class TestParseControlMd:
         assert rec["display_name"] == "Test System"
         assert rec["purpose"] == "A durable test system"
 
+    def test_yaml_extracts_continuity_metadata(self):
+        text = "---\nrepository:\n  slug: test\n  purpose: Test system\nlifecycle:\n  state: source-only\ncontinuity:\n  current_focus: Bound work\n  recent_milestone: Durable outcome\n  recent_reference: commit abc123\n  long_horizon: Long direction\n---\n# Test System"
+        rec = parse_control_md("test", text)
+        assert rec["current_focus"] == "Bound work"
+        assert rec["recent_milestone"] == "Durable outcome"
+        assert rec["long_horizon"] == "Long direction"
+
     def test_with_baseline_info(self):
         baseline = {"repo_id": "traderie", "display_name": "Traderie"}
         rec = parse_control_md("traderie", TRADERIE, baseline)
@@ -332,6 +340,14 @@ class TestFormat:
         assert "records" in parsed
         assert parsed["record_count"] == len(records)
         assert parsed["records"][0]["repo_id"] == "traderie"
+
+    def test_context_is_generated_routing_not_health(self):
+        records = build_registry(repo_filter="traderie")
+        output = format_context(records)
+        assert "generated from CONTROL.md" in output
+        assert "Current focus:" in output
+        assert "Long horizon:" in output
+        assert "not current operational evidence" in output
 
 
 # ── Validation ─────────────────────────────────────────────────────────
@@ -420,6 +436,15 @@ class TestCli:
         )
         assert "traderie" in result.stdout
         assert "reddit-ops" not in result.stdout.lower() or "reddit" not in result.stdout.lower()
+
+    def test_cli_context(self):
+        result = subprocess.run(
+            [sys.executable, "tools/portfolio_registry.py", "--context", "--repo", "traderie"],
+            capture_output=True, text=True, cwd=BASE_DIR,
+        )
+        assert result.returncode == 0
+        assert "Traderie" in result.stdout
+        assert "Current focus:" in result.stdout
 
     def test_cli_json_output(self):
         with tempfile.TemporaryDirectory() as tmp:

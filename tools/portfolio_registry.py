@@ -8,6 +8,7 @@ Repos without CONTROL.md appear as placeholders sourced from PORTFOLIO_BASELINE.
 Usage:
     python tools/portfolio_registry.py --json
     python tools/portfolio_registry.py --table
+    python tools/portfolio_registry.py --context --repo traderie
     python tools/portfolio_registry.py --validate
     python tools/portfolio_registry.py --repo traderie --json
 """
@@ -368,6 +369,10 @@ def parse_control_md(
         "repo_id": repo_id,
         "display_name": UNKNOWN,
         "purpose": UNKNOWN,
+        "current_focus": UNKNOWN,
+        "recent_milestone": UNKNOWN,
+        "recent_reference": UNKNOWN,
+        "long_horizon": UNKNOWN,
         "source": MISSING,
         "_yaml_present": "false",
         "lifecycle": UNKNOWN,
@@ -407,6 +412,10 @@ def parse_control_md(
         rec["_yaml_present"] = "true"
         rec["repo_id"] = yaml_meta.get("repository.slug", repo_id)
         rec["purpose"] = yaml_meta.get("repository.purpose", UNKNOWN)
+        rec["current_focus"] = yaml_meta.get("continuity.current_focus", UNKNOWN)
+        rec["recent_milestone"] = yaml_meta.get("continuity.recent_milestone", UNKNOWN)
+        rec["recent_reference"] = yaml_meta.get("continuity.recent_reference", UNKNOWN)
+        rec["long_horizon"] = yaml_meta.get("continuity.long_horizon", UNKNOWN)
         body_title = next((line for line in body.splitlines() if line.startswith("# ")), "")
         rec["display_name"] = yaml_meta.get("display_name", yaml_meta.get("name",
             display_name_from_title(body_title)))
@@ -620,6 +629,34 @@ def format_json(records: list[dict[str, str]]) -> str:
     return json.dumps(payload, indent=2)
 
 
+def format_context(records: list[dict[str, str]]) -> str:
+    """Render a generated orientation brief from CONTROL metadata.
+
+    This output is intentionally routing-only: the referenced CONTROL record,
+    ROADMAP, and dated evidence remain authoritative for any action or claim.
+    """
+    lines = [
+        "Ivy Control repository context (generated from CONTROL.md)",
+        "Confirm authority, evidence, and approval boundaries before acting.",
+    ]
+    for rec in records:
+        lines.extend([
+            "",
+            f"## {rec['display_name']} ({rec['repo_id']})",
+            f"Purpose: {rec['purpose']}",
+            f"Lifecycle / control health: {rec['lifecycle']} / {rec['health']}",
+            f"Current focus: {rec['current_focus']}",
+            f"Recent milestone: {rec['recent_milestone']}",
+            f"Recent reference: {rec['recent_reference']}",
+            f"Short-term authorized work: {rec['next_task']}",
+            f"Long horizon: {rec['long_horizon']}",
+            f"Risk / blocker: {rec['blocker']}",
+            f"Control review: {rec['last_verified']} (not current operational evidence)",
+            f"Authority: {rec['source']}",
+        ])
+    return redact("\n".join(lines) + "\n")
+
+
 def validate_registry(records: list[dict[str, str]]) -> list[dict[str, str]]:
     """Run validation rules against the registry. Returns list of issues."""
     issues: list[dict[str, str]] = []
@@ -760,6 +797,8 @@ def main() -> int:
     )
     parser.add_argument("--json", action="store_true", help="Output as JSON (default: table)")
     parser.add_argument("--table", action="store_true", help="Output as human-readable table")
+    parser.add_argument("--context", action="store_true",
+                        help="Output generated repository continuity/orientation context")
     parser.add_argument("--validate", action="store_true", help="Run validation and exit")
     parser.add_argument("--repo", type=str, default=None, help="Filter by repo_id")
     parser.add_argument("--no-placeholders", dest="placeholders", action="store_false", default=True)
@@ -787,6 +826,12 @@ def main() -> int:
         else:
             print("Validation: 0 issues found — all records clean.")
             return 0
+
+    if args.context:
+        if args.output:
+            parser.error("--context cannot be combined with --output")
+        sys.stdout.write(format_context(records))
+        return 0
 
     want_json = args.json or (args.output is not None)
     if want_json:
