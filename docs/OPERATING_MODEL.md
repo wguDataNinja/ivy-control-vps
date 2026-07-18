@@ -4,7 +4,7 @@
 
 ## Purpose
 
-IvyControlVPS is the portfolio control plane for active Ivy VPS operations. It owns:
+IvyControlVPS is the portfolio control plane for the Ivy engineering portfolio. It owns:
 
 - portfolio operational governance, topology, and standards;
 - health contracts, backup/restore, archive and retention rules;
@@ -15,15 +15,31 @@ IvyControlVPS is the portfolio control plane for active Ivy VPS operations. It o
 
 Managed repositories remain separate projects with their own code, data, implementation schemas, runtime behavior, tests, and local workflows. Together they present a cohesive standard of engineering, documentation, operations, and automation. Differences between repositories are justified by their actual purpose rather than by habit.
 
-Current work is implementation mode, where task-specific Buddy authorization controls each change. Later production admission activates stricter production operating rules. This document defines the operating model; per-repository current state is maintained in `docs/PORTFOLIO_BASELINE.md`.
+Current work is implementation mode, where task-specific Buddy authorization controls each change. Later production admission activates stricter production operating rules. This document defines the operating model; `ROADMAP.md` owns current portfolio execution priorities and `repos/<repo>/CONTROL.md` owns current managed-repository state. `docs/PORTFOLIO_BASELINE.md` is a dated assessment reference, not the live authority.
+
+## Portfolio dimensions
+
+Ivy Control serves repositories; repositories do not exist to satisfy Ivy Control. The portfolio therefore keeps these dimensions independent:
+
+| Dimension | Question | Authority |
+|---|---|---|
+| Portfolio value | Why does this asset matter? | `docs/PORTFOLIO_UNIVERSE.md` |
+| Operational priority | Where does uncertainty create loss now? | `ROADMAP.md` |
+| Lifecycle / support state | What operational support is authorized? | `repos/<repo>/CONTROL.md` |
+| Evidence confidence | What current proof exists, and is it still valid? | `docs/HEALTH_CONTRACT.md` and dated evidence |
+| Exposure class | What may be public, private, restricted, or absent from VPS operation? | Portfolio universe and applicable control record |
+
+**Not admitted does not mean unimportant.** Admission is an operational capability decision: it says an asset is ready for a specified support model, such as source-only review, a batch procedure, or production runtime. It is not a portfolio ranking, quality score, or requirement that a valuable asset deploy to the VPS.
+
+**P0 means uncertainty creates loss.** P0 work protects irreplaceable data, collection continuity, recovery confidence, or another condition where lack of current evidence can cause material loss. It is not a measure of a project's novelty, polish, or personal interest.
 
 ## Living standards
 
 Shared standards documented here are baselines, not blind templates. Every repository must be reviewed against its actual contents, runtime environment, data flows, workflows, and public presentation. Templates are starting points; they must evolve when new repositories, workflows, incidents, or operational needs expose gaps.
 
-## Workflow classification
+## Operational support classification
 
-Workflows are classified by VPS readiness. Every roadmap must classify each meaningful workflow into exactly one category:
+Workflows are classified by the support model they may use. This classification is operational only and must not be used to infer portfolio value.
 
 | # | Category | Meaning |
 |---|----------|---------|
@@ -37,7 +53,7 @@ Workflows are classified by VPS readiness. Every roadmap must classify each mean
 
 ## Ingestion-first admission
 
-Portfolio planning distinguishes ingestion operational readiness from full public repository maturity.
+Portfolio planning distinguishes ingestion operational readiness from full public repository maturity. It also distinguishes both from the decision to acknowledge an asset in the portfolio universe.
 
 **Ingestion operational readiness** is the minimum evidence required to move authoritative data collection to the VPS safely: one scheduler, one writer, deterministic entrypoints, visible health, backup/restore proof, rollback path, exact deployed revision, and documented cutover authority.
 

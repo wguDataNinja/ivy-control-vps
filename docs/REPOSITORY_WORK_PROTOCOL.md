@@ -74,7 +74,7 @@ The report is the primary handoff artifact between the executing agent, GPT, Bud
 
 | Repository | Prompt location | Result-report location | Log location |
 |---|---|---|---|
-| Ivy Control VPS | `_internal/inbox/session-<N>/` | `_internal/outbox/session<N>/` | `_internal/logs/agents/YYYY-MM-DD/` |
+| Ivy Control VPS | `_internal/inbox/session-<N>/` | `_internal/outbox/session-<N>/` | `_internal/logs/agents/YYYY-MM-DD/` |
 | Palworld KB | `_inbox/` | `agent-reports/` (by type) | `logs/agent-log.md` |
 | SJC Intel | (none defined) | `_outbox/` | `logs/agents/` |
 | Other repos | `_inbox/`, `inbox/`, or documented equivalent | `_outbox/`, `outbox/`, or documented equivalent | `logs/` or documented equivalent |
@@ -108,6 +108,32 @@ A separate agent execution log is required when the repository or portfolio logg
 | **Gate packets** | High-reasoning decision evidence | Evidence only |
 
 Evidence is not canonical authority. Durable decisions should be promoted to the appropriate canonical document.
+
+### Work-continuity lifecycle
+
+For substantial work, the normal lifecycle is:
+
+```text
+task intent (inbox artifact or direct handoff)
+  → bounded execution
+  → outbox result report
+  → agent execution log when meaningful work occurred
+  → review and acceptance meaning
+  → journal navigation entry
+  → intentional promotion into canonical documentation when durable truth changed
+```
+
+Each artifact has one role:
+
+| Artifact | Role | Does not become |
+|---|---|---|
+| Inbox | Task intent, scope, constraints, and validation expectations | Decision or architecture authority |
+| Result report | Consolidated outcome, evidence, validation, risks, and next handoff | Permanent documentation automatically |
+| Agent log | Concise execution chronology | A second result report or architecture explanation |
+| Journal | Navigation across reviewed substantial results | A task transcript |
+| Canonical documentation | Settled operating, product, or policy truth | A replacement for task evidence |
+
+An inbox artifact is preferred for multi-step or cross-session work, but a direct handoff remains valid when recorded in the result report. Read-only exploration, brief questions, and trivial safe changes may use a reduced workflow; substantial implementation, audit, architecture, durable-artifact, or operational work must use the full evidence path.
 
 ---
 

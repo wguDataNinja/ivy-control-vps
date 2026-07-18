@@ -11,6 +11,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`README.md`](../README.md) | Public repository overview — purpose, current stage, design principles |
 | [`ROADMAP.md`](../ROADMAP.md) | Portfolio-wide roadmap — ingestion-first readiness campaign, shared VPS platform workstreams, and controlled cutover waves |
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
+| [`PORTFOLIO_UNIVERSE.md`](PORTFOLIO_UNIVERSE.md) | Curated known portfolio universe — asset relationship, classification, value context, and discovery confidence; not live operational status |
 | [`RESIDENT_AGENT_MODEL.md`](RESIDENT_AGENT_MODEL.md) | Resident Agent Interface (RAI) architecture — why resident agents exist, file-backed bridge, verification principle, separation of interface from implementation |
 | [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md) | Portfolio repository-control model — governance mechanism, standards applicability, gate framework, approved SHA tracking |
 | [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Git workflow — branch naming, commits, PRs, agents, VPS provisional rules, git-steward delegation |
@@ -30,7 +31,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | Document | Purpose |
 |----------|---------|
 | [`VPS_ACCESS.md`](VPS_ACCESS.md) | VPS access procedures — SSH, SCP, desktop access, identity key management |
-| [`VPS_ADMISSION_CHECKLIST.md`](VPS_ADMISSION_CHECKLIST.md) | VPS repository admission evidence checklist — required gates before any portfolio repository can be deployed |
+| [`VPS_ADMISSION_CHECKLIST.md`](VPS_ADMISSION_CHECKLIST.md) | VPS repository admission evidence checklist — supporting checklist for the deployment requirements in `PORTFOLIO_CONVENTIONS.md` |
 | [`DATABASE.md`](DATABASE.md) | Database architecture and operations — PostgreSQL topology, schema ownership, migrations, backup/restore, and operation history |
 | [`HERMES_OPERATOR_GUIDE.md`](HERMES_OPERATOR_GUIDE.md) | Hermes operator guide — bridge protocol, orientation, independent verification, file-based communication loop |
 
@@ -79,41 +80,53 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`../_internal/GPT_ORCHESTRATED_WORKFLOW.md`](../_internal/GPT_ORCHESTRATED_WORKFLOW.md) | Private GPT-orchestrated workflow authority — numbered handoffs, gates, session logs, ad-hoc tasks, session close |
 | [`../_internal/vps-inventory-and-runbook.md`](../_internal/vps-inventory-and-runbook.md) | Private VPS inventory and runbook — host identity, SSH access, workload map, capacity evidence, read-only procedures |
 
-### Portfolio baseline
+### Portfolio inventory and assessment
 
 | Document | Purpose |
 |----------|---------|
-| [`PORTFOLIO_BASELINE.md`](PORTFOLIO_BASELINE.md) | Portfolio-wide repository baseline — inventory, current state, LLM inventory, standards gaps, sequencing |
+| [`PORTFOLIO_BASELINE.md`](PORTFOLIO_BASELINE.md) | Dated portfolio assessment baseline — historical inventory, patterns, and gaps; current state remains in ROADMAP and CONTROL records |
 
 ## Reading order for a new maintainer or agent
 
 1. `README.md` — what this repository is and is not
-2. `OPERATING_MODEL.md` — how the repository and portfolio are governed
-3. `RESIDENT_AGENT_MODEL.md` — resident-agent architecture and interface (RAI)
-4. `REPOSITORY_CONTROL_MODEL.md` — how portfolio standards apply to each repository
-5. Applicable portfolio standards (read per task):
+2. `ROADMAP.md` — what requires attention now and why
+3. `OPERATING_MODEL.md` — why the control plane exists and how the portfolio is governed
+4. `PORTFOLIO_UNIVERSE.md` — what is known to exist; read this before inferring importance from admission
+5. `REPOSITORY_CONTROL_MODEL.md` — how portfolio standards apply to each managed repository
+6. Applicable portfolio standards (read per task):
    - `PORTFOLIO_CONVENTIONS.md` — shared technical conventions and VPS admission requirements
    - `HEALTH_CONTRACT.md` — health reporting contract and producer registry
    - `DATA_LIFECYCLE_STANDARD.md` — retention, pruning, storage thresholds
    - `LOGGING_STANDARD.md` — logging for machine, agent, and planning work
    - `GIT_WORKFLOW.md` — Git branch naming, commits, agent rules
    - `LLM_TENETS.md` — LLM system design principles
-6. Repository control sheet — `repos/<repo>/CONTROL.md` for repo-specific evidence, exceptions, blockers, and current VPS admission status
-7. Detailed gate evidence or phase packet only when the task requires gate-specific detail
-8. For GPT-orchestrated session work, read `_internal/GPT_ORCHRONESTED_WORKFLOW.md` (private) for numbered handoffs, gate packets, session logging, and session close
-9. For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures
-10. For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification
+7. Repository control sheet — `repos/<repo>/CONTROL.md` for repo-specific evidence, exceptions, blockers, and current support state
+8. Detailed gate evidence or phase packet only when the task requires gate-specific detail
+9. For GPT-orchestrated session work, read `_internal/GPT_ORCHESTRATED_WORKFLOW.md` (private) for numbered handoffs, gate packets, session logging, and session close
+10. For VPS operational work, first read `_internal/vps-inventory-and-runbook.md` (private) for host identity, SSH access, workload map, current capacity, and read-only assessment procedures
+11. For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification
 
 ## Authority model
 
 ### Hierarchy
 
+| Question | Authority |
+|---|---|
+| Why does Ivy Control exist? | `docs/OPERATING_MODEL.md` |
+| What exists and how does it relate to the portfolio? | `docs/PORTFOLIO_UNIVERSE.md` |
+| What happens next? | `ROADMAP.md` |
+| What is currently authorized or true for one managed repository? | `repos/<repo>/CONTROL.md` |
+| What proves workload health and evidence confidence? | `docs/HEALTH_CONTRACT.md` plus dated producer/evidence artifacts |
+| How do humans and agents perform and preserve work? | `docs/REPOSITORY_WORK_PROTOCOL.md` |
+| What is private and how is private orchestration handled? | `_internal/GPT_ORCHESTRATED_WORKFLOW.md` |
+
 `ROADMAP.md` is the portfolio-wide execution authority. Per-repo `CONTROL.md` files govern individual repository lifecycle, production authority, and gate status. Portfolio standards (`PORTFOLIO_CONVENTIONS.md`, `HEALTH_CONTRACT.md`, `DATA_LIFECYCLE_STANDARD.md`, etc.) define cross-repo conventions that CONTROL.md records must comply with or explicitly deviate from.
 
 ```
-ROADMAP.md (portfolio-wide execution authority)
-  └── repos/<repo>/CONTROL.md (per-repo lifecycle, gates, deviations)
-        └── standards/ (cross-repo conventions)
+PORTFOLIO_UNIVERSE.md (known assets and relationships)
+  └── ROADMAP.md (portfolio-wide execution priority)
+        └── repos/<repo>/CONTROL.md (managed lifecycle, support, gates, deviations)
+              └── standards and dated evidence (how claims are evaluated)
 ```
 
 A repo `CONTROL.md` may grant a standards exception; the standards may not override a CONTROL.md exception. `ROADMAP.md` may override a CONTROL.md gate only during an authorized campaign phase.
@@ -132,9 +145,11 @@ Each managed repository has a control sheet at `repos/<repo>/CONTROL.md` that re
 
 A repository without a CONTROL.md is not yet under active portfolio governance.
 
-### Portfolio registry
+### Portfolio universe and managed registry
 
-The portfolio registry is a derived/aggregated view of all CONTROL.md records, not a separate static authority. It is generated by a tool (e.g., `tools/portfolio_registry.py` or extended `ingestion_dashboard.py`) that reads CONTROL.md files and canonical health outputs. The registry does not replace CONTROL.md as the per-repo source of truth.
+`PORTFOLIO_UNIVERSE.md` is the curated, human-readable known asset universe. It includes infrastructure, historical lineage, restricted assets, and acknowledged external/private assets as appropriate. It is explicitly incomplete until a separately approved discovery task reconciles it.
+
+The **managed registry** is a derived/aggregated view of CONTROL.md records, generated by a tool such as `tools/portfolio_registry.py` or an extended health view. It does not replace CONTROL.md as the per-repo source of truth, and it is not the complete portfolio universe.
 
 ### Session artifacts
 

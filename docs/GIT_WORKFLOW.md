@@ -1,24 +1,14 @@
 # Git Workflow
 
-**Status:** Local-development standard for the Mac-based repository. Portfolio-wide Git conventions remain pending — see the conventions list below.
+**Status:** Current Git engineering standard for the Mac-based portfolio control plane. Existing repositories and history are preserved unless a separate migration is authorized; these conventions do not authorize renames, rewrites, publication, or deployment.
 
-### Pending portfolio-wide Git conventions
+## Naming and identity
 
-The following are explicitly not defined here and must be drafted as a separate portfolio-wide standard before they become requirements:
-
-- Repository naming convention
-- Default branch policy
-- Commit-message house style
-- Pull-request policy and review requirements
-- Public-by-default engineering history expectations
-- Private runtime-data exclusion from public repositories
-- Initial publication review process
-- Git history sanitization procedure
-- Agent Git write authority model (beyond the existing local-agent rules)
-- Exact-SHA deployment tagging
-- Tag and release versioning
-
-This document preserves the operator/implementation model for the local checkout. The portfolio-wide standard will supersede or extend these rules for the full portfolio.
+- Prefer lowercase kebab-case for new repository names and canonical Ivy portfolio slugs: `reddit-ops`, `sjc-intel`, `ivy-control-vps`.
+- Preserve established repository names, URLs, default branches, and language-specific package names. A legacy underscore name is not a reason to rename a repository.
+- Python packages/modules use lowercase snake_case when the language requires it. Repository and package names need not match.
+- Canonical durable filenames are `README.md`, `AGENTS.md`, `CONTROL.md`, and `RELEASE_GATES.md` when those roles apply.
+- New task/session identifiers use `session-<N>` and `agent-<N>-<descriptive-slug>`; see `docs/REPOSITORY_WORK_PROTOCOL.md`.
 
 ## Principles
 
@@ -199,18 +189,22 @@ Suggested types:
 - `ops/`
 - `chore/`
 - `recovery/`
+- `architecture/`
 
 The private `_internal/` repository may normally remain on `main` because it has no remote and no collaboration workflow.
 
 ## Commit messages
 
-Use concise imperative messages describing one coherent change.
+Use one coherent change per commit. For new portfolio-managed work, prefer scoped Conventional Commit syntax:
 
 Examples:
 
-- `Clarify private repository boundary`
-- `Record agent workflow decision`
-- `Fix documentation links`
+- `docs(control-plane): define portfolio universe`
+- `feat(health): add evidence card schema`
+- `fix(reddit-ops): correct collector validation`
+- `ops(backup): record restore verification procedure`
+
+The scope is optional when it adds no clarity. Existing concise imperative history remains valid and must not be rewritten for style. Keep migrations with their necessary validation and rollback material when they are one coherent change.
 
 Public and private changes must be committed in their respective repositories.
 
@@ -220,6 +214,14 @@ Public and private changes must be committed in their respective repositories.
 - Agents do not merge public work unless the task explicitly authorizes a bounded integration after validation.
 - The private repository is never merged into the public repository.
 - Buddy remains the default authority for policy and public-history decisions.
+
+## Branch and review model
+
+- `main` is the intended default integration branch for new or actively published repositories. Legacy default branches remain in place until a separately approved migration.
+- Use a short-lived task branch by default for tracked work. Typical prefixes are `docs/`, `feat/`, `fix/`, `ops/`, `chore/`, `recovery/`, and `architecture/`.
+- Direct public commits to `main` are exceptional: Buddy must explicitly authorize the exact bounded change, and normal validation/review still applies.
+- Pull requests are preferred when the repository has a suitable review surface. A reviewable branch plus exact diff and validation evidence remains the minimum until then.
+- Agents may inspect, edit within their task scope, create proposals, and run validation. Implementation agents do not directly stage, commit, push, merge, delete, restore, clean, or rewrite history. `git-steward` performs only explicitly authorized exact-path Git writes.
 
 ## Dirty trees and recovery
 

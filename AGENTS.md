@@ -229,7 +229,7 @@ This repository follows the Ivy portfolio work protocol (`docs/REPOSITORY_WORK_P
 - **Governing protocol:** Ivy portfolio work protocol
 - **Current planning authority:** `ROADMAP.md` (portfolio-wide) + `TODO.md` (session-scoped)
 - **Task-prompt location:** `_internal/inbox/session-<N>/` (optional — direct handoffs accepted)
-- **Task-result location:** `_internal/outbox/session<N>/`
+- **Task-result location:** `_internal/outbox/session-<N>/`
 - **Session record:** `_internal/logs/sessions/GPT-<N>-<slug>.md`
 - **Agent execution logs:** `_internal/logs/agents/YYYY-MM-DD/<slug>.md`
 - **Portfolio journal:** `_internal/logs/sessions/SESSION_JOURNAL.md`

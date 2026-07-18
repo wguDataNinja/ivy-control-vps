@@ -16,7 +16,7 @@ ivy-control-vps is the portfolio control plane. It owns:
 - agent instruction model (`AGENTS.md`)
 - public roadmap conventions (when a `ROADMAP.md` exists for a workstream)
 
-Managed repositories remain separate codebases with their own code, data, tests, and local workflows.
+Managed repositories remain separate codebases with their own code, data, tests, and local workflows. A managed control record describes an operational support relationship; it does not assign portfolio value or require VPS deployment.
 
 ---
 
@@ -220,6 +220,7 @@ CONTROL.md must be reviewed or updated when:
 | `_internal/outbox/` and `_internal/tasks/` | Private gate-evidence packets and ad-hoc task artifacts. Not governance; evidence only. See `_internal/GPT_ORCHESTRATED_WORKFLOW.md`. |
 | `docs/PORTFOLIO_CONVENTIONS.md` | Durable cross-repo conventions. Referenced by CONTROL.md applicability matrix. |
 | `docs/DATA_LIFECYCLE_STANDARD.md` | Portfolio data-lifecycle principles. Referenced by CONTROL.md. |
+| `docs/PORTFOLIO_UNIVERSE.md` | Curated known asset universe and portfolio relationship. It may acknowledge assets that do not have and should not receive a CONTROL.md record. |
 
 ---
 
@@ -327,7 +328,7 @@ The canonical list of portfolio-wide Buddy decisions is maintained in ROADMAP §
 
 ## Registry-facing fields
 
-Portfolio registry scripts consume the following fields from the metadata block for aggregation and dashboard generation:
+Managed-registry scripts consume the following fields from the metadata block for aggregation and health/dashboard views:
 
 | Field | Purpose |
 |-------|---------|
@@ -343,7 +344,7 @@ Portfolio registry scripts consume the following fields from the metadata block 
 | `scheduler.active` | Description of active scheduler |
 | `hermes.scope` | Hermes authorization level |
 
-These fields are consumed by `tools/portfolio_registry.py` (or equivalent). They must be updated whenever a gate passes, the SHA changes, or the health state changes. A registry update does not replace reading CONTROL.md for detailed governance.
+These fields are consumed by `tools/portfolio_registry.py` (or equivalent). They must be updated whenever a gate passes, the SHA changes, or the health state changes. A managed-registry update does not replace reading CONTROL.md for detailed governance, and it does not replace `PORTFOLIO_UNIVERSE.md` as the broader asset inventory.
 
 ---
 
