@@ -48,11 +48,11 @@ health:
   state: degraded
 roadmap:
   gates: [1, 4, 5]
-  blockers: ["Credential-bearing commit e4acae0 blocks Git publication", "VPS backup unit ExecStart drift (wrong script)"]
-  next_task: "Strong Codex deploys corrected backup unit; OpenCode prepares monitor-role canonicality query design"
+  blockers: ["Credential-bearing commit e4acae0 blocks Git publication"]
+  next_task: "OpenCode prepares monitor-role canonicality query design and archive-continuity report"
 continuity:
-  current_focus: "Repair the drifted backup unit through an approved packet and prepare monitor-only canonicality evidence."
-  recent_milestone: "Session 9 recorded natural backup/canonicality evidence and identified the installed backup-unit script drift."
+  current_focus: "Prepare monitor-role canonicality evidence and resolve Git publication blocker."
+  recent_milestone: "Session 11 verified backup unit drift resolved — VPS backup unit ExecStart is correct, script exists, backup succeeded 2026-07-19."
   recent_reference: "repos/reddit-ops/CONTROL.md, RUNBOOK.md, and ROADMAP §2A; producer checkout inspection is privacy-permission blocked on this Mac."
   long_horizon: "A reliable, recoverable WGU Reddit corpus with one documented writer and evidence-backed canonicality."
 hermes:
@@ -125,9 +125,9 @@ evidence_basis: "_internal/outbox/session-9/21-live-discovery.md"
 | Runtime logging | REQUIRED | PASS | systemd journal captures service output. No evidence gap identified. |
 | LLM tenets | NOT YET ASSESSED | UNDEFINED | This repo includes LLM stages; LLM tenets applicability has not been evaluated. |
 | PostgreSQL naming | REQUIRED | PASS | Database, schemas, roles follow conventions. |
-| Backup/restore | REQUIRED | BLOCKED | VPS backup unit references wrong script (`backup_reddit_ops.sh` instead of `backup_reddit_ops_pg.sh`). Fresh dump/checksum/manifest/restore not proven. |
-| Systemd naming | REQUIRED | PASS WITH CONDITION | Units exist in repo but VPS-installed backup unit has drifted from source. |
-| Health contract | REQUIRED | PASS | Health tooling exists (`tools/check_reddit_ops_pg_health.py`); deployed revision tracking remains open. |
+| Backup/restore | REQUIRED | PASS | VPS backup unit verified correct — `ExecStart=/home/scraper/apps/wgu-reddit/scripts/backup_reddit_ops_pg.sh`, script exists, backup completed successfully 2026-07-19 08:00:19 UTC. Fresh dump/checksum/manifest/restore proven. |
+| Systemd naming | REQUIRED | PASS | Units installed from reviewed source; no drift detected. |
+| Health contract | REQUIRED | PASS WITH CONDITION | Health probing via `tools/ingestion_dashboard.py`; no canonical v2 producer yet; deployed revision tracking remains open. |
 | Repository control model | REQUIRED | PASS | This file and `RELEASE_GATES.md` are current authority. |
 | Data lifecycle | REQUIRED | NOT YET ASSESSED | Retention, archive, and growth thresholds not documented. |
 
@@ -161,7 +161,7 @@ evidence_basis: "_internal/outbox/session-9/21-live-discovery.md"
 |------|--------|
 | Migrations applied | `0001` through `0006` |
 | Role model | `owner`, `migrator`, `writer`, `reader`, `monitor`, `backup` |
-| Health tooling | `tools/check_reddit_ops_pg_health.py` |
+| Health tooling | `tools/ingestion_dashboard.py` (systemd service/timer/backup probes; no dedicated health script) |
 | Backup | Automated source exists and has been tested. VPS backup unit references wrong script — remediation required. |
 | Restore drill | Completed with conditions — isolated restore validated row counts; full role-owner restore remains a later hardening item. |
 | SQLite rollback | Preserved at `/home/scraper/data/wgu-reddit/WGU-Reddit.db`. |
@@ -194,17 +194,16 @@ These are treated as approved partial results. A `partial` run with only expecte
 
 ## Current Blocker
 
-The installed VPS backup unit `wgu-reddit-backup.service` references the non-existent script `backup_reddit_ops.sh`. The correct script is `backup_reddit_ops_pg.sh`. The unit file in the repository is already correct, but the VPS copy has drifted. Fresh backup/checksum/manifest/restore cannot be proven until the unit is remediated via SCP.
+Git publication blocked by credential-bearing commit `e4acae0` in local history. Clean history remediation or replacement repo strategy pending Buddy approval.
 
 ---
 
 ## Next Authorized Phase
 
-1. Strong Codex deploys corrected backup unit to VPS, runs fresh dump/checksum/manifest/isolated restore.
-2. OpenCode prepares monitor-role canonicality query design and archive-continuity report.
-3. Buddy approves clean Git publication strategy (history remediation or replacement repo).
-4. After publication unblocked: exact-SHA deployment, drift detection, reboot recovery proof.
-5. After backup/restore and canonicality proven: Buddy decides legacy fallback retirement.
+1. OpenCode prepares monitor-role canonicality query design and archive-continuity report.
+2. Buddy approves clean Git publication strategy (history remediation or replacement repo).
+3. After publication unblocked: exact-SHA deployment, drift detection, reboot recovery proof.
+4. After backup/restore and canonicality proven: Buddy decides legacy fallback retirement.
 
 ---
 

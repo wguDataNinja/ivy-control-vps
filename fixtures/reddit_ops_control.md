@@ -18,7 +18,7 @@
 | Runtime host | ih-market-vps (Hetzner CX23, Ubuntu 24.04) |
 | Runtime user | scraper |
 | Storage backend | PostgreSQL (WGU_REDDIT_STORAGE_BACKEND=postgres) |
-| Health tooling | tools/check_reddit_ops_pg_health.py |
+| Health tooling | tools/ingestion_dashboard.py (systemd timer/service/backup probes; no dedicated health script) |
 | Backup | Automated source exists and has been tested. |
 
 ---
