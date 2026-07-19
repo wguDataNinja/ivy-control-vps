@@ -81,6 +81,19 @@ The report is the primary handoff artifact between the executing agent, GPT, Bud
 
 A repository using an alternative path must document it in AGENTS.md, CONTROL.md, or a clearly identified private local supplement.
 
+### Multi-artifact review rule
+
+When a task produces multiple artifacts that require a review decision (such as
+model outputs, comparison reports, or generated proposals):
+
+- The reviewer must inspect primary artifacts directly.
+- Agent-produced comparisons or summaries are secondary evidence only.
+- A single review bundle containing all primary artifacts must be assembled
+  before the reviewer is asked for a decision.
+
+This prevents summary substitution — the decision-maker must see the actual
+outputs, not another agent's interpretation of them.
+
 ---
 
 ## 5. Execution Logs
@@ -145,11 +158,12 @@ For a normal, non-production change, use this path:
 
 1. Identify the relevant authority document and task scope. Do not use a result report or chat history as substitute authority.
 2. Inspect the current working tree and preserve unrelated or protected work.
-3. Use a bounded task branch unless an explicitly authorized exception applies; select the branch prefix from `docs/GIT_WORKFLOW.md`.
-4. Implement only the approved scope and run task-appropriate validation.
-5. Create a result report and an execution log when the work is substantial or creates a durable artifact.
-6. Have the authorized Git writer package the exact public files after reviewing the diff. Agents do not self-merge or push private history.
-7. After review, record the journal entry and promote only settled truth into the appropriate roadmap, control record, or canonical standard.
+3. **Before creating any new file**, confirm that no existing authority document can absorb the material. Apply the documentation creation governance gate (see `docs/README.md` §Repository Documentation Contract — four-question check). If the gate is unclear, do not create the document.
+4. Use a bounded task branch unless an explicitly authorized exception applies; select the branch prefix from `docs/GIT_WORKFLOW.md`.
+5. Implement only the approved scope and run task-appropriate validation.
+6. Create a result report and an execution log when the work is substantial or creates a durable artifact.
+7. Have the authorized Git writer package the exact public files after reviewing the diff. Agents do not self-merge or push private history.
+8. After review, record the journal entry and promote only settled truth into the appropriate roadmap, control record, or canonical standard.
 
 For a production, VPS, database, destructive, privacy-sensitive, or authority-changing action, stop at step 1 until the applicable control record, gate, and task authorization permit the action. `agents/VPS_ORCHESTRATION.md` defines the VPS interaction modes.
 
@@ -187,12 +201,14 @@ Before declaring task completion:
 Before closing a session:
 
 1. Inspect all task result reports for completion state.
-2. Verify Git state and distinguish pre-existing dirt from session changes.
-3. Confirm `_internal/` or equivalent private-data directory is not staged.
-4. Verify all required session logs exist.
-5. Update or verify TODO.md contains the next-session plan.
-6. Commit and push authorized durable changes.
-7. Do not discard, restore, or truncate TODO.md.
+2. Discover task boundaries from outbox artifacts, agent logs, and session context. Create a per-session task journal at `_internal/logs/sessions/session-<N>/TASK_JOURNAL.md` with one template section per task.
+3. GPT fills the semantic fields (objective, assessment, decisions, lessons, follow-up). The agent does not infer semantic content.
+4. Verify Git state and distinguish pre-existing dirt from session changes.
+5. Confirm `_internal/` or equivalent private-data directory is not staged.
+6. Verify all required session logs exist.
+7. Update or verify TODO.md contains the next-session plan.
+8. Commit and push authorized durable changes.
+9. Do not discard, restore, or truncate TODO.md.
 
 ---
 

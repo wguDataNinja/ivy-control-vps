@@ -14,7 +14,9 @@ ivy-control-vps is the portfolio control plane. It owns:
 - approved SHA tracking
 - repository status aggregation
 - agent instruction model (`AGENTS.md`)
-- public roadmap conventions (when a `ROADMAP.md` exists for a workstream)
+- portfolio Intent Layer (`docs/PORTFOLIO_INTENT.md`)
+- portfolio-level roadmap (`ROADMAP.md`)
+- per-repo roadmap conventions (when a `repos/<repo>/ROADMAP.md` exists)
 
 Managed repositories remain separate codebases with their own code, data, tests, and local workflows. A managed control record describes an operational support relationship; it does not assign portfolio value or require VPS deployment.
 
@@ -211,9 +213,18 @@ CONTROL.md must be reviewed or updated when:
 
 ## Relationship between documents
 
+A managed repository's documents form a governing contract defined by
+`docs/README.md` §Repository Documentation Contract. CONTROL.md is one part of
+that contract — it owns lifecycle, gates, and evidence expectations. It does
+not replace the repo's README, ROADMAP, TODO, or AGENTS.md.
+
 | Document | Role |
 |----------|------|
 | `repos/<repo>/CONTROL.md` | Active governance authority. One-stop for current state. |
+| `repos/<repo>/README.md` | Human/project orientation. Required by the contract for every managed repo. |
+| `repos/<repo>/AGENTS.md` | Agent operating instructions. Required when agent interaction is expected. |
+| `repos/<repo>/ROADMAP.md` | Owner-approved direction when the repo has project-specific sequencing. |
+| `repos/<repo>/TODO.md` | Short-term implementation queue when the repo has agent-visible work. |
 | `repos/<repo>/RELEASE_GATES.md` | Detailed gate evidence. Referenced by CONTROL.md. |
 | `repos/<repo>/STATUS.md` | **Deprecated** once CONTROL.md exists. Retained as historical reference, not updated. |
 | `repos/<repo>/<phase-packet>.md` | Bounded execution instructions for the next authorized phase. Not a governance document. Public. |
@@ -221,6 +232,150 @@ CONTROL.md must be reviewed or updated when:
 | `docs/PORTFOLIO_CONVENTIONS.md` | Durable cross-repo conventions. Referenced by CONTROL.md applicability matrix. |
 | `docs/DATA_LIFECYCLE_STANDARD.md` | Portfolio data-lifecycle principles. Referenced by CONTROL.md. |
 | `docs/PORTFOLIO_UNIVERSE.md` | Curated known asset universe and portfolio relationship. It may acknowledge assets that do not have and should not receive a CONTROL.md record. |
+
+### Documentation creation governance
+
+Before creating any new file in a managed repository, check whether an existing
+authority document can own the content. See `docs/README.md` §Repository
+Documentation Contract for the four-question gate. A new doc must answer a
+distinct question that no existing document already answers. If the gate is
+unclear, do not create the document.
+
+---
+
+## Per-repo roadmap
+
+A managed repository may have its own `ROADMAP.md` when it has project-specific
+sequencing that cannot be expressed at the portfolio level.
+
+### When to create
+
+A per-repo ROADMAP.md is appropriate when the repo has:
+- multiple phases with dependency chains;
+- a mix of agent-implementable work and high-reasoning gates;
+- implementation chunks that require specs before coding;
+- enough scope that a coding agent cannot execute without phased context.
+
+A per-repo ROADMAP.md is NOT appropriate when:
+- the repo is source-only with minimal scope (use CONTROL.md + TODO.md);
+- the repo is deferred or blocked at Gate 1;
+- the portfolio ROADMAP.md already covers the repo's direction adequately.
+
+### Required structure
+
+```
+# <Repo Name> Roadmap
+
+## North Star
+- Final desired capability
+
+## Current State
+- Existing implementation, accepted decisions, known limitations
+
+## Dependency Map
+- Prerequisites, blockers, critical path, parallel work
+
+## Workstreams
+- Grouped related work with objectives, dependencies, owner type
+
+## Execution Chunks
+Per chunk:
+- Goal, Worker Tasks, Inputs, Outputs, Validation, Dependencies, Exit Gate
+
+## Implementation Specifications
+- Interfaces, contracts, data structures, APIs, ownership boundaries
+
+## High Reasoning Gates
+Per gate:
+- Decision, Evidence, Reviewer, Outcomes, Downstream Impact
+
+## Agent Assignment Model
+- Per phase: what agent type suits it and why
+
+## Risks and Unknowns
+
+## Completion Criteria
+```
+
+### Relationship to portfolio ROADMAP.md
+
+The portfolio `ROADMAP.md` references active per-repo roadmaps in §2 (Active
+Initiatives). A repo with its own ROADMAP.md should have a portfolio entry
+point that links to it. The per-repo roadmap does not replace the portfolio
+entry — an operator should discover the repo's existence from the portfolio
+level first.
+
+### Relationship to CONTROL.md
+
+CONTROL.md records lifecycle state, gates, SHA, blockers. The per-repo
+ROADMAP.md records phased execution direction. CONTROL.md `next_task` may
+reference a phase in the repo ROADMAP.md. They complement each other and
+should not conflict.
+
+### Creation workflow
+
+Per-repo roadmaps use a controlled Codex handoff. The workflow is:
+
+1. Agent gathers context (README, CONTROL, existing docs, git log).
+2. Agent compresses into a context packet (not a full repo dump).
+3. User approves a Codex call.
+4. Codex produces a roadmap proposal.
+5. Agent reconciles (fixes paths, corrects assumptions).
+6. Buddy approves the candidate.
+7. git-steward commits ROADMAP.md.
+
+**Model selection:**
+
+- **Default: Strong Codex** for roadmap generation. Strong Codex identifies
+  hidden constraints, architectural boundaries, false assumptions, and creates
+  executable chunks that agents can follow without reinterpretation.
+- **Optional: Fast Codex** for comparison, benchmarking, low-complexity
+  repositories, or auditing Strong Codex output. Fast Codex provides first-pass
+  structure; its formatting contribution can be recreated by OpenCode
+  refinement or GPT editing.
+
+**Context packet requirement:** The Codex prompt must be a compressed context
+packet containing repository identity, current state, architecture, dependency
+analysis, and agent execution model. Codex must not receive the full repository.
+
+### Roadmap lifecycle states
+
+Every per-repo roadmap artifact must carry an explicit status to distinguish
+proposals from canonical authority.
+
+| State | Meaning | When used |
+|-------|---------|-----------|
+| `PROPOSAL` | A draft roadmap created for discussion | Before any review |
+| `TRIAL` | A proposed roadmap being tested on a non-critical repo | First implementation |
+| `ACTIVE` | Current execution authority — agents use this for chunk execution | Normal operation |
+| `MIGRATION_PENDING` | An old roadmap is being replaced; migration in progress | During format upgrades |
+| `CANONICAL` | Same as ACTIVE — authoritative for the repo | Normal operation |
+| `ARCHIVED` | Superseded, preserved for historical reference | After replacement |
+
+The status should appear as a header line in the roadmap file:
+
+```
+# <Repo Name> Roadmap
+**Status:** ACTIVE
+```
+
+### Required migration rule
+
+No agent may replace an existing authoritative roadmap unless the task
+explicitly states:
+- this is a migration;
+- the old authority is being replaced;
+- review has occurred.
+
+### Trial rule
+
+New workflow designs or roadmap formats must first be tested on:
+- a non-critical repository;
+- a repository with no existing ROADMAP.md;
+- a copied or proposed artifact (not canonical).
+
+The trial result determines adoption. Trial artifacts must carry `PROPOSAL`
+or `TRIAL` status.
 
 ---
 

@@ -9,10 +9,11 @@ This index is the operational map for agents and maintainers working with IvyCon
 | Document | Purpose |
 |----------|---------|
 | [`README.md`](../README.md) | Public repository overview — purpose, current stage, design principles |
-| [`ROADMAP.md`](../ROADMAP.md) | Portfolio-wide roadmap — ingestion-first readiness campaign, shared VPS platform workstreams, and controlled cutover waves |
+| [`PORTFOLIO_INTENT.md`](PORTFOLIO_INTENT.md) | Buddy Intent Layer — what Buddy cares about, current priorities, Hermes alignment target |
+| [`ROADMAP.md`](../ROADMAP.md) | Portfolio-wide strategic direction — investment priorities, active initiatives, shared gates |
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
 | [`PORTFOLIO_UNIVERSE.md`](PORTFOLIO_UNIVERSE.md) | Curated known portfolio universe — asset relationship, classification, value context, and discovery confidence; not live operational status |
-| [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md) | Portfolio repository-control model — governance mechanism, standards applicability, gate framework, approved SHA tracking |
+| [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md) | Portfolio repository-control model — governance mechanism, standards applicability, gate framework, approved SHA tracking, per-repo roadmap contract |
 | [`REPOSITORY_WORK_PROTOCOL.md`](REPOSITORY_WORK_PROTOCOL.md) | Work-continuity protocol — task identity, result reports, logs, journals, review, and promotion into canonical documentation |
 | [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Git workflow — branch naming, commits, PRs, agents, VPS provisional rules, git-steward delegation |
 | [`HEALTH_CONTRACT.md`](HEALTH_CONTRACT.md) | Canonical health/evidence semantics for operational workloads |
@@ -135,11 +136,44 @@ For the authoritative distinction and refresh rules, see [`REPOSITORY_CONTROL_MO
 
 ### Hierarchy
 
-| Question | Authority |
-|---|---|
+The portfolio uses a layered authority model:
+
+```
+Buddy Intent Layer
+docs/PORTFOLIO_INTENT.md
+  ↓
+Portfolio Roadmap
+ROADMAP.md
+  ↓
+Repository Roadmaps (per managed repo)
+repos/<repo>/ROADMAP.md
+  ↓
+Implementation Specs (per chunk)
+(referenced from repo ROADMAP.md)
+  ↓
+Execution Queues
+TODO.md
+  ↓
+Agent Task Results
+_internal/outbox/
+  ↓
+Journals / History
+_internal/logs/
+```
+
+Each layer answers a different question:
+
+| Layer | Question | Authority |
+|---|---|---|
+| Intent | What matters? | `docs/PORTFOLIO_INTENT.md` |
+| Portfolio roadmap | Where are we investing? | `ROADMAP.md` |
+| Repository roadmap | How do we build it? | `repos/<repo>/ROADMAP.md` (where it exists) |
+| Implementation spec | Exactly what should happen? | Referenced from repo roadmaps |
+| Execution queue | What does the agent do next? | `TODO.md` |
+| Result report | What happened? | `_internal/outbox/` artifacts |
+| Journal | What did we learn? | `_internal/logs/sessions/SESSION_JOURNAL.md` |
 | Why does Ivy Control exist? | `docs/OPERATING_MODEL.md` |
 | What exists and how does it relate to the portfolio? | `docs/PORTFOLIO_UNIVERSE.md` |
-| What happens next? | `ROADMAP.md` |
 | What is currently authorized or true for one managed repository? | `repos/<repo>/CONTROL.md` |
 | What proves workload health and evidence confidence? | `docs/HEALTH_CONTRACT.md` plus dated producer/evidence artifacts |
 | How do humans and agents perform and preserve work? | `docs/REPOSITORY_WORK_PROTOCOL.md` |
@@ -147,13 +181,16 @@ For the authoritative distinction and refresh rules, see [`REPOSITORY_CONTROL_MO
 | How is the public work lifecycle organized? | `workflows/README.md` and `docs/REPOSITORY_WORK_PROTOCOL.md` |
 | What is private? | Local-only supplements may exist, but they are not public-clone authority or dependencies. |
 
-`ROADMAP.md` is the portfolio-wide execution authority. Per-repo `CONTROL.md` files govern individual repository lifecycle, production authority, and gate status. Portfolio standards (`PORTFOLIO_CONVENTIONS.md`, `HEALTH_CONTRACT.md`, `DATA_LIFECYCLE_STANDARD.md`, etc.) define cross-repo conventions that CONTROL.md records must comply with or explicitly deviate from.
+`ROADMAP.md` is the portfolio-wide strategic direction. Per-repo `CONTROL.md` files govern individual repository lifecycle, production authority, and gate status. `docs/PORTFOLIO_INTENT.md` captures what Buddy cares about — the layer Hermes watches for alignment checks. Per-repo `ROADMAP.md` files hold phased execution detail with dependency maps and implementation chunks.
+
+Portfolio standards (`PORTFOLIO_CONVENTIONS.md`, `HEALTH_CONTRACT.md`, `DATA_LIFECYCLE_STANDARD.md`, etc.) define cross-repo conventions that CONTROL.md records must comply with or explicitly deviate from.
 
 ```
-PORTFOLIO_UNIVERSE.md (known assets and relationships)
-  └── ROADMAP.md (portfolio-wide execution priority)
+docs/PORTFOLIO_INTENT.md (Buddy priorities)
+  └── ROADMAP.md (portfolio-level strategic direction)
         └── repos/<repo>/CONTROL.md (managed lifecycle, support, gates, deviations)
-              └── standards and dated evidence (how claims are evaluated)
+              └── repos/<repo>/ROADMAP.md (per-repo execution detail)
+                    └── standards and dated evidence (how claims are evaluated)
 ```
 
 A repo `CONTROL.md` may grant a standards exception; the standards may not override a CONTROL.md exception. `ROADMAP.md` may override a CONTROL.md gate only during an authorized campaign phase.
@@ -182,6 +219,60 @@ The **managed registry** is a derived/aggregated view of CONTROL.md records, gen
 
 `_internal/outbox/` contains ignored session artifacts — execution packets, evidence files, and intermediate reports produced during GPT-orchestrated work. These files are not durable Git authority. They are retained for provenance and traceability but must not be treated as active standards, policy, or configuration. The authority table above, including root `ROADMAP.md` and per-repository control records, identifies the current sources of truth.
 
+## Repository Documentation Contract
+
+Every Ivy-portfolio repository is expected to have a consistent set of
+documents forming a governing contract. A repository that is missing any of
+these has a documentation gap.
+
+### Contract documents
+
+| Document | Purpose | Authority |
+|----------|---------|-----------|
+| `README.md` | Human/project orientation. What is this repo? How does someone understand it quickly? | Root `/README.md` for ivy-control-vps; repo-local for managed repos. |
+| `ROADMAP.md` | Owner-approved long-horizon direction. Strategic decisions, future milestones, sequencing principles. Must not become an implementation checklist. Changes require Buddy approval. | Root `/ROADMAP.md` (portfolio-wide). Managed repos may have their own for project-specific direction. |
+| `TODO.md` | Short-term implementation queue. Near-term work derived from ROADMAP. Detailed enough for implementation agents. May be updated during execution workflows. | Root `/TODO.md` (session-scoped). Managed repos may have their own for local queue. |
+| `AGENTS.md` | Agent operating instructions. Repo-specific constraints, workflows, validation commands, boundaries. Only information important enough for every agent working in this repo. | Per-repository where agent interaction is expected. |
+| `CONTROL.md` | Ivy control-plane relationship. Lifecycle, gates, evidence expectations, ownership metadata. Not a project roadmap. Not a duplicate README. | `repos/<repo>/CONTROL.md` for managed repos only. |
+| Evidence, logs, journals | Historical execution and operational proof. Result reports, gate packets, agent logs, session journals. Not replacement documentation. | `_internal/outbox/`, `_internal/logs/`, `repos/<repo>/RELEASE_GATES.md`, `repos/<repo>/RUNBOOK.md` etc. |
+
+Unmanaged repositories are not expected to have `CONTROL.md` but benefit from
+the other contract documents.
+
+### `README_INTERNAL.md` is not a required standard
+
+The old `README_INTERNAL.md` pattern (a private catch-all document under
+`_internal/`) is no longer a required or expected convention. Existing files
+should be audited:
+
+- duplicate public content → migrate to the correct authority or remove
+- agent instructions → `AGENTS.md`
+- project direction → `ROADMAP.md`
+- implementation queue → `TODO.md`
+- historical execution → logs, journals, or archive
+- genuinely private content that has no public authority home → retain as-is
+
+### Documentation creation governance
+
+Before adding or modifying any documentation, check whether an existing
+authority document already owns the information. This is not a ban on
+documentation — it is a rule against duplicate authority.
+
+Every proposed new document must answer:
+
+1. **What question does this document answer?**
+2. **Which existing authority does not already answer it?**
+3. **Who owns updates to it?**
+4. **Why should this not live in an existing document?**
+
+If the answers are unclear, do not create the document. Route the content to
+the correct existing authority instead.
+
+This rule is discoverable from `AGENTS.md` (Development behavior),
+`docs/REPOSITORY_WORK_PROTOCOL.md` (§7 — making a tracked change), and
+every agent entry path. If you encounter a request to create a new document
+that does not satisfy these checks, stop and escalate.
+
 ## Predecessor tree
 
 The `ivy-control/vps/` directory in the old `ivy-control` repository contains historical planning documents, completed execution evidence, and reference material that has not been promoted here.
@@ -193,6 +284,8 @@ Private VPS access details and local evidence may be provisioned separately for 
 ## New documents
 
 A new document must serve a distinct durable authority role that no existing document can absorb. Before creating a file, identify its unique purpose, why an existing document cannot hold the material, and which current document it supersedes or complements. Index it here on creation.
+
+The documentation creation governance rules above (under Repository Documentation Contract) are the authority for this gate. This section is preserved as the index location where new documents are recorded.
 
 
 ## Historical public material

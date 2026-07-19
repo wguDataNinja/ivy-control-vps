@@ -91,6 +91,28 @@ Hermes must never:
 - Commit `_internal/` or `internal/` content
 - Claim work that did not occur
 
+### 3.5 Documentation contract alignment check
+
+To answer "How aligned is this repo?" or "What is missing?", check the
+Repository Documentation Contract defined in `docs/README.md`:
+
+| Contract document | Expectation | Check |
+|---|---|---|
+| `README.md` | Human/project orientation | Exists? Describes repo purpose and how to understand it? |
+| `ROADMAP.md` | Owner-approved long-horizon direction | Exists? Contains strategic decisions, not implementation checklist? |
+| `TODO.md` | Short-term implementation queue | Exists? Contains actionable near-term work items? |
+| `AGENTS.md` | Agent operating instructions | Exists? Contains constraints, workflows, boundaries? (Required when agent interaction is expected) |
+| `CONTROL.md` | Ivy control-plane relationship | Exists (managed repos)? Contains lifecycle, gates, blockers, SHA? |
+| Evidence | Historical execution proof | Recent result reports? Gate packets? Agent logs? |
+
+Hermes may report alignment as a structured table with three states per row:
+`present`, `present-with-issues`, or `absent`. Do not infer alignment from Git
+activity alone — verify the file content matches its role.
+
+This check belongs in a bridge report, not in CONTROL.md or any durable
+authority document. Alignment gaps are findings for Buddy review, not
+automatic remediation authority.
+
 ---
 
 ## 4. Task Discovery Mechanism
