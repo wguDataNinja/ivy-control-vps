@@ -455,6 +455,10 @@ continuity:
   long_horizon: "<durable product or operational direction>"
 hermes:
   scope: "<read-only|read-only-with-pr|none>"
+  artifact_paths: |-
+    optional; list of publication-safe directory paths Hermes may write
+    (e.g. "agent/reports/", "logs/"). Required when Hermes operates under
+    Mode 0 on a VPS-resident checkout. Default: none (single-task dispatch).
 codex_stops: []
 buddy_decisions: []
 last_verified: "<yyyy-mm-dd>"
@@ -506,9 +510,44 @@ The `hermes.scope` field in the metadata block records Hermes's authorized inspe
 |-------|---------|
 | `none` | Hermes may not inspect this repository. |
 | `read-only` | Hermes may run read-only commands, compare SHAs, check health, and produce structured reports. No branch creation, PR preparation, or file modification. |
+| `orchestrate-artifact-only` | Hermes may coordinate explicitly dispatched work and write only declared task/report/log/journal-proposal artifacts. It may not write code, Git, data, configuration, services, or canonical documents. |
 | `read-only-with-pr` | Hermes may inspect, create isolated branches, run tests, and prepare pull requests for review. Self-merge is prohibited. |
 
 Scope changes require a Gate 3+ passage and Buddy approval documented in `RELEASE_GATES.md`. Hermes must never exceed the scope recorded here, even if the VPS environment permits broader access.
+
+### Codex capabilities field
+
+The `hermes.codex_capabilities` field in the metadata block controls which
+Codex escalation capabilities Hermes may request for this repository. Each
+capability has an enabled state and an approval requirement.
+
+```yaml
+hermes:
+  scope: "orchestrate-artifact-only"
+  codex_capabilities:
+    roadmap_repair:
+      enabled: false
+      requires_buddy_approval: true
+    architecture_review:
+      enabled: false
+      requires_buddy_approval: true
+    implementation_blocker_review:
+      enabled: false
+      requires_buddy_approval: true
+    production_change_review:
+      enabled: false
+      requires_buddy_approval: true
+```
+
+| State | Meaning |
+|---|---|
+| `enabled: true` | Capability is available. Hermes may use it when the trigger condition is met. |
+| `enabled: false` | Capability is not available. Hermes must not request it. Falls back to `NEEDS_BUDDY_REVIEW`. |
+| `requires_buddy_approval: true` | Each use requires per-call Buddy approval. Hermes produces escalation context; Buddy reviews before Codex is invoked. |
+| `requires_buddy_approval: false` | Capability is pre-authorized. Hermes may proceed to escalation without per-use approval. |
+
+Default state for all capabilities: `enabled: false`, `requires_buddy_approval: true`.
+Capability definitions are documented in `agents/HERMES_AGENT_CONTRACT.md` §3.5d.
 
 ---
 

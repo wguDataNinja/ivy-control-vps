@@ -81,6 +81,16 @@ The report is the primary handoff artifact between the executing agent, GPT, Bud
 
 A repository using an alternative path must document it in AGENTS.md, CONTROL.md, or a clearly identified private local supplement.
 
+### VPS workspace artifact boundary
+
+A clean VPS checkout must not rely on Ivy Control VPS's Mac-local `_internal/`
+tree. For a VPS-resident repository, its AGENTS.md or CONTROL.md must declare
+the publication-safe artifact paths Hermes may use, or Hermes must remain
+limited to a single human-dispatched task. Private task packets, raw evidence,
+and runtime logs require a separately provisioned location outside the Git
+checkout. Result reports, logs, and journal proposals created by Hermes remain
+evidence only and cannot promote canonical truth.
+
 ### Multi-artifact review rule
 
 When a task produces multiple artifacts that require a review decision (such as
@@ -147,6 +157,38 @@ Each artifact has one role:
 | Canonical documentation | Settled operating, product, or policy truth | A replacement for task evidence |
 
 An inbox artifact is preferred for multi-step or cross-session work, but a direct handoff remains valid when recorded in the result report. Read-only exploration, brief questions, and trivial safe changes may use a reduced workflow; substantial implementation, audit, architecture, durable-artifact, or operational work must use the full evidence path.
+
+### Artifact-only orchestration
+
+An explicitly dispatched Hermes orchestration run follows the artifact-driven
+lifecycle:
+
+```
+Task packet → execution agent → execution report
+  → Hermes validation → validation outcomes:
+    → [ACCEPT] → journal update → next packet or stop
+    → [REJECT] → rework or escalate
+    → [NEEDS_BUDDY_REVIEW] → stop, report to Buddy
+    → [NEEDS_CODEX] → check capability registry → escalate if authorized
+```
+
+Hermes may create task packets, factual review reports, concise orchestration
+logs, and journal proposals only inside the target repository's declared
+permitted artifact paths. It must use
+`agents/orchestrator-task-packet-template.md`, operate inside a delegation
+envelope, and stop after every delegated task unless the next packet remains
+within that envelope. Before creating any packet, Hermes must evaluate the
+roadmap section against `agents/HERMES_ROADMAP_SUFFICIENCY_GATE.md`.
+
+Between receiving an execution report and authorizing the next task, Hermes
+must produce a validation report. See `agents/HERMES_AGENT_CONTRACT.md` §3.5b
+for the validation criteria and `agents/HERMES_AGENT_CONTRACT.md` §3.5c for
+the validation outcomes.
+
+Hermes never supplies GPT/Buddy acceptance, decisions, lessons, or canonical
+promotion. Hermes coordinates; execution agents implement; Buddy approves.
+Codex escalation requires Buddy approval in all cases where
+`requires_buddy_approval` is true.
 
 ---
 
