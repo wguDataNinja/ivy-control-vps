@@ -204,8 +204,10 @@ def main() -> int:
         print(f"  Files:         {v.file_count}")
         if v.manifest_digest_sha256:
             print(f"  Manifest hash: {v.manifest_digest_sha256}")
+        if v.execution_authority_sha256:
+            print(f"  Authority hash: {v.execution_authority_sha256}")
         if v.tracked_file_digest_sha256:
-            print(f"  Tracked hash:  {v.tracked_file_digest_sha256}")
+            print(f"  Tracked hash:   {v.tracked_file_digest_sha256}")
         if v.upstream_info and v.upstream_info.warning:
             print(f"  Upstream:      ⚠ {v.upstream_info.warning}")
         if v.errors:

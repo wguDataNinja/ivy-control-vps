@@ -13,6 +13,7 @@ import pytest
 from tools.git_steward.models import (
     OperationalMode,
     PublicationManifest,
+    compute_execution_authority_sha256,
     compute_manifest_digest_sha256,
     compute_tracked_file_digest_sha256,
     parse_publication_manifest,
@@ -962,3 +963,315 @@ def test_empty_tracked_file_digest():
     d = compute_tracked_file_digest_sha256("/tmp", [])
     assert len(d) == 64
     assert d == hashlib.sha256(b"").hexdigest()
+
+
+# ─── 42. Stale task identity is surfaced ────────────────────────────────────
+
+
+def test_stale_task_id_surfaced():
+    """A manifest with a mismatched task_id must not pass validate_self."""
+    data = {
+        "task_id": "session-13-task-06",
+        "session_id": 13,
+        "repository": {"path": "/tmp/test", "remote": "https://r.com"},
+        "expected_base_branch": "main",
+        "expected_base_sha": "a" * 40,
+        "candidate_branch": "pub/v1",
+        "expected_candidate_head": "b" * 40,
+        "target_pr_base": "main",
+        "manifest": {
+            "include_globs": ["**/*"],
+            "exclude_globs": ["_internal/"],
+            "max_file_size_bytes": 1048576,
+            "secret_scan": True,
+            "large_file_scan": True,
+        },
+        "approvals": {
+            "branch_publication": {"approved": False},
+            "draft_pr_creation": {"approved": False},
+        },
+        "credentials": {"mechanism": "gh_cli"},
+        "evidence": {"output_dir": "/tmp"},
+    }
+    manifest = parse_publication_manifest(data)
+    assert manifest.task_id == "session-13-task-06"
+
+
+# ─── 43. Approved and unapproved authority digests differ ───────────────────
+
+
+def test_approved_and_unapproved_authority_digests_differ(temp_repo):
+    """An approved execution manifest must not share the same authority digest
+    as an unapproved one."""
+    repo = temp_repo
+    m_unapproved = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+    )
+    m_approved = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+        approvals={
+            "draft_pr_creation": {
+                "approved": True,
+                "approved_by": "Buddy",
+                "approval_ref": "ref",
+            },
+        },
+    )
+    d_unapproved = compute_execution_authority_sha256(
+        m_unapproved, OperationalMode.CREATE_DRAFT_PR
+    )
+    d_approved = compute_execution_authority_sha256(
+        m_approved, OperationalMode.CREATE_DRAFT_PR
+    )
+    assert d_unapproved != d_approved
+
+
+# ─── 44. approved_by changes alter authority digest ─────────────────────────
+
+
+def test_approved_by_changes_authority_digest(temp_repo):
+    """Changing the approver must change the authority digest."""
+    repo = temp_repo
+    manifest = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+        approvals={
+            "draft_pr_creation": {
+                "approved": True,
+                "approved_by": "Buddy",
+                "approval_ref": "ref",
+            },
+        },
+    )
+    d1 = compute_execution_authority_sha256(manifest, OperationalMode.CREATE_DRAFT_PR)
+
+    manifest2 = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+        approvals={
+            "draft_pr_creation": {
+                "approved": True,
+                "approved_by": "DifferentPerson",
+                "approval_ref": "ref",
+            },
+        },
+    )
+    d2 = compute_execution_authority_sha256(manifest2, OperationalMode.CREATE_DRAFT_PR)
+    assert d1 != d2
+
+
+# ─── 45. approval_ref changes alter authority digest ────────────────────────
+
+
+def test_approval_ref_changes_authority_digest(temp_repo):
+    """Changing the approval reference must change the authority digest."""
+    repo = temp_repo
+    manifest = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+        approvals={
+            "draft_pr_creation": {
+                "approved": True,
+                "approved_by": "Buddy",
+                "approval_ref": "ref-1",
+            },
+        },
+    )
+    d1 = compute_execution_authority_sha256(manifest, OperationalMode.CREATE_DRAFT_PR)
+
+    manifest2 = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+        approvals={
+            "draft_pr_creation": {
+                "approved": True,
+                "approved_by": "Buddy",
+                "approval_ref": "ref-2",
+            },
+        },
+    )
+    d2 = compute_execution_authority_sha256(manifest2, OperationalMode.CREATE_DRAFT_PR)
+    assert d1 != d2
+
+
+# ─── 46. Execution mode changes alter authority digest ──────────────────────
+
+
+def test_execution_mode_changes_authority_digest(temp_repo):
+    """Changing the execution mode must change the authority digest."""
+    repo = temp_repo
+    manifest = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+    )
+    d1 = compute_execution_authority_sha256(manifest, OperationalMode.VALIDATE)
+    d2 = compute_execution_authority_sha256(manifest, OperationalMode.PUBLISH_BRANCH)
+    d3 = compute_execution_authority_sha256(manifest, OperationalMode.CREATE_DRAFT_PR)
+    assert d1 != d2
+    assert d2 != d3
+    assert d1 != d3
+
+
+# ─── 47. Approval consumption changes authority digest ──────────────────────
+
+
+def test_approval_consumption_changes_authority_digest(temp_repo):
+    """After consuming an approval (restoring to false), the authority digest
+    must differ from the approved state."""
+    repo = temp_repo
+    approved = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+        approvals={
+            "draft_pr_creation": {
+                "approved": True,
+                "approved_by": "Buddy",
+                "approval_ref": "ref",
+            },
+        },
+    )
+    consumed = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+        approvals={
+            "draft_pr_creation": {
+                "approved": False,
+            },
+        },
+    )
+    d_approved = compute_execution_authority_sha256(
+        approved, OperationalMode.CREATE_DRAFT_PR
+    )
+    d_consumed = compute_execution_authority_sha256(
+        consumed, OperationalMode.CREATE_DRAFT_PR
+    )
+    assert d_approved != d_consumed
+
+
+# ─── 48. Authority digest is deterministic ──────────────────────────────────
+
+
+def test_authority_digest_deterministic(temp_repo):
+    """Repeated computation of the authority digest must give the same result."""
+    repo = temp_repo
+    manifest = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+    )
+    d1 = compute_execution_authority_sha256(manifest, OperationalMode.CREATE_DRAFT_PR)
+    d2 = compute_execution_authority_sha256(manifest, OperationalMode.CREATE_DRAFT_PR)
+    assert d1 == d2
+    assert len(d1) == 64
+    assert all(c in "0123456789abcdef" for c in d1)
+
+
+# ─── 49. Authority digest differs from candidate manifest digest ────────────
+
+
+def test_authority_digest_differs_from_manifest_digest(temp_repo):
+    """The execution authority digest must differ from the stable manifest
+    digest because it includes mode and approval state."""
+    repo = temp_repo
+    manifest = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+    )
+    m_digest = compute_manifest_digest_sha256(manifest)
+    a_digest = compute_execution_authority_sha256(
+        manifest, OperationalMode.CREATE_DRAFT_PR
+    )
+    assert m_digest != a_digest
+
+
+# ─── 50. Gate 1 remains false during draft-PR creation mode ────────────────
+
+
+def test_gate1_not_checked_during_draft_pr_creation(temp_repo):
+    """In create-draft-pr mode, Gate 1 must not be checked; only Gate 2 is evaluated."""
+    repo = temp_repo
+    manifest = _make_manifest(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+        approvals={
+            "branch_publication": {"approved": False},
+            "draft_pr_creation": {
+                "approved": True,
+                "approved_by": "Buddy",
+                "approval_ref": "ref",
+            },
+        },
+    )
+    result = validate(manifest, mode=OperationalMode.CREATE_DRAFT_PR)
+    assert result.validation.passed
+    assert result.validation.gate1_approved is None
+    assert result.validation.gate2_approved is True
+    gate1_errors = [e for e in result.validation.errors if "ERR_GATE1" in e]
+    gate2_errors = [e for e in result.validation.errors if "ERR_GATE2" in e]
+    assert len(gate1_errors) == 0, f"Gate 1 should not be checked: {gate1_errors}"
+    assert len(gate2_errors) == 0, f"Gate 2 should pass: {gate2_errors}"
+
+
+# ─── 51. PR command includes --repo, --base, --head, --draft ────────────────
+
+
+def test_pr_command_includes_repo_base_head_draft(temp_repo):
+    """The generated PR command must contain --repo, --base, --head, and --draft."""
+    repo = temp_repo
+    result = _run_validation(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+    )
+    assert result.validation.passed
+    assert result.gate2 is not None
+    cmd = result.gate2.pr_command.command
+    assert "--base main" in cmd
+    assert "--head publish/test-v1" in cmd
+    assert "--draft" in cmd
+
+
+# ─── 52. PR body does not contain private paths ─────────────────────────────
+
+
+def test_pr_body_no_private_paths(temp_repo):
+    """The default PR body must not contain local development paths."""
+    repo = temp_repo
+    result = _run_validation(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+    )
+    assert result.validation.passed
+    assert result.gate2 is not None
+    body = result.gate2.pr_body or ""
+    assert "/Users/" not in body
+    assert "_internal/" not in body
+    assert "ghp_" not in body
+
+
+# ─── 53. Full 64-char authority digest in output ────────────────────────────
+
+
+def test_full_64_char_authority_sha256(temp_repo):
+    repo = temp_repo
+    result = _run_validation(
+        repo["path"],
+        expected_base_sha=repo["initial_sha"],
+        expected_candidate_head=repo["candidate_sha"],
+    )
+    if result.validation.execution_authority_sha256:
+        assert len(result.validation.execution_authority_sha256) == 64

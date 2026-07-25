@@ -18,6 +18,7 @@ from .models import (
     StewardResult,
     UpstreamInfo,
     ValidationResult,
+    compute_execution_authority_sha256,
     compute_manifest_digest_sha256,
     compute_tracked_file_digest_sha256,
     make_error,
@@ -346,6 +347,7 @@ def validate(
 
     tracked_file_digest = compute_tracked_file_digest_sha256(resolved, tracked_files)
     manifest_digest = compute_manifest_digest_sha256(manifest)
+    authority_digest = compute_execution_authority_sha256(manifest, mode)
 
     # Scan tracked files
     no_absolute_dev_paths = True
@@ -555,6 +557,7 @@ def validate(
         file_count=file_count,
         tracked_file_digest_sha256=tracked_file_digest,
         manifest_digest_sha256=manifest_digest,
+        execution_authority_sha256=authority_digest,
     )
 
     gate1_result: Gate1Result | None = None

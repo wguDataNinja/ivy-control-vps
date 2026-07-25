@@ -179,6 +179,7 @@ class ValidationResult:
     file_count: int | None = None
     tracked_file_digest_sha256: str | None = None
     manifest_digest_sha256: str | None = None
+    execution_authority_sha256: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -232,6 +233,44 @@ def compute_manifest_digest_sha256(manifest: PublicationManifest) -> str:
             "large_file_scan_enabled": manifest.manifest.large_file_scan_enabled,
             "exclude_globs": sorted(manifest.manifest.exclude_globs),
             "include_globs": sorted(manifest.manifest.include_globs),
+        },
+    }
+    raw = _stable_json(canonical)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def compute_execution_authority_sha256(
+    manifest: PublicationManifest, mode: str
+) -> str:
+    canonical = {
+        "mode": mode,
+        "task_id": manifest.task_id,
+        "session_id": manifest.session_id,
+        "repository_path": manifest.repository.path,
+        "repository_remote": manifest.repository.remote_url,
+        "expected_base_branch": manifest.expected_base_branch,
+        "expected_base_sha": manifest.expected_base_sha,
+        "candidate_branch": manifest.candidate_branch,
+        "expected_candidate_head": manifest.expected_candidate_head,
+        "target_pr_base": manifest.target_pr_base,
+        "manifest": {
+            "max_file_size_bytes": manifest.manifest.max_file_size_bytes,
+            "secret_scan_enabled": manifest.manifest.secret_scan_enabled,
+            "large_file_scan_enabled": manifest.manifest.large_file_scan_enabled,
+            "exclude_globs": sorted(manifest.manifest.exclude_globs),
+            "include_globs": sorted(manifest.manifest.include_globs),
+        },
+        "approvals": {
+            "branch_publication": {
+                "approved": manifest.approvals.branch_publication.approved,
+                "approved_by": manifest.approvals.branch_publication.approved_by,
+                "approval_ref": manifest.approvals.branch_publication.approval_ref,
+            },
+            "draft_pr_creation": {
+                "approved": manifest.approvals.draft_pr_creation.approved,
+                "approved_by": manifest.approvals.draft_pr_creation.approved_by,
+                "approval_ref": manifest.approvals.draft_pr_creation.approval_ref,
+            },
         },
     }
     raw = _stable_json(canonical)
