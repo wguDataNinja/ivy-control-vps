@@ -26,7 +26,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`DATA_LIFECYCLE_STANDARD.md`](DATA_LIFECYCLE_STANDARD.md) | Portfolio data-lifecycle principles — data classes, retention, growth measurement, disk thresholds, health metrics |
 | [`LOGGING_STANDARD.md`](LOGGING_STANDARD.md) | Three-layer logging standard — machine/runtime, agent work, and GPT/planning logs |
 | [`LLM_TENETS.md`](LLM_TENETS.md) | Design tenets for auditable, constrained, portable, and data-efficient LLM systems |
-| [`RESIDENT_AGENT_MODEL.md`](RESIDENT_AGENT_MODEL.md) | Resident Agent Interface architecture — supporting architecture for Hermes-style resident assistance |
+| [`RESIDENT_AGENT_MODEL.md`](RESIDENT_AGENT_MODEL.md) | Resident Agent Interface architecture — **redirect**; content merged into `OPERATING_MODEL.md` §Hermes and agents |
 
 ### Operations and access
 
@@ -42,6 +42,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | Document | Purpose |
 |----------|---------|
 | [`../agents/VPS_ORCHESTRATION.md`](../agents/VPS_ORCHESTRATION.md) | VPS/Hermes orchestration contract — interaction modes (read-only inspection, bounded mutation, full production), approval boundaries, logging |
+| [`../agents/orchestrator-task-packet-template.md`](../agents/orchestrator-task-packet-template.md) | Reusable Mode 0 task-packet template — execution aid, not authority |
 | [`../agents/LOCAL_IMPLEMENTATION.md`](../agents/LOCAL_IMPLEMENTATION.md) | Local implementation agent contract — rules for OpenCode, Codex, and similar agents operating from this repository |
 
 ### Health subsystem
@@ -117,6 +118,57 @@ Read these only when applicable to the assigned work:
 - For public work lifecycle, read [`../workflows/README.md`](../workflows/README.md) and `REPOSITORY_WORK_PROTOCOL.md`. A locally provisioned private supplement may add private mechanics but is not required for clone orientation.
 - For VPS operational work, read `agents/VPS_ORCHESTRATION.md` first. A private local runbook may provide approved host-specific procedures when it is provisioned.
 - For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification.
+
+## Actor-specific reading paths
+
+### New human maintainer
+
+```
+README.md → OPERATING_MODEL.md → REPOSITORY_CONTROL_MODEL.md
+→ targeted repos/<repo>/CONTROL.md
+```
+
+Read the core reading path (above) in order. Skip task-specific, agent, and Hermes documents until they become relevant.
+
+### OpenCode execution agent
+
+```
+AGENTS.md + agents/LOCAL_IMPLEMENTATION.md
+→ docs/README.md core reading path
+→ REPOSITORY_WORK_PROTOCOL.md
+→ GIT_WORKFLOW.md
+→ target repos/<repo>/CONTROL.md
+→ task-relevant standards
+```
+
+The agent reading order is defined in `agents/LOCAL_IMPLEMENTATION.md`. Follow it exactly.
+
+### Strong Codex (architecture work)
+
+```
+Core reading path
+→ PORTFOLIO_CONVENTIONS.md
+→ HEALTH_CONTRACT.md
+→ DATA_LIFECYCLE_STANDARD.md
+→ agents/VPS_ORCHESTRATION.md
+→ relevant repos/<repo>/CONTROL.md + RELEASE_GATES.md
+```
+
+Strong Codex needs the broadest path due to architecture, deployment, and database authority.
+
+### Hermes (orchestration)
+
+```
+agents/HERMES_AGENT_CONTRACT.md
+→ docs/OPERATING_MODEL.md (resident agent model, authority model)
+→ agents/VPS_ORCHESTRATION.md
+→ docs/HERMES_OPERATOR_GUIDE.md
+→ REPOSITORY_WORK_PROTOCOL.md (artifact-only orchestration §)
+→ target repos/<repo>/CONTROL.md
+→ orchestrator-task-packet-template.md
+```
+
+Hermes reads agent contracts before repository governance because its authority model is defined there.
 
 ## Fresh-agent repository intelligence route
 

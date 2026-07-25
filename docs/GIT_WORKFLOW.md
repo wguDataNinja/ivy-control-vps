@@ -316,3 +316,21 @@ Before a repository is published on GitHub, the following must be verified:
 - Branch and upstream state confirm clean history with no unexpected divergence
 
 Detailed gate evidence is recorded in `repos/<repo>/RELEASE_GATES.md`. This section defines the standards; the gate file records the specific pass/fail evidence.
+
+## VPS engineering-workspace readiness
+
+A VPS engineering workspace is a clean public checkout for controlled ongoing
+work. It is not automatically a production deployment. Before residency,
+verify the exact published SHA, remote identity, clean working tree, clone
+footprint and capacity reserve, and a rollback SHA. Confirm `_internal/` is
+ignored and absent, and that no secrets, private host paths, temporary
+experiments, or unreviewed generated output enter the checkout.
+
+The checkout may contain intentional publication-safe workflow artifacts, but
+private task packets, raw execution evidence, runtime logs, credentials, and
+private prompts belong in an explicitly provisioned location outside Git. A
+tracked root `TODO.md` that is not current or publication-safe may be omitted
+from a declared sparse workspace profile; never replace it with private task
+content. Do not edit the workspace ad hoc: tracked changes remain branch-based
+and review bound. A deployed runtime, service, timer, database, or data
+authority still requires its separate gate.

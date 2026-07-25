@@ -51,7 +51,7 @@ VALID_LIFECYCLES = {
 
 VALID_GATES = {"1", "2", "3", "4", "5", "6", "UNKNOWN", "MISSING"}
 
-HERMES_SCOPES = {"read-only", "read-write", "enabled", "none", "MISSING", "UNKNOWN", "N/A"}
+HERMES_SCOPES = {"read-only", "orchestrate-artifact-only", "read-only-with-pr", "read-write", "enabled", "none", "MISSING", "UNKNOWN", "N/A"}
 
 # Baseline repos from PORTFOLIO_BASELINE.md §1A
 BASELINE_REPOS: list[dict[str, str]] = [

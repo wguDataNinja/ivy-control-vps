@@ -1,6 +1,6 @@
 ---
 vps_inventory_version: "1.0"
-last_updated: "2026-07-19"
+last_updated: "2026-07-20"
 source: "docs/VPS_INVENTORY.md"
 authority: "VPS deployment topology — not governance, not health signals"
 
@@ -236,9 +236,9 @@ workloads:
     lifecycle: monitoring
     admission_gate: null
 
-    runtime_path: null
-    deployment_method: null
-    approved_sha: null
+    runtime_path: "/home/scraper/apps/ivy-control-vps"
+    deployment_method: git-clone
+    approved_sha: "1cd48d756ede1018b7f74f0ecc30c3f8fc68e044"
 
     systemd:
       active_timer: null
@@ -262,17 +262,18 @@ workloads:
     health_conformance: null
 
     owning_repo: ivy-control-vps
-    control_record: null
+    control_record: repos/ivy-control-vps/CONTROL.md
     runbook: null
     release_gates: null
 
-    verification_date: "2026-07-19"
+    verification_date: "2026-07-20"
     verification_sources:
       - tools/ingestion_dashboard.py
       - tools/producers/vps_capacity_snapshot.py
       - tools/producers/control_plane_revision.py
       - docs/health/producer-registry.md
-    verification_basis: "Not a managed repo — no CONTROL.md. Service-less workload representing the control-plane monitoring surface on the VPS. Producer references from tools/producers/ directory and dashboard capacity collection."
+      - repos/ivy-control-vps/CONTROL.md
+    verification_basis: "Clean public engineering workspace verified at the approved exact SHA; no service, scheduler, production data, private context, or _internal tree. The obsolete tracked root TODO is deliberately absent through the declared sparse workspace profile. Producer references remain from tools/producers/ directory and dashboard capacity collection."
 ---
 
 # VPS Inventory v1

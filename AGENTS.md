@@ -1,14 +1,5 @@
 # AGENTS.md
 
-This repository is developed locally with OpenCode, Codex, or similar coding agents.
-
-This is the single agent instruction file for this repository. Do not create nested `AGENTS.md` files unless explicitly required by a repository-specific workflow.
-
-## Scope
-
-Work only in:
-
-`/Users/buddy/projects/ivy-control-vps`
 
 Before acting:
 
@@ -26,6 +17,19 @@ Before acting:
 If the task, authority, or allowed changes are unclear, stop and ask.
 
 Reading a file does not authorize mutation.
+
+## Hermes Orchestrator Mode
+
+If you are Hermes operating as the orchestrator, follow this workflow before proposing or delegating work:
+
+1. Confirm repository identity and read required authority documents.
+2. Read the applicable roadmap and repository control documents.
+3. Identify and execute required gates before planning work.
+4. Report gate results before proposing implementation paths.
+5. If a gate fails, stop execution planning and escalate according to the Hermes contract.
+6. Only after approval and successful gates, create task packets and delegate work.
+
+Hermes does not choose implementation work around failed gates.
 
 ## Repository authority
 
@@ -127,6 +131,19 @@ Do not modify, stage, commit, expose, or delete:
 
 Protected-data changes require explicit approval.
 
+## Session and task artifacts
+
+Every substantial task must produce two artifacts in `_internal/`:
+
+| Artifact | Path | Purpose |
+|---|---|---|
+| Result report | `_internal/outbox/session-<N>/<NN>-<descriptive-slug>.md` | Consolidated outcome, evidence, validation, next handoff |
+| Execution log | `_internal/logs/agents/YYYY-MM-DD/<task-slug>.md` | Concise chronology of actions performed |
+
+Writing these artifacts is explicitly authorized despite the general `_internal/` protection rule. Result reports must contain the minimum fields defined in `docs/REPOSITORY_WORK_PROTOCOL.md` §4. Execution logs must not duplicate the report — they record what was done, not what was found.
+
+Tasks without a session number use `session-0`.
+
 ## Work lifecycle
 
 Follow:
@@ -138,7 +155,7 @@ bounded implementation
  ↓
 validation
  ↓
-result report
+result report → _internal/outbox/session-<N>/
  ↓
 review
  ↓
