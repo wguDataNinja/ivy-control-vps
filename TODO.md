@@ -1,228 +1,201 @@
-# Session 12 — Establish the VPS Portfolio Engineering Workspace
+# Session 13 — Establish the Verified Execution Baseline for the First Branch-to-PR Pilot
 
 ## Intent
 
-Establish the VPS as the trusted, always-available portfolio engineering
-workspace now. Ivy Control VPS becomes VPS-resident first; Hermes becomes
-available there as a bounded orchestrator; Palworld becomes the first
-meaningful active managed repository; other repositories join as their actual
-needs and evidence allow.
+Session 12 established the architecture, policy, and sequencing for the first
+autonomous branch-to-PR pilot on Palworld KB. Session 13 begins the verified
+execution baseline: direct VPS verification, read-only Palworld publication
+audit, and minimum tooling design — not pilot implementation.
 
-VPS residency is not a reward for portfolio perfection. It is the environment
-that helps unfinished repositories become healthier.
+The architecture and strategic decisions from Session 12 are preserved in
+`docs/STRATEGIC_ARCHITECTURE.md`. Read that first.
 
-The standard for a VPS-resident repository is not "finished." It is:
+## Current verified state (end of Session 12)
 
-> clean, understandable, reproducible, and safe for another engineer or agent
-> to continue.
-
-Known incomplete work is allowed when it is documented. Private, unexplained,
-or dirty local state is not copied into the workspace.
-
-```text
-Ivy Control VPS on VPS
-  → governed portfolio engineering workspace
-  → clean Palworld working baseline on VPS
-  → Hermes coordinates approved bounded work
-  → more repositories align as they become ready
-```
-
-## Current verified state
-
-- VPS root disk is 76% used with 8.7 GB free; current capacity is `GREEN`, but
-  clone footprint and resident-agent resource bounds must be checked.
-- The largest observed home-directory consumers are apps (4.4 GB), `.hermes`
-  (2.8 GB), and `.cache` (2.0 GB), not portfolio data (821 MB).
-- Session 11 added VPS inventory/dashboard topology sourcing. One stale
-  inventory statement and one missing Task 3 log link need repair.
-- Ivy Control has two local commits ahead of `origin/main`; the refactored
-  source revision must be approved and published before the VPS clone.
-- Palworld is an active unfinished project. Its current working tree has
-  experiment output, but that does not prevent a clean branch/clone from being
-  an active managed repository.
+- `docs/STRATEGIC_ARCHITECTURE.md` created — durable architectural decisions
+- `ROADMAP.md` updated — §6A Autonomous Branch-to-PR Pilot Transition added
+- `TODO.md` updated — Session 13 sequence
+- ivy-control-vps on `architecture/gold-standard-control-plane` branch (6 ahead)
+- Palworld KB 36 commits ahead of `origin/main`, dirty tracked + untracked
+- Git Steward predecessor found in `ivy-control` repo (3 scripts, schema, skill)
+- STS Workbench identified as key reference architecture (not yet managed)
+- Hermes terminology overload identified — needs reconciliation in docs
+- VPS runtime facts remain UNVERIFIED — no SSH inspection performed
 
 ## Non-negotiable boundaries
 
-- A VPS repository checkout is a clean approved public Git clone. It may contain
-  source, tests, public documentation, declared control records, deployment
-  instructions, known incomplete work, and deliberately sanitized agent
-  workflow artifacts.
-- Never copy, mount, transfer, or synchronize `_internal/`, raw agent
-  reasoning, private prompts, private logs/evidence, credentials,
-  Mac-specific paths, temporary experiments, or unreviewed generated data.
-- `TODO.md` is currently tracked and therefore appears in a normal clone. It
-  must either be a concise publication-safe queue or be explicitly excluded
-  from Hermes' VPS task-input model; it cannot become a private task channel by
-  accident. Resolve this in Task 1 before relying on it from the VPS.
-- VPS-private task packets, raw evidence, and runtime logs require a separately
-  approved location outside each Git checkout. They are never a substitute for
-  canonical repository documentation.
-- Do not delete, `git clean`, reset, restore, move, or stage Palworld experiment
-  artifacts without an exact-path disposition and Buddy approval.
-- Hermes never merges, pushes to `main`, deploys, changes systemd, writes
-  production data, accesses protected raw data, or changes its own permissions.
-- Hermes cannot create GPT/Buddy acceptance, decisions, or canonical promotion.
-  It may create only factual workflow artifacts marked `PENDING_GPT_REVIEW`.
-- No cleanup is authorized by this TODO. Retention/accounting precedes any
-  separately approved destructive operation.
+- Same as Session 12: `_internal/` never staged/pushed, private content stays
+  private, no destructive cleanup without approval.
+- Do not begin the Palworld implementation pilot during Session 13.
+- Do not port Git Steward code during Session 13 (design only if needed).
+- Do not create GitHub credentials, modify branch protection, or push repos.
 
-## P0 — Task 1: Finalize governed VPS-workspace residency rules
+---
 
-Reconcile the existing public authorities before any clone is treated as a
-resident engineering workspace. This is a focused alignment, not a new
-governance system.
+## Task 1 — VPS Runtime Verification (READ-ONLY, SSH IF AUTHORIZED)
 
-1. Distinguish a **VPS engineering checkout** from a production workload:
-   repositories may be active and incomplete while their production data,
-   services, schedulers, credentials, and runtime state remain absent.
-2. State the two-tier artifact model: publication-safe repository artifacts in
-   Git; private operational/task material only in a deliberately provisioned
-   external location.
-3. Resolve the tracked `TODO.md` policy for a clean clone and define the
-   declared public artifact paths Hermes may read or write for a pilot.
-4. Add a small residency preflight to existing VPS/Git/work-protocol authority:
-   approved SHA, clean clone, `_internal/` absence, no-secret/public-path
-   review, validation, capacity/footprint, and no direct checkout editing.
-5. Reconcile any documentation that still calls every VPS checkout a production
-   deployment target or implies Hermes is already installed/authorized beyond
-   verified reality.
+Directly verify the VPS engineering environment. Read-only commands only.
+Do not modify services, credentials, or deployments.
 
-### Acceptance evidence
+### Subtasks
 
-- An engineer can distinguish a professional active VPS working copy from a
-  production activation.
-- The allowed public and prohibited private artifact classes are unambiguous.
-- The artifact path and write boundary for the first Hermes pilot are explicit.
+1. Host, disk, and workspace paths
+   - `df -h` — confirm free space
+   - Verify `/home/scraper/apps/` structure
+   - Verify `/home/scraper/workspaces/` exists or can be created
+   - Check largest consumers: `du -sh /home/scraper/*/ | sort -rh | head -10`
 
-## P0 — Task 2: Ivy Control VPS residency
+2. Hermes runtime
+   - `which hermes` and `hermes --version`
+   - `systemctl --user list-units --all | grep hermes` or equivalent
+   - `ps aux | grep hermes`
+   - Check `~/.hermes/` structure if it exists
 
-Move the newly refactored Ivy Control VPS repository to the VPS as the
-source/control-plane home.
+3. OpenCode / Codex runtime
+   - `which opencode` and `opencode version`
+   - `which codex` and `codex --version`
+   - Check `~/.opencode/` or equivalent config paths
 
-### Required preconditions
+4. GitHub credential
+   - `gh auth status`
+   - Token scopes (do not print token value)
+   - Which repositories are visible
 
-1. Review and publish the approved refactored SHA currently ahead of
-   `origin/main`; preserve and exclude protected local changes.
-2. Create an exact deployment packet: remote, SHA, clean-tree evidence, VPS
-   path/owner, clone footprint, reserve-capacity check, no-secret scan, and
-   rollback/removal plan.
-3. Verify `_internal/` is ignored and absent from the clone. Do not mount,
-   transfer, or synchronize it.
-4. State initial scope honestly: this is an engineering workspace, not a
-   production service activation; no production data, private evidence
-   ingestion, or Hermes credential authority is introduced.
+5. API key capability
+   - Check configured model providers (do not print key values)
+   - Determine available models
 
-### Acceptance evidence
+6. Palworld KB status
+   - Check whether any clone exists at expected paths
+   - If not, verify clone is feasible (disk, auth)
 
-- VPS clone is a clean approved SHA from the public remote.
-- `git status`, origin, branch/SHA, and read-only control-plane commands work
-  in the VPS checkout.
-- Clone footprint and remaining capacity are recorded.
-- `_internal/` and secret-bearing local material are absent.
+### Expected artifact
 
-## P0 — Task 3: Palworld active managed baseline and VPS residency
+`_internal/outbox/session-13/01-vps-verification-report.md`
 
-Do not make Palworld “portfolio perfect” first. Make it honest, cleanly
-represented, and ready for managed work.
+### Stop conditions
 
-1. Identify the last good approved commit and current experiment boundary.
-2. Inventory experiment output as tracked/untracked/ignored/modified.
-3. Propose exact disposition: preserve, package for review, archive, branch,
-   or delete. Stop for approval before destructive cleanup.
-4. Establish a clean working branch or clean clone for the active roadmap.
-5. Record current state, known gaps, next work, and the Hermes/OpenCode role.
-6. After footprint review, place the clean source-only Palworld clone on VPS.
+- Any unverified credential or secret exposure
+- Disk below 4 GB free
+- Production service access without explicit authorization
+- Cannot determine Hermes/OpenCode/Codex/credential state
 
-Unfinished is acceptable. Dirty, unexplained, or copied-private state is not.
+---
 
-### Acceptance evidence
+## Task 2 — Palworld Publication Audit (READ-ONLY)
 
-An explicit branch/baseline record; reviewed experiment disposition; clean or
-classified working state; source-only VPS clone with no runtime, database,
-timer, or private-data role.
+Read-only classification of Palworld KB's 36 ahead commits and dirty/untracked
+state. Do not modify the repository.
 
-## P0 — Task 4: Minimum VPS Hermes orchestration and first roadmap pilot
+### Subtasks
 
-Implement only the minimum needed for Hermes to coordinate from the VPS
-workspace, then use it to do real bounded work on the clean Palworld baseline.
-Update only the existing applicable authorities:
+1. List all 36 commits: `git log --oneline origin/main..HEAD`
+2. Classify each commit by type (source, test, docs, session, evidence)
+3. Identify commit contents for any `_internal/` or private paths
+4. Classify each dirty tracked file (modified, deleted)
+5. Classify each untracked file or directory
+6. Determine which files contain private session content
+7. Determine which files contain generated artifacts
+8. Produce disposition recommendation: publish, review-and-publish, private-only
 
-- `agents/HERMES_AGENT_CONTRACT.md`
-- `agents/VPS_ORCHESTRATION.md`
-- `docs/OPERATING_MODEL.md`
-- `docs/REPOSITORY_WORK_PROTOCOL.md`
-- `agents/orchestrator-task-packet-template.md` — reusable packet template,
-  not a competing authority; include **Read first**, delegation target, allowed
-  paths, checkpoint rule, and the post-completion instruction to write the
-  next packet only when the delegation envelope permits it.
+### Expected artifact
 
-### Mode 0 — orchestrator coordination
+`_internal/outbox/session-13/02-palworld-publication-audit.md`
 
-Mode 0 is local/VPS repository coordination. It grants **no** SSH escalation,
-service control, credential, production-data, Git-write, or deployment power.
+Containing a table per commit/path: `path | type | publishable | recommended disposition`
 
-Hermes receives an explicit **delegation envelope**:
+### Acceptance criteria
 
-- target repository and approved roadmap section(s);
-- maximum tasks/chunks, one task in flight, and checkpoint cadence;
-- target repository's declared public/private artifact paths;
-- executor class, allowed implementation scope, and validation;
-- stop conditions and GPT/Buddy escalation owner.
+Every dirty/untracked path has a classification and recommended disposition.
+Private session logs are clearly identified and excluded from publication.
 
-Hermes may write only task packets, factual review reports, concise
-orchestration logs, and `PENDING_GPT_REVIEW` journal proposals in the target
-repository's declared permitted artifact paths. It delegates code, scripts,
-schemas, tests, fixtures, canonical data, configuration, migrations, services,
-and all Git writes.
+### Read-only? YES
+### May write? NO — report only
+### Requires Buddy approval? YES — before any baseline construction
 
-### Minimum write barrier
+---
 
-A real multi-task pilot requires an enforceable artifact-only write boundary.
-If that is not enforceable, Hermes is limited to one human-dispatched delegated
-task at a time and is not yet autonomous across roadmap chunks.
+## Task 3 — Minimum Task/PR/Quota Contract Design (READ-ONLY DESIGN)
 
-```text
-read approved roadmap
-  → create Task 1 packet
-  → delegate to OpenCode
-  → review result and validation
-  → create next bounded packet only if inside the envelope
-  → GPT/Buddy accepts journal semantics
-```
+Design the minimum contract fields needed for the first pilot. Do not implement.
 
-The first chunk should be read-only or documentation-safe. It must not alter
-canonical KB data, promote records, deploy services, or create Git writes.
+Review existing templates at:
+- `agents/orchestrator-task-packet-template.md`
+- `agents/hermes-validation-report-template.md`
+- `docs/REPOSITORY_WORK_PROTOCOL.md` (result report requirements)
 
-### Acceptance evidence
+Propose additions for:
+1. Task packet: `model_budget`, `base_sha`, `branch`, `allowed_paths`, `denied_paths`
+2. Result report: `stop_conditions_hit`, `evidence_paths`, `residual_dirty_state`
+3. PR body: minimum required sections
 
-A complete evidence cycle exists: task packet → delegated result → factual
-Hermes review → GPT/Buddy-reviewed journal entry. Only then decide whether
-Hermes can continue through multiple chunks and later propose scoped PRs.
+### Expected artifact
 
-## Parallel P0 hygiene — do not block residency unnecessarily
+`_internal/outbox/session-13/03-minimum-contract-design.md`
 
-1. Correct the stale Reddit backup-unit statement in `docs/VPS_INVENTORY.md`.
-2. Repair the missing Session 11 Task 3 log link or recreate its concise log
-   from retained evidence.
-3. Produce a bounded disk-accounting/retention proposal for `.hermes`,
-   `.cache`, and `apps`; no cleanup until separately approved.
-4. Keep operational uncertainty visible: Passport recovery confidence; Reddit
-   canonicality/publication; Idle Hacking durability; Traderie natural-run and
-   exporter evidence; SJC Intel readiness.
+### Read-only? YES
+### May write? NO — design document only
+### Requires Buddy approval? YES — before template modification
 
-## P1 — After the first pilot passes
+---
 
-- Give Hermes per-repository branch/PR credentials with no `main` merge right.
-- Let Hermes prepare, test, and propose PRs for explicitly approved repos.
-- Add clean source-only clones for other active repositories as their footprint
-  and privacy boundaries are reviewed.
-- Evaluate persistent Hermes service installation only after the orchestration
-  loop is proven.
+## Task 4 — Git Steward Migration Plan (READ-ONLY DESIGN)
 
-## Deferred
+Inspect the predecessor Git Steward implementation in `~/projects/ivy-control`.
+Design the migration plan. Do not copy code.
 
-- Automatic cleanup or retention enforcement.
-- General production deployment authority.
-- Database, systemd, timer, or credential mutation.
-- Broad multi-repository parallel orchestration.
-- Palworld runtime/database/data deployment.
+### Subtasks
+
+1. Inspect `~/projects/ivy-control/scripts/git_steward.py` (610 lines)
+2. Inspect `~/projects/ivy-control/scripts/git_steward_review.py` (354 lines)
+3. Inspect `~/projects/ivy-control/scripts/git_steward_commit.py` (498 lines)
+4. Inspect `~/projects/ivy-control/schemas/git_steward_commit.schema.json` (100 lines)
+5. Inspect `~/projects/ivy-control/skills/git_steward_agent.md` (337 lines)
+6. Design the minimum viable migration with mandatory gates
+7. Propose target paths in `ivy-control-vps`
+
+### Expected artifact
+
+`_internal/outbox/session-13/04-git-steward-migration-plan.md`
+
+### Read-only? YES
+### May write? NO — plan only
+### Requires Buddy approval? YES — before implementation
+
+---
+
+## Task 5 — Session 13 Closeout
+
+1. Consolidate all Task 1-4 reports
+2. Produce session close record
+3. Produce next-session handoff
+4. Reconcile Git state
+
+### Expected artifact
+
+Session close record at `_internal/logs/sessions/session-13/TASK_JOURNAL.md`
+Next-session handoff at `_internal/outbox/session-13/`
+
+---
+
+## Explicit non-goals for Session 13
+
+- Do NOT begin Palworld pilot implementation
+- Do NOT port Git Steward code
+- Do NOT create GitHub credentials
+- Do NOT modify branch protection
+- Do NOT modify Palworld KB
+- Do NOT push any branches
+- Do NOT modify production services
+- Do NOT perform broad document consolidation
+- Do NOT begin Idle Hacker restructuring
+- Do NOT extract STS adapters
+
+---
+
+## Deferred (Session 14+)
+
+- Palworld baseline construction (requires Task 2 approval)
+- Git Steward implementation (requires Task 4 approval)
+- Credential configuration (requires Task 1 findings)
+- First pilot execution (requires all above)

@@ -175,6 +175,33 @@ Existing safeguards remain unchanged:
 - `TODO.md` remains read-only — never staged, committed, or modified.
 - No file deletion is permitted by any agent, including `git-steward`.
 
+## Temporary Git-authority model (pre–Git Steward)
+
+Git Steward is the intended long-term Git execution mechanism. It has not yet
+been migrated into `ivy-control-vps`. Until it is operational, this temporary
+authority applies:
+
+- Implementation agents remain prohibited from performing Git writes on their
+  own authority.
+- The GPT orchestrator may authorize a specific, bounded Git write for a
+  reviewed and approved manifest.
+- The orchestrator must confirm that the manifest is exact, contains no
+  `_internal/` paths, and is safe for the current branch.
+- After orchestrator approval, the execution agent may stage and commit only
+  the exact approved paths.
+- This temporary authority applies only to approved repository-local commits.
+- It does **not** authorize:
+  - merge;
+  - push;
+  - reset, restore, or clean;
+  - history rewriting;
+  - branch deletion;
+  - deployment;
+  - credential or configuration changes.
+- This temporary authority must be removed when Git Steward becomes operational.
+  Removal requires updating this section and restoring the strict
+  "implementation agents must not stage, commit" rule without exception.
+
 ## Branch naming
 
 Public branches:

@@ -260,6 +260,11 @@ Before closing a session:
 - Private manifests, execution packets, backup logs, and scope-decision artifacts stay outside Git.
 - Commits must not contain passwords, secrets, private absolute paths, or sensitive content.
 - Use `git-steward` or equivalent for Git write operations unless explicitly authorized otherwise.
+- **Temporary provision:** Until Git Steward is operational in `ivy-control-vps`,
+  the GPT orchestrator may authorize a specific bounded commit for a reviewed
+  manifest. See `docs/GIT_WORKFLOW.md` §Temporary Git-authority model for the
+  full rules and restrictions. This provision expires when Git Steward is
+  available.
 
 ---
 

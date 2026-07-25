@@ -5,7 +5,11 @@ investing, what phases each major workstream follows, and what gates govern
 progression. Implementation detail lives in `TODO.md` and per-repo ROADMAP.md
 files.
 
-**Updated:** 2026-07-19
+**Architectural decisions:** See `docs/STRATEGIC_ARCHITECTURE.md` for durable
+architectural decisions, portfolio thesis, and sequencing rationale. This roadmap
+references that document rather than duplicating all rationale.
+
+**Updated:** 2026-07-25
 
 ---
 
@@ -225,6 +229,56 @@ broad secrets access, destructive operations, unrestricted service control.
 
 ---
 
+## §6A Autonomous Branch-to-PR Pilot Transition
+
+**Status:** ACTIVE — Session 12 completed the architecture and policy design for
+the first autonomous branch-to-PR pilot. Implementation has not yet begun.
+
+The next major proof is a complete branch-to-draft-PR delivery loop on a single
+repository. This supersedes the narrower artifact-only pilot described in
+§6 / TODO.md Task 4 for Palworld KB. The artifact-only concept remains valid
+for read-only or documentation tasks.
+
+### Immediate transition (Session 13+)
+
+1. **Session 12 closeout** — preserve architectural decisions, reconcile Git
+   state, produce durable handoff for the next session.
+2. **VPS verification** — directly verify Hermes, OpenCode, Codex, credential,
+   disk, and workspace state on the VPS.
+3. **Palworld publication audit** — read-only classification of 36 local commits
+   and dirty/untracked artifacts. Determine what is publishable, what requires
+   review, and what must remain private.
+4. **Palworld baseline construction** — after Buddy approves the audit
+   disposition, create a clean approved baseline branch/SHA.
+5. **Git Steward MVP** — port the predecessor implementation from `ivy-control`
+   to `ivy-control-vps`. Add mandatory gates: branch, base SHA, scope, manifest
+   equality, secret/large-file scan.
+6. **Minimum contracts** — add task-packet budget fields, result-report fields,
+   PR template, and quota tracking.
+7. **Credential and protection** — configure scoped GitHub credential and
+   default-branch protection for the pilot repository.
+8. **First pilot** — execute one bounded Palworld KB task through the complete
+   branch-to-draft-PR loop. Recommended first task: CLI compatibility regression
+   coverage for all seven public operations.
+
+### After successful pilot
+
+1. Review pilot evidence and update operating documents from proven behavior.
+2. Admit or complete admission of STS Workbench as a managed repository.
+3. Extend workspace management and deterministic gates.
+4. Prepare cross-repository Palworld-to-STS work.
+
+### Deferred
+
+- General autonomous orchestration service
+- STS reusable adapter extraction
+- Provider abstraction framework
+- Idle Hacker consolidation
+- Automated deployment
+- Broad portfolio-scale generalization
+
+---
+
 ## §7 Decisions Requiring Buddy
 
 1. Reddit Ops clean publication/history strategy.
@@ -236,3 +290,6 @@ broad secrets access, destructive operations, unrestricted service control.
 7. Hermes PR credentials and scope per repo.
 8. Palworld KB VPS source-only clone timing.
 9. Per-repo ROADMAP.md creation priority and timing.
+10. Palworld 36-commit publication audit disposition.
+11. First pilot credential model (fine-grained PAT vs GitHub App).
+12. STS Workbench managed-repository admission timing.
