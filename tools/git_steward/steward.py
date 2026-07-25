@@ -7,9 +7,8 @@ import json
 import os
 import sys
 import time
-from pathlib import Path
 
-from .models import parse_publication_manifest
+from .models import OperationalMode, parse_publication_manifest
 from .validation import validate
 
 
@@ -42,7 +41,7 @@ def _load_yaml(path: str) -> dict:
     try:
         import yaml
     except ImportError:
-        print("error: PyYAML is required. Install with: pip install pyyaml", file=sys.stderr)
+        print("error: PyYAML required. Install with: pip install pyyaml", file=sys.stderr)
         sys.exit(1)
 
     with open(path, "r") as f:
@@ -62,9 +61,7 @@ def _load_json(path: str) -> dict:
     return data
 
 
-def _write_evidence(
-    output_dir: str, manifest_path: str, result: object
-) -> str:
+def _write_evidence(output_dir: str, manifest_path: str, result: object) -> str:
     ts = time.strftime("%Y%m%d_%H%M%S")
     dirpath = os.path.abspath(os.path.expanduser(output_dir))
     os.makedirs(dirpath, exist_ok=True)
@@ -75,9 +72,28 @@ def _write_evidence(
     return evidence_path
 
 
+def _check_evidence_sanitized(evidence_path: str) -> list[str]:
+    issues: list[str] = []
+    try:
+        with open(evidence_path, "r") as f:
+            content = f.read()
+        token_patterns = [
+            "ghp_", "gho_", "github_pat_", "sk-",
+            "-----BEGIN", "api_key", "apikey",
+        ]
+        for pat in token_patterns:
+            if pat in content:
+                issues.append(f"potential token pattern found in evidence: {pat}")
+        if "http://" in content and "github.com" not in content:
+            issues.append("non-github http URL found in evidence")
+    except Exception:
+        pass
+    return issues
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Git Steward MVP — publication candidate validation"
+        description="Git Steward MVP — publication candidate validation and execution"
     )
     parser.add_argument(
         "manifest",
@@ -90,6 +106,12 @@ def main() -> int:
         help="Manifest format (default: auto-detect from extension)",
     )
     parser.add_argument(
+        "--mode",
+        choices=OperationalMode.ALL,
+        default=OperationalMode.VALIDATE,
+        help=f"Operational mode (default: {OperationalMode.VALIDATE})",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Emit result as JSON",
@@ -100,13 +122,11 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    # Resolve manifest
     manifest_path = _resolve_manifest_path(args.manifest)
     if manifest_path is None:
         print(f"error: manifest file not found: {args.manifest}", file=sys.stderr)
         return 1
 
-    # Determine format
     fmt = args.format
     if fmt == "auto":
         ext = os.path.splitext(manifest_path)[1].lower()
@@ -115,10 +135,12 @@ def main() -> int:
         elif ext == ".json":
             fmt = "json"
         else:
-            print(f"error: cannot determine format for {manifest_path}; use --format", file=sys.stderr)
+            print(
+                f"error: cannot determine format for {manifest_path}; use --format",
+                file=sys.stderr,
+            )
             return 1
 
-    # Load manifest
     if fmt == "yaml":
         data = _load_yaml(manifest_path)
     else:
@@ -126,22 +148,23 @@ def main() -> int:
 
     manifest = parse_publication_manifest(data)
 
-    # Override evidence dir from CLI
     if args.evidence_dir:
         object.__setattr__(manifest, "evidence_output_dir", args.evidence_dir)
 
-    # Run validation
-    result = validate(manifest)
+    result = validate(manifest, mode=args.mode)
 
-    # Write evidence
     evidence_dir = manifest.evidence_output_dir or "_internal/evidence"
     evidence_path = _write_evidence(evidence_dir, manifest_path, result)
     evidence_abspath = os.path.abspath(evidence_path)
 
-    # Update evidence paths in result
-    object.__setattr__(
-        result, "evidence_paths", (evidence_abspath,)
-    )
+    object.__setattr__(result, "evidence_paths", (evidence_abspath,))
+
+    sanitized_issues = _check_evidence_sanitized(evidence_abspath)
+    if sanitized_issues:
+        print(
+            f"warning: evidence may contain unsanitized content: {sanitized_issues}",
+            file=sys.stderr,
+        )
 
     result_dict = _serialize(result)
 
@@ -152,24 +175,31 @@ def main() -> int:
         status = "PASSED" if v.passed else "FAILED"
         print(f"\n{'='*60}")
         print(f"  Git Steward MVP — {status}")
+        print(f"  Mode: {args.mode}")
         print(f"{'='*60}")
         print(f"  Repository:    {manifest.repository.path}")
-        print(f"  Candidate:     {manifest.candidate_branch} @ {manifest.expected_candidate_head[:12]}")
-        print(f"  Base:          {manifest.expected_base_sha[:12]}")
-        print(f"  Remote:        {v.remote_matches}")
-        print(f"  Branch:        {v.branch_valid}")
-        print(f"  HEAD:          {v.head_valid}")
+        print(f"  Candidate:     {manifest.candidate_branch} @ {manifest.expected_candidate_head}")
+        print(f"  Base:          {manifest.expected_base_sha}")
+        print(f"  Remote match:  {v.remote_matches}")
+        print(f"  Branch match:  {v.branch_valid}")
+        print(f"  HEAD match:    {v.head_valid}")
         print(f"  Base SHA:      {v.base_sha_valid}")
         print(f"  Clean tree:    {v.tree_clean}")
-        print(f"  No protected:  {v.no_protected_paths}")
-        print(f"  No secrets:    {v.no_secrets}")
-        print(f"  No large:      {v.no_large_files}")
+        print(f"  No untracked:  {v.no_untracked}")
+        print(f"  Protected:     {v.no_protected_paths}")
+        print(f"  Secrets:       {v.no_secrets}")
+        print(f"  Large files:   {v.no_large_files}")
+        print(f"  Dev paths:     {v.no_absolute_dev_paths}")
         print(f"  Not default:   {v.not_default_branch}")
-        print(f"  No tracking:   {v.no_remote_tracking}")
-        print(f"  Push approved: {v.push_approved}")
-        print(f"  PR approved:   {v.pr_approved}")
+        print(f"  Gate 1 (pub):  {v.gate1_approved}")
+        print(f"  Gate 2 (PR):   {v.gate2_approved}")
         print(f"  Files:         {v.file_count}")
-        print(f"  Manifest hash: {v.manifest_digest}")
+        if v.manifest_digest_sha256:
+            print(f"  Manifest hash: {v.manifest_digest_sha256}")
+        if v.tracked_file_digest_sha256:
+            print(f"  Tracked hash:  {v.tracked_file_digest_sha256}")
+        if v.upstream_info and v.upstream_info.warning:
+            print(f"  Upstream:      ⚠ {v.upstream_info.warning}")
         if v.errors:
             print(f"\n  Errors ({len(v.errors)}):")
             for e in v.errors[:10]:
@@ -177,11 +207,17 @@ def main() -> int:
         if v.findings:
             print(f"\n  Findings ({len(v.findings)}):")
             for f_item in v.findings[:10]:
-                print(f"    - [{f_item.finding_type}] {f_item.path}: {f_item.detail}")
-        if result.dry_run and v.passed:
-            print(f"\n  Dry-run commands:")
-            print(f"    Push: {result.dry_run.push_command}")
-            print(f"    PR:   {result.dry_run.pr_command}")
+                print(
+                    f"    - [{f_item.finding_type}] {f_item.path}: {f_item.detail}"
+                )
+        if result.gate1 and v.passed:
+            print(f"\n  Gate 1 command:")
+            if result.gate1.push_command:
+                print(f"    {result.gate1.push_command.command}")
+        if result.gate2 and v.passed:
+            print(f"\n  Gate 2 command:")
+            if result.gate2.pr_command:
+                print(f"    {result.gate2.pr_command.command}")
         if result.stop_reason:
             print(f"\n  Stop: {result.stop_reason}")
         print(f"\n  Evidence: {evidence_abspath}")

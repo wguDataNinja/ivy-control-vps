@@ -5,16 +5,22 @@ import hashlib
 import os
 import re
 import subprocess
-from pathlib import Path
 from typing import Any
 
 from .models import (
     BranchInfo,
-    DryRunResult,
     FileFinding,
+    Gate1Result,
+    Gate2Result,
+    MutationCommand,
+    OperationalMode,
     PublicationManifest,
     StewardResult,
+    UpstreamInfo,
     ValidationResult,
+    compute_manifest_digest_sha256,
+    compute_tracked_file_digest_sha256,
+    make_error,
 )
 
 
@@ -40,22 +46,11 @@ def _resolve_repo_path(raw: str) -> str | None:
     if not os.path.isdir(path):
         return None
     git_dir = os.path.join(path, ".git")
-    # .git may be a directory (normal repo) or a file (worktree)
     if not os.path.isdir(git_dir) and not os.path.isfile(git_dir):
         return None
     return path
 
 
-def _compute_manifest_digest(repo_path: str, manifest: PublicationManifest) -> str:
-    tracked = _run_git(repo_path, "ls-files")
-    if tracked[0] != 0:
-        return ""
-    files = sorted(tracked[1].strip().split("\n")) if tracked[1].strip() else []
-    raw = "\n".join(files)
-    return hashlib.sha256(raw.encode()).hexdigest()[:32]
-
-
-# Patterns that suggest secrets in committed files
 _SECRET_PATTERNS: list[re.Pattern] = [
     re.compile(r"(?i)(?:api[_-]?key|apikey)\s*[:=]\s*[\"'][^\"']{16,}[\"']"),
     re.compile(r"(?i)(?:secret|token)\s*[:=]\s*[\"'][^\"']{16,}[\"']"),
@@ -67,7 +62,6 @@ _SECRET_PATTERNS: list[re.Pattern] = [
     re.compile(r"(?i)-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
 ]
 
-# Path patterns that are typically excluded from publication
 _PROTECTED_PATH_PATTERNS: list[re.Pattern] = [
     re.compile(r"(?:^|/)_internal/"),
     re.compile(r"(?:^|/)internal/"),
@@ -91,7 +85,6 @@ _PROTECTED_PATH_PATTERNS: list[re.Pattern] = [
     re.compile(r"client_secret.+\.json$"),
 ]
 
-# Absolute path patterns from the development environment
 _ABSOLUTE_PATH_PATTERNS: list[re.Pattern] = [
     re.compile(r"/Users/buddy/"),
     re.compile(r"/home/buddy/"),
@@ -129,7 +122,7 @@ def _has_absolute_dev_path(filepath: str) -> bool:
     return False
 
 
-def _is_large_file(filepath: str, max_bytes: int) -> bool:
+def _is_large_file(filepath: str, max_bytes: int) -> tuple[bool, int]:
     try:
         size = os.path.getsize(filepath)
         return size > max_bytes, size
@@ -137,38 +130,52 @@ def _is_large_file(filepath: str, max_bytes: int) -> bool:
         return False, 0
 
 
-def validate(manifest: PublicationManifest) -> StewardResult:
+def validate(
+    manifest: PublicationManifest,
+    mode: str = OperationalMode.VALIDATE,
+) -> StewardResult:
     errors: list[str] = []
     findings: list[FileFinding] = []
     repo_path = manifest.repository.path
 
-    # Validate manifest self-consistency
     manifest_errors = manifest.validate_self()
     if manifest_errors:
         return StewardResult(
             validation=ValidationResult(
                 passed=False, errors=tuple(manifest_errors)
             ),
-            dry_run=None,
             mutation_status="none",
             stop_reason="manifest validation failed",
-            evidence_paths=(),
             recommended_next_action="fix publication manifest",
         )
 
-    # Resolve and verify repository
+    if mode not in OperationalMode.ALL:
+        return StewardResult(
+            validation=ValidationResult(
+                passed=False,
+                mode=mode,
+                errors=(make_error("ERR_INVALID_MODE", f"unknown mode: {mode}"),),
+            ),
+            mutation_status="none",
+            stop_reason="invalid mode",
+        )
+
     resolved = _resolve_repo_path(repo_path)
     if resolved is None:
         return StewardResult(
             validation=ValidationResult(
                 passed=False,
                 repository_identity_ok=False,
-                errors=(f"repository path not found or not a git repo: {repo_path}",),
+                mode=mode,
+                errors=(
+                    make_error(
+                        "ERR_REPO_NOT_FOUND",
+                        f"repository path not found or not a git repo: {repo_path}",
+                    ),
+                ),
             ),
-            dry_run=None,
             mutation_status="none",
             stop_reason="repository not found",
-            evidence_paths=(),
             recommended_next_action="verify repository path",
         )
 
@@ -176,10 +183,12 @@ def validate(manifest: PublicationManifest) -> StewardResult:
     rc, stdout, _ = _run_git(resolved, "remote", "get-url", "origin")
     actual_remote = stdout.strip() if rc == 0 else None
     remote_matches = actual_remote == manifest.repository.remote_url
-
     if not remote_matches:
         errors.append(
-            f"remote mismatch: expected '{manifest.repository.remote_url}', got '{actual_remote}'"
+            make_error(
+                "ERR_REMOTE_MISMATCH",
+                f"expected '{manifest.repository.remote_url}', got '{actual_remote}'",
+            )
         )
 
     # Branch
@@ -188,23 +197,52 @@ def validate(manifest: PublicationManifest) -> StewardResult:
     branch_valid = current_branch == manifest.candidate_branch
     if not branch_valid:
         errors.append(
-            f"branch mismatch: expected '{manifest.candidate_branch}', on '{current_branch}'"
+            make_error(
+                "ERR_BRANCH_MISMATCH",
+                f"expected '{manifest.candidate_branch}', on '{current_branch}'",
+            )
         )
 
-    # Default branch check
+    # Default branch
     rc, stdout, _ = _run_git(resolved, "symbolic-ref", "refs/remotes/origin/HEAD")
     default_branch = ""
     if rc == 0:
         ref = stdout.strip()
         default_branch = ref.replace("refs/remotes/origin/", "")
     is_default = current_branch == default_branch
+    if is_default:
+        errors.append(
+            make_error(
+                "ERR_DEFAULT_BRANCH",
+                f"candidate branch '{current_branch}' is the default branch",
+            )
+        )
 
-    # Remote tracking
+    # Remote tracking / upstream
     rc, stdout, _ = _run_git(
-        resolved, "rev-parse", "--abbrev-ref", "--symbolic-full-name", f"{current_branch}@{{upstream}}"
+        resolved,
+        "rev-parse",
+        "--abbrev-ref",
+        "--symbolic-full-name",
+        f"{current_branch}@{{upstream}}",
     )
     has_remote_tracking = rc == 0 and bool(stdout.strip())
     remote_tracking_branch = stdout.strip() if has_remote_tracking else None
+    targets_main = bool(
+        has_remote_tracking and remote_tracking_branch == "origin/main"
+    )
+
+    upstream_info = UpstreamInfo(
+        has_upstream=has_remote_tracking,
+        upstream_branch=remote_tracking_branch,
+        targets_main=targets_main,
+        warning=(
+            "upstream targets 'origin/main'; bare `git push` would push to main, "
+            "not to candidate branch"
+        )
+        if targets_main
+        else None,
+    )
 
     branch_info = BranchInfo(
         current_branch=current_branch,
@@ -213,13 +251,29 @@ def validate(manifest: PublicationManifest) -> StewardResult:
         remote_tracking_branch=remote_tracking_branch,
     )
 
+    if targets_main:
+        findings.append(
+            FileFinding(
+                path="(branch config)",
+                finding_type="upstream_warning",
+                detail=(
+                    f"upstream '{remote_tracking_branch}' targets main branch; "
+                    f"a bare `git push` would push to main, not to candidate branch. "
+                    f"Git Steward always uses an explicit refspec."
+                ),
+            )
+        )
+
     # HEAD
     rc, stdout, _ = _run_git(resolved, "rev-parse", "HEAD")
     actual_head = stdout.strip() if rc == 0 else None
     head_valid = actual_head == manifest.expected_candidate_head
     if not head_valid:
         errors.append(
-            f"HEAD mismatch: expected '{manifest.expected_candidate_head}', got '{actual_head}'"
+            make_error(
+                "ERR_HEAD_MISMATCH",
+                f"expected '{manifest.expected_candidate_head}', got '{actual_head}'",
+            )
         )
 
     # Base SHA
@@ -227,85 +281,110 @@ def validate(manifest: PublicationManifest) -> StewardResult:
     actual_base = stdout.strip() if rc == 0 else None
     base_found = rc == 0
 
-    # Verify base is ancestor of HEAD
     base_is_ancestor = False
     if base_found:
         rc, _, _ = _run_git(
-            resolved, "merge-base", "--is-ancestor", manifest.expected_base_sha, "HEAD"
+            resolved,
+            "merge-base",
+            "--is-ancestor",
+            manifest.expected_base_sha,
+            "HEAD",
         )
         base_is_ancestor = rc == 0
 
-    if not base_found or not base_is_ancestor:
+    if not base_found:
         base_valid = False
-        if not base_found:
-            errors.append(f"base SHA not found in repository: {manifest.expected_base_sha}")
-        else:
-            errors.append(
-                f"base SHA {manifest.expected_base_sha} is not an ancestor of HEAD"
+        errors.append(
+            make_error(
+                "ERR_BASE_NOT_FOUND",
+                f"base SHA not found: {manifest.expected_base_sha}",
             )
+        )
+    elif not base_is_ancestor:
+        base_valid = False
+        errors.append(
+            make_error(
+                "ERR_BASE_NOT_ANCESTOR",
+                f"base SHA {manifest.expected_base_sha} is not an ancestor of HEAD",
+            )
+        )
     else:
         base_valid = True
 
     # Working tree
     rc, stdout, _ = _run_git(resolved, "status", "--porcelain")
-    tree_dirty_lines = [l for l in stdout.strip().split("\n") if l.strip()] if stdout.strip() else []
-    tree_clean = len(tree_dirty_lines) == 0
+    tree_lines = (
+        [l for l in stdout.strip().split("\n") if l.strip()]
+        if stdout.strip()
+        else []
+    )
+    tree_clean = len(tree_lines) == 0
     if not tree_clean:
-        errors.append(f"working tree has {len(tree_dirty_lines)} dirty entries")
+        errors.append(
+            make_error(
+                "ERR_DIRTY_TREE",
+                f"working tree has {len(tree_lines)} dirty entries",
+            )
+        )
 
-    # Untracked files
-    untracked = [l for l in tree_dirty_lines if l.startswith("??")]
+    untracked = [l for l in tree_lines if l.startswith("??")]
     no_untracked = len(untracked) == 0
     if not no_untracked:
-        errors.append(f"working tree has {len(untracked)} untracked files")
+        errors.append(
+            make_error(
+                "ERR_UNTRACKED_FILES",
+                f"working tree has {len(untracked)} untracked files",
+            )
+        )
 
-    # Tracked file list
+    # Tracked files
     rc, stdout, _ = _run_git(resolved, "ls-files")
-    tracked_files = sorted(stdout.strip().split("\n")) if rc == 0 and stdout.strip() else []
+    tracked_files = (
+        sorted(stdout.strip().split("\n")) if rc == 0 and stdout.strip() else []
+    )
     file_count = len(tracked_files)
 
-    # Manifest digest
-    manifest_digest = _compute_manifest_digest(resolved, manifest)
+    tracked_file_digest = compute_tracked_file_digest_sha256(resolved, tracked_files)
+    manifest_digest = compute_manifest_digest_sha256(manifest)
 
-    # Scan tracked files for protected paths, secrets, large files
+    # Scan tracked files
+    no_absolute_dev_paths = True
     if tracked_files:
         for tf in tracked_files:
-            # Protected/excluded path check
             if _is_protected_path(tf):
                 findings.append(
                     FileFinding(
                         path=tf,
                         finding_type="protected_path",
-                        detail=f"path matches protected pattern",
+                        detail="path matches protected pattern",
                     )
                 )
 
-            # Absolute development path check
             abs_path = os.path.join(resolved, tf)
             if os.path.isfile(abs_path):
                 if _has_absolute_dev_path(abs_path):
                     findings.append(
                         FileFinding(
                             path=tf,
-                            finding_type="secret_like",
+                            finding_type="absolute_dev_path",
                             detail="contains absolute development environment path",
                         )
                     )
 
-                # Large file check
                 if manifest.manifest.large_file_scan_enabled:
-                    oversized, size = _is_large_file(abs_path, manifest.manifest.max_file_size_bytes)
+                    oversized, size = _is_large_file(
+                        abs_path, manifest.manifest.max_file_size_bytes
+                    )
                     if oversized:
                         findings.append(
                             FileFinding(
                                 path=tf,
                                 finding_type="oversized",
-                                detail=f"file size {size} exceeds max {manifest.manifest.max_file_size_bytes}",
+                                detail=f"size {size} exceeds max {manifest.manifest.max_file_size_bytes}",
                                 size_bytes=size,
                             )
                         )
 
-                # Secret scan
                 if manifest.manifest.secret_scan_enabled:
                     if _has_secret_like_content(abs_path):
                         findings.append(
@@ -316,69 +395,140 @@ def validate(manifest: PublicationManifest) -> StewardResult:
                             )
                         )
 
-    # Protected path gate
-    protected_findings = [f for f in findings if f.finding_type == "protected_path"]
-    no_protected_paths = len(protected_findings) == 0
-    if not no_protected_paths:
-        for pf in protected_findings:
-            errors.append(f"protected path found in tracked files: {pf.path}")
-
-    # Secret findings
-    secret_findings = [f for f in findings if f.finding_type == "secret_like"]
-    no_secrets = len(secret_findings) == 0
-
-    # Large file findings
-    large_findings = [f for f in findings if f.finding_type == "oversized"]
-    no_large_files = len(large_findings) == 0
-
-    # Not default branch
-    not_default_branch = not is_default
-    if is_default:
-        errors.append(
-            f"candidate branch '{current_branch}' is the default branch; publication candidates must not be the default branch"
-        )
-
-    # No remote tracking — warn if upstream targets main
-    no_remote_tracking = not has_remote_tracking
-    if has_remote_tracking and remote_tracking_branch == "origin/main":
-        findings.append(
-            FileFinding(
-                path="(branch config)",
-                finding_type="protected_path",
-                detail=f"upstream '{remote_tracking_branch}' targets main branch; a bare `git push` would push to main, not to candidate branch",
-            )
-        )
-
-    # Push approval
-    push_approved = manifest.approval.push_approved
-    if not push_approved:
-        errors.append("push not approved")
-
-    # PR approval
-    pr_approved = manifest.approval.pr_approved
-    if not pr_approved:
-        errors.append("PR creation not approved")
-
-    # Credential readiness
-    credential_ready = manifest.credentials.mechanism in ("gh_cli", "pat")
-
-    # Verify excluded paths don't exist in candidate
+    # Excluded globs check
     excluded_globs = manifest.manifest.exclude_globs
     for tf in tracked_files:
         for pattern in excluded_globs:
-            # Support directory-only patterns: "internal/" matches "internal/foo"
             pat = pattern.rstrip("/") + ("/*" if pattern.endswith("/") else "")
             if fnmatch.fnmatch(tf, pat) or fnmatch.fnmatch(tf, pattern):
                 findings.append(
                     FileFinding(
                         path=tf,
                         finding_type="protected_path",
-                        detail=f"path matches excluded pattern '{pattern}'",
+                        detail=f"matches excluded pattern '{pattern}'",
                     )
                 )
 
+    # Promote findings to errors
+    for ff in findings:
+        if ff.finding_type == "protected_path":
+            errors.append(
+                make_error("ERR_PROTECTED_PATH", f"protected path: {ff.path}")
+            )
+        elif ff.finding_type == "secret_like":
+            errors.append(
+                make_error(
+                    "ERR_SECRET_FOUND",
+                    f"secret-like content in: {ff.path}",
+                )
+            )
+        elif ff.finding_type == "oversized":
+            errors.append(
+                make_error(
+                    "ERR_LARGE_FILE",
+                    f"oversized file: {ff.path} ({ff.size_bytes} bytes)",
+                )
+            )
+        elif ff.finding_type == "absolute_dev_path":
+            errors.append(
+                make_error(
+                    "ERR_DEV_PATH",
+                    f"absolute dev path in: {ff.path}",
+                )
+            )
+
+    protected_findings = [f for f in findings if f.finding_type == "protected_path"]
+    no_protected_paths = len(protected_findings) == 0
+    secret_findings = [f for f in findings if f.finding_type == "secret_like"]
+    no_secrets = len(secret_findings) == 0
+    large_findings = [f for f in findings if f.finding_type == "oversized"]
+    no_large_files = len(large_findings) == 0
+    dev_path_findings = [f for f in findings if f.finding_type == "absolute_dev_path"]
+    no_absolute_dev_paths = len(dev_path_findings) == 0
+
+    not_default_branch = not is_default
+    credential_ready = manifest.credentials.mechanism in ("gh_cli", "pat")
+
+    # Gate checks (mode-dependent)
+    gate1_approved: bool | None = None
+    gate2_approved: bool | None = None
+
+    if mode == OperationalMode.VALIDATE:
+        pass
+    elif mode == OperationalMode.PUBLISH_BRANCH:
+        bp = manifest.approvals.branch_publication
+        gate1_approved = bp.approved
+        if not gate1_approved:
+            errors.append(
+                make_error(
+                    "ERR_GATE1_NOT_APPROVED",
+                    "branch_publication not approved",
+                )
+            )
+        if bp.approved and not bp.approved_by:
+            errors.append(
+                make_error(
+                    "ERR_GATE1_MISSING_APPROVER",
+                    "branch_publication approved=true requires approved_by",
+                )
+            )
+        if bp.approved and not bp.approval_ref:
+            errors.append(
+                make_error(
+                    "ERR_GATE1_MISSING_REF",
+                    "branch_publication approved=true requires approval_ref",
+                )
+            )
+    elif mode == OperationalMode.CREATE_DRAFT_PR:
+        dp = manifest.approvals.draft_pr_creation
+        gate2_approved = dp.approved
+        if not gate2_approved:
+            errors.append(
+                make_error(
+                    "ERR_GATE2_NOT_APPROVED",
+                    "draft_pr_creation not approved",
+                )
+            )
+        if dp.approved and not dp.approved_by:
+            errors.append(
+                make_error(
+                    "ERR_GATE2_MISSING_APPROVER",
+                    "draft_pr_creation approved=true requires approved_by",
+                )
+            )
+        if dp.approved and not dp.approval_ref:
+            errors.append(
+                make_error(
+                    "ERR_GATE2_MISSING_REF",
+                    "draft_pr_creation approved=true requires approval_ref",
+                )
+            )
+
+    base_validation_passed = (
+        remote_matches
+        and branch_valid
+        and base_valid
+        and head_valid
+        and tree_clean
+        and no_untracked
+        and no_protected_paths
+        and no_secrets
+        and no_large_files
+        and not_default_branch
+        and credential_ready
+    )
+
+    mode_gate_passed = True
+    if mode == OperationalMode.PUBLISH_BRANCH:
+        mode_gate_passed = bool(gate1_approved)
+    elif mode == OperationalMode.CREATE_DRAFT_PR:
+        mode_gate_passed = bool(gate2_approved)
+
+    blocking_findings = [f for f in findings if f.finding_type != "upstream_warning"]
+    overall_passed = base_validation_passed and mode_gate_passed and len(blocking_findings) == 0
+
     validation = ValidationResult(
-        passed=len(errors) == 0 and len(findings) == 0,
+        passed=overall_passed,
         repository_identity_ok=True,
         remote_matches=remote_matches,
         branch_valid=branch_valid,
@@ -387,63 +537,68 @@ def validate(manifest: PublicationManifest) -> StewardResult:
         tree_clean=tree_clean,
         no_untracked=no_untracked,
         no_protected_paths=no_protected_paths,
-        manifest_matches=True,
         no_secrets=no_secrets,
         no_large_files=no_large_files,
         not_default_branch=not_default_branch,
-        no_remote_tracking=no_remote_tracking,
-        push_approved=push_approved,
-        pr_approved=pr_approved,
+        no_absolute_dev_paths=no_absolute_dev_paths,
+        gate1_approved=gate1_approved,
+        gate2_approved=gate2_approved,
         credential_ready=credential_ready,
+        mode=mode,
         branch_info=branch_info,
+        upstream_info=upstream_info,
         findings=tuple(findings),
         errors=tuple(errors),
         actual_base_sha=actual_base or manifest.expected_base_sha,
         actual_head=actual_head or manifest.expected_candidate_head,
         actual_remote=actual_remote or "unknown",
         file_count=file_count,
-        manifest_digest=manifest_digest,
+        tracked_file_digest_sha256=tracked_file_digest,
+        manifest_digest_sha256=manifest_digest,
     )
 
-    passed = validation.passed
+    gate1_result: Gate1Result | None = None
+    gate2_result: Gate2Result | None = None
 
-    # Dry run commands
-    if passed:
-        remote_name = "origin"
-        push_cmd = f"git push {remote_name} {manifest.candidate_branch}:{manifest.candidate_branch}"
+    if overall_passed:
+        refspec = f"refs/heads/{manifest.candidate_branch}:refs/heads/{manifest.candidate_branch}"
+        push_cmd = f"git push origin {refspec}"
+        gate1_result = Gate1Result(
+            push_command=MutationCommand(
+                command=push_cmd, description="Push candidate branch to remote"
+            ),
+            rollback_command=f"git push origin --delete refs/heads/{manifest.candidate_branch}",
+        )
+        pr_title = _default_pr_title(manifest)
+        pr_body = _default_pr_body(manifest)
         pr_cmd = (
             f"gh pr create --base {manifest.target_pr_base} "
             f"--head {manifest.candidate_branch} "
-            f"--title \"{_default_pr_title(manifest)}\" "
-            f"--body \"{_default_pr_body(manifest)}\" "
+            f"--title \"{pr_title}\" "
+            f"--body \"{pr_body}\" "
             f"--draft"
         )
-        rollback_cmd = f"git push {remote_name} --delete {manifest.candidate_branch}"
-    else:
-        push_cmd = None
-        pr_cmd = None
-        rollback_cmd = None
-
-    dry_run = DryRunResult(
-        push_command=push_cmd,
-        pr_command=pr_cmd,
-        pr_title=_default_pr_title(manifest) if passed else None,
-        pr_body=_default_pr_body(manifest) if passed else None,
-        rollback_command=rollback_cmd,
-    )
+        gate2_result = Gate2Result(
+            pr_command=MutationCommand(
+                command=pr_cmd, description="Create draft PR"
+            ),
+            pr_title=pr_title,
+            pr_body=pr_body,
+        )
 
     stop_reason = None
-    if not passed:
-        stop_reason = "; ".join(errors[:5]) if errors else "validation failed"
+    if not overall_passed:
+        reasons = [e for e in errors[:5]]
+        stop_reason = "; ".join(reasons) if reasons else "validation failed"
 
     recommended = _recommend_next(validation, manifest)
 
     return StewardResult(
         validation=validation,
-        dry_run=dry_run,
-        mutation_status="dry_run_only",
+        gate1=gate1_result,
+        gate2=gate2_result,
+        mutation_status="dry_run_only" if overall_passed else "none",
         stop_reason=stop_reason,
-        evidence_paths=(),
         recommended_next_action=recommended,
     )
 
@@ -463,8 +618,8 @@ def _default_pr_body(manifest: PublicationManifest) -> str:
         f"- **Session:** {manifest.session_id}",
         f"- **Candidate branch:** `{manifest.candidate_branch}`",
         f"- **Target base:** `{manifest.target_pr_base}`",
-        f"- **Expected candidate HEAD:** `{manifest.expected_candidate_head[:12]}`",
-        f"- **Expected base SHA:** `{manifest.expected_base_sha[:12]}`",
+        f"- **Expected candidate HEAD:** `{manifest.expected_candidate_head}`",
+        f"- **Expected base SHA:** `{manifest.expected_base_sha}`",
         "",
         "### Validation",
         "All local safety gates passed.",
@@ -478,15 +633,17 @@ def _default_pr_body(manifest: PublicationManifest) -> str:
         "### Rollback",
         "Delete the remote branch after rejection or consolidation:",
         f"```",
-        f"git push origin --delete {manifest.candidate_branch}",
+        f"git push origin --delete refs/heads/{manifest.candidate_branch}",
         f"```",
     ]
     return "\n".join(lines)
 
 
-def _recommend_next(validation: ValidationResult, manifest: PublicationManifest) -> str:
+def _recommend_next(
+    validation: ValidationResult, manifest: PublicationManifest
+) -> str:
     if validation.passed:
-        return "execute push after push_approved; then create draft PR after pr_approved"
+        return "ready for Gate 1 (branch_publication) or Gate 2 (draft_pr_creation) with explicit approval"
     blockers = []
     if not validation.remote_matches:
         blockers.append("fix remote")
@@ -506,10 +663,10 @@ def _recommend_next(validation: ValidationResult, manifest: PublicationManifest)
         blockers.append("resolve large file findings")
     if not validation.not_default_branch:
         blockers.append("use non-default branch")
-    if not validation.push_approved:
-        blockers.append("obtain push approval")
-    if not validation.pr_approved:
-        blockers.append("obtain PR approval")
+    if validation.gate1_approved is False:
+        blockers.append("obtain branch_publication approval")
+    if validation.gate2_approved is False:
+        blockers.append("obtain draft_pr_creation approval")
     if not validation.credential_ready:
         blockers.append("configure credentials")
     return "blocked: " + ", ".join(blockers[:5]) if blockers else "unknown"
