@@ -229,44 +229,36 @@ broad secrets access, destructive operations, unrestricted service control.
 
 ---
 
-## §6A Autonomous Branch-to-PR Pilot Transition
+## §6A Autonomous Branch-to-PR Pilot — Completed
 
-**Status:** ACTIVE — Session 12 completed the architecture and policy design for
-the first autonomous branch-to-PR pilot. Implementation has not yet begun.
+**Status:** COMPLETED — Session 13 executed the complete branch-to-PR pilot
+on Palworld KB. Git Steward MVP was implemented, the Palworld baseline was
+published, a draft PR was created, reviewed for Gate 3 readiness, and merged.
 
-The next major proof is a complete branch-to-draft-PR delivery loop on a single
-repository. This supersedes the narrower artifact-only pilot described in
-§6 / TODO.md Task 4 for Palworld KB. The artifact-only concept remains valid
-for read-only or documentation tasks.
+The pilot demonstrated:
+- Git Steward MVP (53 tests, three-gate model: validate, publish-branch, create-draft-pr)
+- Controlled publication with explicit per-gate Buddy approval
+- PR creation, review, and merge under three-gate authority
+- Approval consumption and cryptographic authority digest
+- Portfolio-view creation and Hermes-to-OpenCode delegation contract
 
-### Immediate transition (Session 13+)
+### What was proven
 
-1. **Session 12 closeout** — preserve architectural decisions, reconcile Git
-   state, produce durable handoff for the next session.
-2. **VPS verification** — directly verify Hermes, OpenCode, Codex, credential,
-   disk, and workspace state on the VPS.
-3. **Palworld publication audit** — read-only classification of 36 local commits
-   and dirty/untracked artifacts. Determine what is publishable, what requires
-   review, and what must remain private.
-4. **Palworld baseline construction** — after Buddy approves the audit
-   disposition, create a clean approved baseline branch/SHA.
-5. **Git Steward MVP** — port the predecessor implementation from `ivy-control`
-   to `ivy-control-vps`. Add mandatory gates: branch, base SHA, scope, manifest
-   equality, secret/large-file scan.
-6. **Minimum contracts** — add task-packet budget fields, result-report fields,
-   PR template, and quota tracking.
-7. **Credential and protection** — configure scoped GitHub credential and
-   default-branch protection for the pilot repository.
-8. **First pilot** — execute one bounded Palworld KB task through the complete
-   branch-to-draft-PR loop. Recommended first task: CLI compatibility regression
-   coverage for all seven public operations.
+1. Branch-to-PR-to-merge delivery loop on one repository (palworld-kb)
+2. Independent Gate 1, Gate 2, Gate 3 approvals
+3. Git Steward secret/absolute-path/protected-path/large-file validation
+4. Approval authority digest binding approval state to execution evidence
+5. Deterministic evidence and sanitized reporting
+6. Read-only PR review and merge-readiness assessment
 
-### After successful pilot
+### What remains unproven
 
-1. Review pilot evidence and update operating documents from proven behavior.
-2. Admit or complete admission of STS Workbench as a managed repository.
-3. Extend workspace management and deterministic gates.
-4. Prepare cross-repository Palworld-to-STS work.
+1. Hermes-first orchestration (delegation contract defined, pilot not executed)
+2. Multi-repository orchestration (envelope design not yet attempted)
+3. Hermes-per-repo credential model
+4. VPS workspace management and deterministic gates for non-Palworld repos
+5. STS Workbench managed-repository admission
+6. Cross-repository dependency orchestration (Palworld-to-STS)
 
 ### Deferred
 

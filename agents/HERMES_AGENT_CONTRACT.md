@@ -46,15 +46,16 @@ Before any Hermes bounded-work discovery, establish orientation through the smal
 | 2 | `agents/VPS_ORCHESTRATION.md` | Interaction modes, role boundaries, allowed/prohibited actions |
 | 3 | `agents/HERMES_AGENT_CONTRACT.md` | This file — bounded work contract |
 | 4 | `docs/README.md` and `docs/OPERATING_MODEL.md` | Authority map, navigation, role and public/private boundary |
-| 5 | `docs/PORTFOLIO_UNIVERSE.md` and `ROADMAP.md` | Known assets and current portfolio priority |
-| 6 | `tools/show_portfolio_status.sh --no-color` | Generated managed-record orientation; not authority |
-| 7 | `python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only` | Local read-only evidence summary; a live inspection requires the separate VPS interaction mode |
-| 8 | `tools/show_portfolio_status.sh --context --repo <target>` | Generated continuity route: focus, recent milestone, short-term work, long horizon, and risk |
-| 9 | `repos/<target-repo>/CONTROL.md` | Per-repo governance, permissions, blockers, next work |
-| 10 | `repos/<target-repo>/RELEASE_GATES.md` | Detailed gate evidence for the target repo |
-| 11 | `docs/HEALTH_CONTRACT.md`, `docs/GIT_WORKFLOW.md`, and `docs/LOGGING_STANDARD.md` | Read only when the proposed work concerns health, tracked change, or durable work record |
+| 5 | `docs/PORTFOLIO.md` and `docs/PORTFOLIO_INTENT.md` | Buddy's priorities, notes, direction, and formal intent |
+| 6 | `docs/PORTFOLIO_UNIVERSE.md` and `ROADMAP.md` | Known assets and current portfolio priority |
+| 7 | `tools/show_portfolio_status.sh --no-color` | Generated managed-record orientation; not authority |
+| 8 | `python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only` | Local read-only evidence summary; a live inspection requires the separate VPS interaction mode |
+| 9 | `tools/show_portfolio_status.sh --context --repo <target>` | Generated continuity route: focus, recent milestone, short-term work, long horizon, and risk |
+| 10 | `repos/<target-repo>/CONTROL.md` | Per-repo governance, permissions, blockers, next work |
+| 11 | `repos/<target-repo>/RELEASE_GATES.md` | Detailed gate evidence for the target repo |
+| 12 | `docs/HEALTH_CONTRACT.md`, `docs/GIT_WORKFLOW.md`, and `docs/LOGGING_STANDARD.md` | Read only when the proposed work concerns health, tracked change, or durable work record |
 
-Steps 1–7 establish portfolio orientation. Steps 8–11 are target- and task-specific. The context view is generated from optional `CONTROL.md` continuity metadata; it is not a second task system or authority. Generated command output routes attention; it cannot authorize an action or override `CONTROL.md`, evidence, or a gate.
+Steps 1–7 establish portfolio orientation. Steps 8–12 are target- and task-specific. The context view is generated from optional `CONTROL.md` continuity metadata; it is not a second task system or authority. Generated command output routes attention; it cannot authorize an action or override `CONTROL.md`, evidence, or a gate.
 
 ---
 
@@ -239,6 +240,62 @@ Hermes must never:
 | **Codex** | Resolves architecture questions, creates/refines roadmaps, handles difficult reasoning. Invoked through approved capabilities only. |
 | **Execution agents** (OpenCode) | Implement bounded work within explicit task packets, produce evidence |
 | **Buddy** | Approves strategic decisions, destructive actions, merges, scope changes, and Codex escalation |
+
+### 3.5f Hermes delegation to OpenCode
+
+For substantial implementation work (code, scripts, tests, schemas, migrations,
+configuration, and repository documentation changes), Hermes **must delegate**
+rather than directly execute.
+
+**Delegation rules:**
+
+1. Hermes reads the applicable authority (CONTROL.md, ROADMAP.md, PORTFOLIO.md).
+2. Hermes writes a **durable bounded task** using the task-packet template.
+3. Hermes selects the authorized executor class — **OpenCode is the normal
+   executor** for implementation work.
+4. Hermes invokes the OpenCode agent against the exact task artifact.
+5. OpenCode performs repository inspection, edits, validation, and produces a
+   singular result report.
+6. Hermes reviews the result report and factual repository evidence.
+7. Hermes does **not** perform the delegated implementation in parallel.
+8. Hermes creates another task only when allowed by the delegation envelope.
+9. Hermes stops at human, approval, privilege, destructive, publication,
+   production, privacy, architecture, or unclear-evidence gates.
+
+**Prohibited Hermes behavior:**
+
+- Direct implementation of code, scripts, tests, schemas, migrations,
+  configuration, or repository documentation changes unless the durable task or
+  delegation envelope explicitly identifies Hermes as the executor and limits
+  the work to an authorized artifact-only or read-only class.
+- Modification of implementation files before or during delegated execution.
+- Claiming delegated work as Hermes-executed work.
+- Silent executor substitution — if OpenCode is unavailable, stop and escalate.
+- Uncontrolled fan-out across many repositories.
+
+**Delegation envelope defaults:**
+
+- One task in flight by default.
+- Exact task-path handoff: Hermes writes the task to the declared artifact path.
+- Exact result-report-path expectation: Hermes reads the report from the
+  declared outbox path.
+- No informal prompt-only delegation when a durable task is required.
+- Repository count, task count, and checkpoint limits defined in the envelope.
+
+**Hermes retains:**
+
+- Coordination responsibility.
+- Evidence reconciliation.
+- Escalation authority.
+- The right to reject incomplete or invalid execution evidence.
+
+**This does not affect:**
+
+- GPT-direct-to-OpenCode work (still supported — see GPT Orchestrated Workflow).
+- Read-only inspection, which Hermes may perform directly.
+- Architecture escalation to Codex (governed by §3.5d).
+
+---
 
 ### 3.6 Documentation contract alignment check
 

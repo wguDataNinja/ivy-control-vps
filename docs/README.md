@@ -9,6 +9,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | Document | Purpose |
 |----------|---------|
 | [`README.md`](../README.md) | Public repository overview — purpose, current stage, design principles |
+| [`PORTFOLIO.md`](PORTFOLIO.md) | Human portfolio working view — Buddy's all-project surface for priorities, notes, direction, and decisions |
 | [`PORTFOLIO_INTENT.md`](PORTFOLIO_INTENT.md) | Buddy Intent Layer — what Buddy cares about, current priorities, Hermes alignment target |
 | [`ROADMAP.md`](../ROADMAP.md) | Portfolio-wide strategic direction — investment priorities, active initiatives, shared gates |
 | [`OPERATING_MODEL.md`](OPERATING_MODEL.md) | Operating model — public/private boundary, living standards, Git, deployment, agents, documentation maintenance |
@@ -94,9 +95,10 @@ This index is the operational map for agents and maintainers working with IvyCon
 Read these first to understand the control plane. Do not read every supporting document unless the task needs it.
 
 1. [`README.md`](../README.md) — what this repository is and is not
-2. [`ROADMAP.md`](../ROADMAP.md) — what requires attention now and why
-3. [`OPERATING_MODEL.md`](OPERATING_MODEL.md) — why the control plane exists and how the portfolio is governed
-4. [`PORTFOLIO_UNIVERSE.md`](PORTFOLIO_UNIVERSE.md) — what is known to exist; read this before inferring importance from admission
+2. [`PORTFOLIO.md`](PORTFOLIO.md) — Buddy's all-project view: priorities, direction, notes, decisions
+3. [`ROADMAP.md`](../ROADMAP.md) — what requires attention now and why
+4. [`OPERATING_MODEL.md`](OPERATING_MODEL.md) — why the control plane exists and how the portfolio is governed
+5. [`PORTFOLIO_UNIVERSE.md`](PORTFOLIO_UNIVERSE.md) — what is known to exist; read this before inferring importance from admission
 5. [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md) — how portfolio standards apply to each managed repository
 6. [`REPOSITORY_WORK_PROTOCOL.md`](REPOSITORY_WORK_PROTOCOL.md) — how substantial work becomes reviewed, durable evidence
 7. [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) — how tracked changes are branched, packaged, and reviewed
@@ -124,7 +126,7 @@ Read these only when applicable to the assigned work:
 ### New human maintainer
 
 ```
-README.md → OPERATING_MODEL.md → REPOSITORY_CONTROL_MODEL.md
+README.md → PORTFOLIO.md → OPERATING_MODEL.md → REPOSITORY_CONTROL_MODEL.md
 → targeted repos/<repo>/CONTROL.md
 ```
 
@@ -135,6 +137,7 @@ Read the core reading path (above) in order. Skip task-specific, agent, and Herm
 ```
 AGENTS.md + agents/LOCAL_IMPLEMENTATION.md
 → docs/README.md core reading path
+→ PORTFOLIO.md (Buddy priorities and direction)
 → REPOSITORY_WORK_PROTOCOL.md
 → GIT_WORKFLOW.md
 → target repos/<repo>/CONTROL.md
@@ -160,6 +163,8 @@ Strong Codex needs the broadest path due to architecture, deployment, and databa
 
 ```
 agents/HERMES_AGENT_CONTRACT.md
+→ PORTFOLIO.md (Buddy's all-project view)
+→ docs/PORTFOLIO_INTENT.md (formal intent layer)
 → docs/OPERATING_MODEL.md (resident agent model, authority model)
 → agents/VPS_ORCHESTRATION.md
 → docs/HERMES_OPERATOR_GUIDE.md
@@ -238,11 +243,12 @@ Each layer answers a different question:
 Portfolio standards (`PORTFOLIO_CONVENTIONS.md`, `HEALTH_CONTRACT.md`, `DATA_LIFECYCLE_STANDARD.md`, etc.) define cross-repo conventions that CONTROL.md records must comply with or explicitly deviate from.
 
 ```
-docs/PORTFOLIO_INTENT.md (Buddy priorities)
-  └── ROADMAP.md (portfolio-level strategic direction)
-        └── repos/<repo>/CONTROL.md (managed lifecycle, support, gates, deviations)
-              └── repos/<repo>/ROADMAP.md (per-repo execution detail)
-                    └── standards and dated evidence (how claims are evaluated)
+docs/PORTFOLIO.md (Buddy's all-project working view — notes, priorities, direction)
+  └── docs/PORTFOLIO_INTENT.md (Buddy's formal intent layer — what Hermes watches)
+        └── ROADMAP.md (portfolio-level strategic direction)
+              └── repos/<repo>/CONTROL.md (managed lifecycle, support, gates, deviations)
+                    └── repos/<repo>/ROADMAP.md (per-repo execution detail)
+                          └── standards and dated evidence (how claims are evaluated)
 ```
 
 A repo `CONTROL.md` may grant a standards exception; the standards may not override a CONTROL.md exception. `ROADMAP.md` may override a CONTROL.md gate only during an authorized campaign phase.

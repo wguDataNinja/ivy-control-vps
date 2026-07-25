@@ -38,6 +38,7 @@ Use the correct authority for each question:
 | Question | Authority |
 |---|---|
 | What is Ivy Control VPS? | `README.md`, `docs/OPERATING_MODEL.md` |
+| What are Buddy's current priorities and direction? | `docs/PORTFOLIO.md`, `docs/PORTFOLIO_INTENT.md` |
 | What direction are we taking? | `ROADMAP.md` |
 | What is current session work? | `TODO.md` |
 | How should agents operate? | This file + applicable standards |

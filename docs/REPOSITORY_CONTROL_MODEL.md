@@ -229,6 +229,8 @@ not replace the repo's README, ROADMAP, TODO, or AGENTS.md.
 | `repos/<repo>/STATUS.md` | **Deprecated** once CONTROL.md exists. Retained as historical reference, not updated. |
 | `repos/<repo>/<phase-packet>.md` | Bounded execution instructions for the next authorized phase. Not a governance document. Public. |
 | Locally provisioned private evidence packets | Private gate evidence and ad-hoc task artifacts. Not governance; evidence only. |
+| `docs/PORTFOLIO.md` | Human portfolio working view. Buddy's all-project surface for priorities, notes, direction, and decisions. Does not override CONTROL.md. |
+| `docs/PORTFOLIO_INTENT.md` | Formal Buddy intent layer. What Hermes watches for alignment. |
 | `docs/PORTFOLIO_CONVENTIONS.md` | Durable cross-repo conventions. Referenced by CONTROL.md applicability matrix. |
 | `docs/DATA_LIFECYCLE_STANDARD.md` | Portfolio data-lifecycle principles. Referenced by CONTROL.md. |
 | `docs/PORTFOLIO_UNIVERSE.md` | Curated known asset universe and portfolio relationship. It may acknowledge assets that do not have and should not receive a CONTROL.md record. |
@@ -384,7 +386,8 @@ or `TRIAL` status.
 The control plane answers different questions through different sources. Do not create a second registry or promote generated output into authority.
 
 | Need | Authority or generated view | Refresh meaning |
-|---|---|---|
+|---|---|---|---|
+| What does Buddy want across the portfolio — priorities, notes, direction, decisions? | `docs/PORTFOLIO.md` and `docs/PORTFOLIO_INTENT.md` | Buddy writes freely in PORTFOLIO.md; PORTFOLIO_INTENT.md documents formal intent. Reconciliation propagates to CONTROL.md, ROADMAP.md when authorized. |
 | What assets are known, including ungoverned, private, historical, and infrastructure assets? | `docs/PORTFOLIO_UNIVERSE.md` | Deliberately update when an asset relationship is learned or changed. `DISCOVERY_INCOMPLETE` remains explicit until separately authorized discovery occurs. |
 | What is true and authorized for a managed repository? | `repos/<repo>/CONTROL.md` and its gate evidence | Update when a gate, approved SHA, support state, blocker, next authorized work, or evidence basis changes. |
 | What managed records currently say in aggregate? | `tools/portfolio_registry.py` / `tools/show_portfolio_status.sh` | Re-run the generator. It reads CONTROL metadata; it does not write it or discover untracked repositories. |
