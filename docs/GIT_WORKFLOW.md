@@ -157,50 +157,89 @@ Implementation agents edit and validate files. They must not stage, commit, push
 
 For Git writes, invoke `git-steward`.
 
-## Git Steward handoff
+## Git Steward MVP
 
-`git-steward` handles authorized Git packaging and closeout. It must not edit or delete files.
+The Git Steward MVP lives at `tools/git_steward/` in the control repository. It
+is a publication-candidate validator and dry-run command generator. It does not
+execute push, pull-request creation, or any remote mutation.
 
-- Implementation agents edit and validate files.
-- When Git write operations are needed, invoke the global `git-steward` subagent.
-- `git-steward` inspects the working tree, classifies changed paths, stages exact paths, commits, pushes, and performs bounded integration — all within the current task authority.
-- `git-steward` runs a mandatory internal certainty check before every write operation. It proceeds autonomously after the check passes.
-- `git-steward` does not require user confirmation for routine authorized Git work. It stops only for real ambiguity or missing authority.
-- No `LOG.md` requirement is introduced by this workflow.
+### Scope
 
-Existing safeguards remain unchanged:
-- Exact-path staging remains mandatory.
-- Public/private separation remains unchanged.
-- Local hooks (`pre-commit`, `pre-push`) remain active.
-- `TODO.md` remains read-only — never staged, committed, or modified.
-- No file deletion is permitted by any agent, including `git-steward`.
+The MVP supports exactly one repository, one candidate branch, and one
+publication target per invocation. It validates:
 
-## Temporary Git-authority model (pre–Git Steward)
+- repository identity and remote URL;
+- candidate branch name and HEAD SHA;
+- base branch and base SHA (must be an ancestor of HEAD);
+- working-tree cleanliness;
+- tracked-file manifest against protected-path patterns;
+- secret-like content in tracked files;
+- oversized tracked files;
+- candidate is not the default branch;
+- explicit approval gates (push, PR).
 
-Git Steward is the intended long-term Git execution mechanism. It has not yet
-been migrated into `ivy-control-vps`. Until it is operational, this temporary
-authority applies:
+It does **not** support:
 
-- Implementation agents remain prohibited from performing Git writes on their
-  own authority.
-- The GPT orchestrator may authorize a specific, bounded Git write for a
-  reviewed and approved manifest.
-- The orchestrator must confirm that the manifest is exact, contains no
-  `_internal/` paths, and is safe for the current branch.
-- After orchestrator approval, the execution agent may stage and commit only
-  the exact approved paths.
-- This temporary authority applies only to approved repository-local commits.
-- It does **not** authorize:
-  - merge;
-  - push;
-  - reset, restore, or clean;
-  - history rewriting;
-  - branch deletion;
-  - deployment;
-  - credential or configuration changes.
-- This temporary authority must be removed when Git Steward becomes operational.
-  Removal requires updating this section and restoring the strict
-  "implementation agents must not stage, commit" rule without exception.
+- merging, rebasing, or force-pushing;
+- default-branch push;
+- branch deletion;
+- tag or release publication;
+- multi-repository batches;
+- automatic credential changes;
+- unattended destructive cleanup.
+
+### Usage
+
+```bash
+# Validate a publication candidate (YAML manifest)
+python3 -m tools.git_steward.steward <manifest-path>
+
+# JSON output for programmatic consumption
+python3 -m tools.git_steward.steward <manifest-path> --json
+```
+
+A publication manifest is a YAML or JSON document specifying the repository
+path, candidate branch, expected SHAs, protected-path policy, and approval
+state. See `_internal/manifests/session-13/palworld-baseline-v1.yaml` for an
+example.
+
+### Three-gate publication authority
+
+Publication to a remote repository requires three explicit gates:
+
+| Gate | Action | Authority | Documented in manifest |
+|---|---|---|---|
+| Gate 1 | Branch push (`git push origin <branch>:<branch>`) | `push_approved: true` | `approval.push_approved` |
+| Gate 2 | Draft PR creation (`gh pr create --draft`) | `pr_approved: true` | `approval.pr_approved` |
+| Gate 3 | Merge (PR approval + merge) | Buddy + GitHub review | Not in manifest scope |
+
+- Gates 1 and 2 are represented as boolean fields in the publication manifest.
+- The MVP stops if either gate is `false`.
+- Gate 3 is outside Git Steward's scope entirely — it requires GitHub review
+  and Buddy decision.
+- No single agent invocation may pass more than one gate without explicit
+  task authority.
+
+### Safety guarantees
+
+- All validation functions are read-only — no git mutation occurs during
+  validation.
+- Push commands are generated as strings only; the MVP never executes them.
+- The generated push command uses an explicit refspec
+  (`<branch>:<branch>`) — never a bare `git push`.
+- The generated PR command includes `--draft` — never a non-draft PR.
+- No `--force` flag appears in any generated command.
+- No merge command is generated.
+- Stale or removed files: the MVP does not delete, add, or modify files.
+
+### Implementation agents
+
+Implementation agents edit and validate files. They must not stage, commit,
+push, merge, integrate, restore, clean, or alter Git state directly.
+
+For Git writes, the executing agent follows the task authorization model in
+`docs/REPOSITORY_WORK_PROTOCOL.md`. The Git Steward MVP validates candidate
+state; it does not perform writes on its own.
 
 ## Branch naming
 
