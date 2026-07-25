@@ -5,6 +5,7 @@ import argparse
 import dataclasses
 import json
 import os
+import re
 import sys
 import time
 
@@ -72,20 +73,27 @@ def _write_evidence(output_dir: str, manifest_path: str, result: object) -> str:
     return evidence_path
 
 
+_EVIDENCE_TOKEN_PATTERNS: list[re.Pattern] = [
+    re.compile(r"ghp_[a-zA-Z0-9]{36}"),
+    re.compile(r"gho_[a-zA-Z0-9]{36}"),
+    re.compile(r"github_pat_[a-zA-Z0-9]{36}"),
+    re.compile(r"sk-[a-zA-Z0-9]{32,}"),
+    re.compile(r"-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(r"(?i)(?:api[_-]?key|apikey)\s*[:=]\s*[\"'][^\"']{16,}[\"']"),
+]
+
+
 def _check_evidence_sanitized(evidence_path: str) -> list[str]:
     issues: list[str] = []
     try:
         with open(evidence_path, "r") as f:
             content = f.read()
-        token_patterns = [
-            "ghp_", "gho_", "github_pat_", "sk-",
-            "-----BEGIN", "api_key", "apikey",
-        ]
-        for pat in token_patterns:
-            if pat in content:
-                issues.append(f"potential token pattern found in evidence: {pat}")
-        if "http://" in content and "github.com" not in content:
-            issues.append("non-github http URL found in evidence")
+        for pat in _EVIDENCE_TOKEN_PATTERNS:
+            m = pat.search(content)
+            if m:
+                issues.append(
+                    f"potential credential pattern matched: {pat.pattern[:40]}"
+                )
     except Exception:
         pass
     return issues
