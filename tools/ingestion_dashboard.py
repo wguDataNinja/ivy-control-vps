@@ -36,6 +36,91 @@ STATUSES = ("GREEN", "YELLOW", "RED", "UNKNOWN")
 EVIDENCE_LEVELS = ("live", "evidence_card", "stale", "missing_producer", "unsupported_field", "doc_fallback", "unresolved_authority")
 SUMMARY_ORDER = {"UNKNOWN": 0, "RED": 1, "YELLOW": 2, "GREEN": 3}
 
+# ---------------------------------------------------------------------------
+# VPS Inventory integration — load topology from docs/VPS_INVENTORY.md
+# Provides fallback defaults so the dashboard is not dependent on the file.
+# ---------------------------------------------------------------------------
+
+_INVENTORY: dict | None = None
+
+
+def _load_inventory() -> dict | None:
+    """Load VPS topology from docs/VPS_INVENTORY.md YAML front matter.
+
+    Returns parsed dict or None if unavailable.
+    Safe fallback — never raises, never blocks.
+    """
+    try:
+        import yaml
+    except ImportError:
+        return None
+    path = ROOT / "docs" / "VPS_INVENTORY.md"
+    if not path.is_file():
+        return None
+    try:
+        parts = path.read_text(encoding="utf-8").split("---", 2)
+        if len(parts) < 3:
+            return None
+        data = yaml.safe_load(parts[1])
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def _ensure_inventory() -> dict | None:
+    global _INVENTORY
+    if _INVENTORY is None:
+        _INVENTORY = _load_inventory()
+    return _INVENTORY
+
+
+def _inventory_workload(workload_id: str) -> dict | None:
+    data = _ensure_inventory()
+    if data is None:
+        return None
+    for w in (data.get("workloads") or []):
+        if isinstance(w, dict) and w.get("id") == workload_id:
+            return w
+    return None
+
+
+def _inventory_host() -> str | None:
+    data = _ensure_inventory()
+    if data is None:
+        return None
+    host = data.get("vps_host") or {}
+    return host.get("ssh_alias")
+
+
+def _inventory_reddit_systemd() -> dict:
+    """Return Reddit systemd names from inventory, with hardcoded fallbacks."""
+    defaults = {
+        "active_timer": "wgu-reddit-postgres-run.timer",
+        "active_service": "wgu-reddit-postgres-run.service",
+        "legacy_timer": "wgu-reddit-shadow-run.timer",
+        "backup_service": "wgu-reddit-backup.service",
+    }
+    w = _inventory_workload("reddit-ops")
+    if w is None:
+        return defaults
+    sd = w.get("systemd") or {}
+    legacy = (w.get("legacy_units") or [None])[0] or {}
+    return {
+        "active_timer": sd.get("active_timer") or defaults["active_timer"],
+        "active_service": sd.get("active_service") or defaults["active_service"],
+        "legacy_timer": legacy.get("timer") or defaults["legacy_timer"],
+        "backup_service": sd.get("backup_service") or defaults["backup_service"],
+    }
+
+
+def _inventory_systemd_field(workload_id: str, field: str, default: str) -> str:
+    w = _inventory_workload(workload_id)
+    if w is None:
+        return default
+    sd = w.get("systemd") or {}
+    return sd.get(field) or default
+
+
 # Ensure the repository root is on sys.path so that 'from tools.*' imports
 # work regardless of the caller's working directory.
 _THIS_DIR = str(ROOT)
@@ -100,8 +185,9 @@ class Transport:
         self.mode = mode
 
     def _detect(self) -> str:
+        _timer = _inventory_reddit_systemd()["active_timer"]
         ok, _ = run(["systemctl", "--user", "show", "-p", "ActiveState", "--value",
-                      "wgu-reddit-postgres-run.timer"])
+                      _timer])
         if ok:
             return self.DIRECT
         return self.REMOTE
@@ -116,7 +202,8 @@ class Transport:
     def _ssh(self, command: str) -> tuple[bool, str]:
         if not shutil.which("ssh"):
             return False, "ssh not available"
-        host = self.host or "ih-market-vps"
+        inventory_host = _inventory_host()
+        host = self.host or inventory_host or "ih-market-vps"
         return run(["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes",
                      host, command])
 
@@ -150,7 +237,9 @@ def control_text(path: str) -> str:
 
 
 def collect_reddit(_transport: Transport | None = None) -> dict:
-    result = row("WGU Reddit", "wgu-reddit-postgres-run.timer", "ROADMAP §7B-G1")
+    _rd = _inventory_reddit_systemd()
+    _active_timer = _rd["active_timer"]
+    result = row("WGU Reddit", _active_timer, "ROADMAP §7B-G1")
     result["evidence_level"] = "missing_producer"
     result["detail"].update({
         "deployed_revision": "unknown (SCP-managed runtime; no Git checkout)",
@@ -168,13 +257,16 @@ def collect_reddit(_transport: Transport | None = None) -> dict:
     # Manual and natural recovery proof known regardless of live access
     result["backup"] = "BACKUP_RECOVERY_PROVEN (manual dump/restore proof from Session 9 report 23; natural timer acceptance at 2026-07-16 08:00:14 UTC)"
     t = _transport or transport
+    _active_service = _rd["active_service"]
+    _legacy_timer = _rd["legacy_timer"]
+    _backup_service = _rd["backup_service"]
     command = (
-        "systemctl --user show wgu-reddit-postgres-run.timer "
+        f"systemctl --user show {_active_timer} "
         "-p ActiveState -p UnitFileState --value; echo ---; "
-        "systemctl --user show wgu-reddit-postgres-run.service "
+        f"systemctl --user show {_active_service} "
         "-p Result -p ExecMainExitTimestamp -p ActiveState --value; echo ---; "
-        "systemctl --user show wgu-reddit-shadow-run.timer -p ActiveState -p UnitFileState --value; echo ---; "
-        "systemctl --user show wgu-reddit-backup.service -p Result -p ExecMainExitTimestamp --value"
+        f"systemctl --user show {_legacy_timer} -p ActiveState -p UnitFileState --value; echo ---; "
+        f"systemctl --user show {_backup_service} -p Result -p ExecMainExitTimestamp --value"
     )
     ok, output = t.exec(command) if t else (False, "no transport")
     if not ok:
@@ -234,9 +326,10 @@ def collect_ih(_transport: Transport | None = None) -> tuple[dict, dict]:
         "canonicality_adapter": "missing_producer (no canonicality evidence adapter for IH market)",
     })
     t = _transport or transport
+    _ih_service = _inventory_systemd_field("ih-market-companion", "active_service", "ih-collector-helper.service")
     ok, output = t.exec(
         "curl --max-time 5 -s http://127.0.0.1:8765/health; echo; "
-        "systemctl --user is-active ih-collector-helper.service"
+        f"systemctl --user is-active {_ih_service}"
     ) if t else (False, "no transport")
     if not ok:
         for item in (chat, market):
@@ -348,7 +441,8 @@ def collect_capacity(_transport: Transport | None = None) -> dict:
 
 
 def traderie_unknown() -> dict:
-    result = row("Traderie", "traderie-ingest-snapshot.timer", "ROADMAP §7A-G1")
+    _traderie_timer = _inventory_systemd_field("traderie", "active_timer", "traderie-ingest-snapshot.timer")
+    result = row("Traderie", _traderie_timer, "ROADMAP §7A-G1")
     result["evidence_level"] = "missing_producer"
     result["detail"].update({
         "deployed_revision": "unknown (no live probe adapter)",

@@ -104,7 +104,7 @@
 | Schedule freshness monitored | ✅ Implemented — `systemctl --user list-timers` |
 | Run duration thresholds defined | ⚠️ Documented — defined in RUNBOOK.md; alerting not automated |
 | Heartbeat age thresholds defined | ⚠️ Documented — stale threshold env var; alerting not automated |
-| Database health monitored | ✅ Implemented — `pg_isready` + `tools/check_reddit_ops_pg_health.py` |
+| Database health monitored | ✅ Implemented — `pg_isready` + `tools/ingestion_dashboard.py` (systemd timer/service/backup probes from ingestion dashboard; no dedicated health script) |
 | Backup age monitored | ⚠️ Documented — manual verification; automated alerting missing |
 | Disk growth monitored | ⚠️ Documented — `df -h` check; automated alerting missing |
 

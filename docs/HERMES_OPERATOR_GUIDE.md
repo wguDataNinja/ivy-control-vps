@@ -1,12 +1,19 @@
 # Hermes Operator Guide
 
-**Status:** Current authority. Hermes is installed, launched, and operational as a read-only resident assistant on the VPS.
+**Status:** Current authority. Hermes is installed and operational as a
+read-only resident assistant on the VPS. Explicitly dispatched artifact-only
+coordination is defined but has not yet passed its first repository pilot.
 
-**Parent document:** `docs/RESIDENT_AGENT_MODEL.md` — defines the Resident Agent Interface (RAI) architecture that Hermes implements.
+**Parent document:** `docs/OPERATING_MODEL.md` — defines the resident agent model, RAI architecture, and verification principle. (Formerly `docs/RESIDENT_AGENT_MODEL.md`, merged.)
 
 ## Purpose
 
 Hermes is a resident VPS operations assistant. It observes, inspects, summarizes, recommends, and produces evidence-backed files. It does not have production write authority.
+
+When a separate Mode 0 delegation envelope exists, Hermes may create only
+bounded workflow artifacts in the target repository's declared paths and
+coordinate one delegated task at a time. This is not application-code, Git,
+service, database, credential, or production-data authority.
 
 Hermes is not required for routine deterministic production operation. Core fetchers, timers, backups, and health checks remain implemented through deterministic scripts, PostgreSQL, and systemd.
 
@@ -91,6 +98,7 @@ Hermes is a **read-only** operator assistant. Allowed actions:
 | Review | Logs, outputs, evidence |
 | Recommend | Actions based on evidence |
 | Produce | Evidence-backed files in the bridge outbox |
+| Coordinate | Mode 0 task packets and factual workflow artifacts only when an explicit delegation envelope permits them |
 
 Prohibited actions:
 
@@ -155,10 +163,10 @@ Do not put credentials, API keys, `.env` contents, chat bodies, or production da
 
 | Agent | Role |
 |-------|------|
-| **Hermes** | Resident read-only VPS assistant. Inspects, summarizes, recommends. |
+| **Hermes** | Orchestration layer. Reads state, validates readiness, creates task packets, delegates execution, validates evidence, produces acceptance/rejection outcomes, and may request controlled Codex escalation through approved capabilities. |
 | **OpenCode** | Bounded implementation and verification agent. Used via local Mac session for source work, documentation, tests, and independent evidence verification. |
-| **Strong Codex** | Privileged execution for architecture, deployment, database, migration, cutover, rollback, and other sensitive or irreversible operations. |
-| **Buddy** | Authority and risk decisions. Sole approver for production mutations, Git writes, privilege expansion, and destructive actions. |
+| **Strong Codex** | Architecture authority. Resolves design questions, creates/refines roadmaps, handles difficult reasoning. Invoked through controlled capabilities, never autonomously. |
+| **Buddy** | Authority and risk decisions. Sole approver for production mutations, Git writes, privilege expansion, destructive actions, and Codex escalation approval. |
 
 ## Stop and escalation boundaries
 
@@ -178,5 +186,7 @@ Escalate to Buddy for:
 - Secret or credential management.
 - Capacity remediation affecting production workloads.
 - Any action requiring sudo (no passwordless sudo available).
+- Codex escalation (Hermes detects a condition matching a defined Codex
+  capability — Buddy must approve before Codex is invoked).
 
-For the Resident Agent Interface architecture, verification principle, and proposed future evolution, see `docs/RESIDENT_AGENT_MODEL.md`.
+For the Resident Agent Interface architecture and verification principle, see `docs/OPERATING_MODEL.md` §Hermes and agents.

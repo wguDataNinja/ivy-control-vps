@@ -19,10 +19,10 @@
 
 | Criterion | Status | Notes |
 |---|---|---|
-| Health source | `tools/check_reddit_ops_pg_health.py` + operational SQL queries | No dedicated health table yet |
+| Health source | `tools/ingestion_dashboard.py` (systemd timer/service/backup probes) + operational SQL queries | No dedicated health script or canonical v2 producer yet |
 | Health table | `reddit_core.ingestion_runs` | Operational table, not a health table |
 | Canonical field set | ≡ | All fields derivable from ingestion_runs + system queries |
-| Exporter exists | ± | CHECK script exists, but no canonical exporter |
+| Exporter exists | ✗ | No canonical v2 exporter — health probing via ingestion dashboard only |
 | Scheduler metadata | ✓ | systemctl reports |
 | Deployed SHA | ✗ | VPS not a Git checkout — needs manual SHA tracking |
 | Drift detection | ✗ | Not implemented |

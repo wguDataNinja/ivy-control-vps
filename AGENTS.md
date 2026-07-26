@@ -1,261 +1,163 @@
 # AGENTS.md
 
-This repository is developed locally with OpenCode, Codex, or similar coding agents.
-
-This file is the single agent instruction file for this repository. Do not look for or create nested `AGENTS.md` files. Do not rely on separate agent contracts unless the task explicitly names one.
-
-## Scope
-
-Work only in:
-
-`/Users/buddy/projects/ivy-control-vps`
 
 Before acting:
 
-1. Run `pwd` and confirm the path.
-2. Read the current local `TODO.md` from disk.
-3. Read the repository standards that apply to the task, including `docs/OPERATING_MODEL.md`, `docs/LOGGING_STANDARD.md`, and any repository-control or portfolio-convention document referenced by the task.
-4. Inspect `git status --short --branch`.
-5. Identify the exact task, allowed files, applicable standards, control-sheet or gate implications, and validation required.
-6. If the task involves a managed repository, read its `repos/<repo>/CONTROL.md` before acting.
-7. Stop and ask if the task or any destructive instruction is ambiguous.
+1. Confirm the repository path.
+2. Read the current local `TODO.md`.
+3. Inspect `git status --short --branch`.
+4. Identify the task scope, authority source, affected files, validation requirements, and any managed repository impact.
+5. Read the applicable standards:
+   - `docs/OPERATING_MODEL.md`
+   - `docs/REPOSITORY_WORK_PROTOCOL.md`
+   - `docs/GIT_WORKFLOW.md`
+   - `docs/LOGGING_STANDARD.md`
+   - relevant `repos/<repo>/CONTROL.md` when working on a managed repository.
 
-A request to read a file authorizes no Git or filesystem mutation.
+If the task, authority, or allowed changes are unclear, stop and ask.
 
-## Fresh-agent orientation
+Reading a file does not authorize mutation.
 
-For a new substantive task, read the root `README.md`, `docs/README.md`, `docs/OPERATING_MODEL.md`, `docs/PORTFOLIO_UNIVERSE.md`, `docs/REPOSITORY_WORK_PROTOCOL.md`, and `docs/GIT_WORKFLOW.md` before expanding into task-specific standards. Then use these read-only views for orientation:
+## Hermes Orchestrator Mode
 
-```sh
-./tools/show_portfolio_status.sh --no-color
-python3 tools/ingestion_dashboard.py --no-live --summary --stdout-only
-./tools/show_ready_work.sh
-```
+If you are Hermes operating as the orchestrator, follow this workflow before proposing or delegating work:
 
-They are generated routing aids, not authority. Confirm portfolio relationship in `PORTFOLIO_UNIVERSE.md`, managed state in the relevant `repos/<repo>/CONTROL.md`, operational evidence in the health contract and evidence artifacts, and execution priority in `ROADMAP.md` before acting.
+1. Confirm repository identity and read required authority documents.
+2. Read the applicable roadmap and repository control documents.
+3. Identify and execute required gates before planning work.
+4. Report gate results before proposing implementation paths.
+5. If a gate fails, stop execution planning and escalate according to the Hermes contract.
+6. Only after approval and successful gates, create task packets and delegate work.
+
+Hermes does not choose implementation work around failed gates.
+
+## Repository authority
+
+Use the correct authority for each question:
+
+| Question | Authority |
+|---|---|
+| What is Ivy Control VPS? | `README.md`, `docs/OPERATING_MODEL.md` |
+| What are Buddy's current priorities and direction? | `docs/PORTFOLIO.md`, `docs/PORTFOLIO_INTENT.md` |
+| What direction are we taking? | `ROADMAP.md` |
+| What is current session work? | `TODO.md` |
+| How should agents operate? | This file + applicable standards |
+| What is a managed repository's state? | `repos/<repo>/CONTROL.md` |
+| What proves operational state? | Evidence artifacts + health contract |
+| How does work become durable? | `docs/REPOSITORY_WORK_PROTOCOL.md` |
+
+Generated views are routing aids, not authority.
+
+## Documentation governance
+
+Before creating any durable documentation:
+
+1. Check whether an existing authority document already owns the information.
+2. Update the existing authority instead of creating a duplicate.
+3. If a new document appears necessary, explain:
+   - what question it answers;
+   - why existing documents cannot own it;
+   - who owns future updates.
+
+Do not create new standards, guides, plans, summaries, or reference documents without this review.
+
+Prefer:
+
+existing authority → update
+
+over:
+
+new document → new authority
 
 ## TODO.md
 
-`TODO.md` is task input written by Buddy or GPT.
+`TODO.md` is task input from Buddy or GPT.
 
 Agents must:
 
 - read the local working-tree version;
-- never replace it with a Git version;
-- never edit, restore, stage, commit, stash, clear, or advance it;
-- report recommended next work in the final response instead of changing it.
+- preserve it;
+- never edit, restore, stage, commit, stash, or replace it;
+- report recommended future work instead.
 
 ## Development behavior
 
-For a tracked change, follow the public change path in `docs/REPOSITORY_WORK_PROTOCOL.md`: identify authority and scope, preserve the working tree, use an authorized branch, validate, record substantial work, then route exact-file Git packaging through `git-steward`. Do not treat chat history, a result report, or a private note as canonical authority.
+Agents may:
 
-Agents may perform ordinary development work explicitly required by the task, including:
-
-- reading repository files;
-- editing approved files;
-- creating approved files;
-- running tests and validation;
-- using Git for task branches, commits, pushes, and task-specific integration when explicitly authorized.
+- inspect repository files;
+- edit approved files;
+- create approved files;
+- run tests and validation;
+- perform task-authorized implementation work.
 
 Agents must:
 
-- keep changes within scope;
+- stay within task scope;
 - preserve unrelated work;
-- inspect existing instructions and current state before editing;
-- distinguish implemented behavior from planned or provisional behavior;
-- avoid inventing policy, permissions, paths, credentials, or production details;
-- report failed validation, ambiguity, missing prerequisites, and process friction;
-- verify claims with evidence before reporting completion.
+- verify claims with evidence;
+- distinguish completed work from planned work;
+- report uncertainty instead of guessing.
 
-## Protected data
+## Git
 
-Treat these as protected user data:
-
-- `_internal/`;
-- `internal/` if present;
-- untracked files;
-- ignored files;
-- uncommitted changes;
-- `TODO.md`;
-- local-only notes and task history.
-
-Do not delete, overwrite, restore, move, clean, stage, commit, or expose protected data unless the task names the exact path and Buddy explicitly approves the exact action.
-
-Git does not protect ignored, untracked, or uncommitted content.
-
-## Destructive commands
-
-Do not run destructive commands without Buddy's explicit approval for the exact command and exact targets.
-
-Prohibited unless specifically approved:
-
-- `rm -rf`;
-- broad `rm` commands;
-- `find ... -delete`;
-- `find ... | xargs rm`;
-- `git clean`;
-- `git reset --hard`;
-- `git checkout ... -- .`;
-- `git restore .`;
-- force-push;
-- history rewriting;
-- deleting branches;
-- deleting or overwriting untracked or ignored files;
-- mass replacement of the working tree.
-
-Before any approved deletion or cleanup:
-
-1. Show the exact target list.
-2. Confirm tracked, untracked, ignored, and modified status.
-3. Explain what is recoverable and what is not.
-4. Obtain explicit approval.
-5. Use exact-file operations only.
-
-Ambiguous language is never authorization for deletion.
-
-## Git rules
-
-Git is for version control, not as a substitute for backups.
+Git history is part of the engineering record.
 
 Agents must:
 
 - inspect status before Git operations;
-- avoid touching unrelated changes;
-- use exact-file staging;
-- use task branches unless the task explicitly authorizes direct work on `main`;
-- never force-push;
-- never rewrite shared history;
-- never assume ignored or untracked files are recoverable;
-- never merge or delete branches unless the task explicitly authorizes it;
-- use `GIT_PAGER=cat` for review commands that might open a pager.
+- preserve unrelated changes;
+- keep commits focused and meaningful;
+- validate before committing;
+- follow `docs/GIT_WORKFLOW.md`.
 
-When task-specific integration is authorized, validate first, then commit, push, integrate, and verify local and remote SHAs.
+Agents must not:
 
-## Git write delegation
+- force-push;
+- rewrite history;
+- delete branches;
+- merge protected branches without authorization;
+- stage protected or unrelated files.
 
-To perform Git write operations, invoke the global `git-steward` subagent. Do not run those operations yourself.
+Normal agents perform Git inspection only unless the task explicitly authorizes Git writes through the repository workflow.
 
-- Normal implementation agents may run read-only Git inspection commands (`git status`, `git diff`, `git log`, `git show`, `git rev-parse`, `git branch`, `git remote -v`, `git ls-files`, `git check-ignore`, `git submodule status`).
-- Normal agents must not stage, commit, push, merge, integrate, restore, clean, or alter Git state directly.
-- `git-steward` owns routine staging, commit, push, and bounded integration within the current task authority.
-- `git-steward` proceeds autonomously only after its mandatory internal certainty check passes.
-- `git-steward` is still bound by `AGENTS.md`, `docs/GIT_WORKFLOW.md`, protected paths, and current task authority.
-- Invoking `git-steward` does not create commit, push, merge, deletion, cleanup, or restore authority beyond what the current task already provides.
-- No agent, including `git-steward`, may delete files.
-- No agent may use Git to overwrite or discard `TODO.md`, `_internal/`, ignored, untracked, private, or unrelated work.
-- Buddy should only be involved for genuine ambiguity, policy, permission, or protected-data decisions.
+## Protected data
 
-## Codex
+Do not modify, stage, commit, expose, or delete:
 
-When a task is explicitly assigned to Strong Codex, Codex has authority to choose the execution strategy, inspect additional relevant context, and determine the safest command sequence within the task's stated boundaries.
+- `_internal/`
+- `TODO.md`
+- ignored files
+- untracked files
+- unrelated local changes
 
-Do not delegate Codex work to subagents unless Buddy explicitly asks for delegation or the task clearly requires independent specialist work.
+Protected-data changes require explicit approval.
 
-## Public and private boundaries
+## Session and task artifacts
 
-- Public tracked documentation may be pushed to GitHub.
-- Private material must not be included in public commits.
-- Do not store secrets in tracked or untracked documentation.
-- Do not assume all local Git history is safe to push.
-- Verify the exact diff before every commit and push.
+Every substantial task must produce two artifacts in `_internal/`:
 
-## Logging
+| Artifact | Path | Purpose |
+|---|---|---|
+| Result report | `_internal/outbox/session-<N>/<NN>-<descriptive-slug>.md` | Consolidated outcome, evidence, validation, next handoff |
+| Execution log | `_internal/logs/agents/YYYY-MM-DD/<task-slug>.md` | Concise chronology of actions performed |
 
-Follow `docs/LOGGING_STANDARD.md`.
+Writing these artifacts is explicitly authorized despite the general `_internal/` protection rule. Result reports must contain the minimum fields defined in `docs/REPOSITORY_WORK_PROTOCOL.md` §4. Execution logs must not duplicate the report — they record what was done, not what was found.
 
-Before meaningful work, read the applicable portfolio standards (`docs/OPERATING_MODEL.md`, `docs/REPOSITORY_CONTROL_MODEL.md`, `docs/LOGGING_STANDARD.md`) and any repository control sheet (`repos/<repo>/CONTROL.md`) that the task affects.
+Tasks without a session number use `session-0`.
 
-A concise private agent log is required whenever an agent performs meaningful work that:
+## Work lifecycle
 
-- changes repository state;
-- creates or changes a durable artifact;
-- changes configuration or policy;
-- performs deployment or operational work;
-- changes a repository control sheet, release gate, or portfolio status;
-- completes another substantive task with a durable result or decision.
+Follow:
 
-Read-only exploration, simple factual answers, and inspections that produce no durable result or decision normally do not require a log.
-
-Create or update the required log before declaring meaningful work complete. Use the organized private logging path defined by `docs/LOGGING_STANDARD.md`; do not use legacy `SESSION.md` or `LOG.md` as the primary record for new work.
-
-Use the concise format defined by the logging standard. Record the result, validation, unresolved issues, and next work. Reference commits where relevant, but do not duplicate Git history or long command transcripts.
-
-If a bounded operational task forbids repository changes, the executing agent returns structured evidence only. A later OpenCode closeout task may record the private log.
-
-## Validation
-
-Before declaring completion:
-
-- review every changed file;
-- run relevant tests or checks;
-- run `git diff --check` for tracked changes;
-- verify links when editing Markdown;
-- confirm no secrets or private content are staged;
-- confirm `TODO.md` was not changed by the agent;
-- confirm any required private agent log was created or updated before completion;
-- confirm required result report exists (see `docs/REPOSITORY_WORK_PROTOCOL.md` §4);
-- report the final branch and working-tree status;
-- report anything that still truly requires Buddy.
-
-## Final report
-
-Return only the information needed to understand the result:
-
-- work completed;
-- files changed;
-- validation performed;
-- Git result, if authorized;
-- required private log path, when meaningful work required one;
-- unresolved issues;
-- process friction;
-- recommended next task;
-- any action that truly requires Buddy.
-
-## VPS work
-
-This file is for local development only.
-
-Do not perform VPS, Hermes, deployment, production, credential, or host-maintenance work from this repository unless Buddy gives a separate explicit task with the exact environment, permissions, and limits.
-
-A separate VPS `AGENTS.md` will be created later in the actual VPS checkout.
-
-### Authorized VPS interaction
-
-Before any VPS work, read these files in order:
-
-1. `agents/VPS_ORCHESTRATION.md` — interaction-mode model, approval boundaries, what each mode allows
-2. `_internal/vps-inventory-and-runbook.md` — private host identity, SSH access, workload map, capacity evidence, exact read-only commands, protected workload rules
-
-"Check the VPS" always means Mode 2 (read-only SSH inspection). It never authorizes cleanup, deployment, restart, migration, or service activation. See `agents/VPS_ORCHESTRATION.md` §1a for the complete mode model.
-
-## Work lifecycle and private supplements
-
-The public lifecycle is defined by `workflows/README.md` and `docs/REPOSITORY_WORK_PROTOCOL.md`. `ROADMAP.md` defines project direction and phase status; `docs/` and `repos/*/CONTROL.md` hold promoted current authority.
-
-For locally provisioned GPT orchestration, a private supplement may define numbered handoffs, gate packets, session logs, and close mechanics. It remains protected local evidence and must not become a public-clone dependency or public Git content.
-
-## Work Tracking
-
-This repository follows the Ivy portfolio work protocol (`docs/REPOSITORY_WORK_PROTOCOL.md`) as the governing repository:
-
-- **Governing protocol:** Ivy portfolio work protocol
-- **Current planning authority:** `ROADMAP.md` (portfolio-wide) + `TODO.md` (session-scoped)
-- **Task-prompt location:** `_internal/inbox/session-<N>/` (optional — direct handoffs accepted)
-- **Task-result location:** `_internal/outbox/session-<N>/`
-- **Session record:** `_internal/logs/sessions/GPT-<N>-<slug>.md`
-- **Agent execution logs:** `_internal/logs/agents/YYYY-MM-DD/<slug>.md`
-- **Portfolio journal:** `_internal/logs/sessions/SESSION_JOURNAL.md`
-- **Canonical project authority:** `docs/` (standards), `repos/*/CONTROL.md` (per-repo policy)
-- **Git writer:** `git-steward` subagent (explicitly authorized operations only)
-- **Closeout requirements:** Result report in outbox, agent log if applicable, Git commit via git-steward, session log updated, journal entry recorded
-
-### Journal workflow
-
-1. Before starting a new substantial task, write the journal entry supplied by GPT for the previous reviewed result.
-2. Link the journal row to the previous result report.
-3. Preserve GPT's acceptance status, summary, issues, and follow-up faithfully.
-4. Write the final journal row during session close when there is no next task.
-5. Maintain the detailed GPT session log separately — the journal is a navigation summary, not a replacement for session memory.
-6. Do not treat the journal as architecture or implementation authority.
-7. Do not claim completion without verifying that required journal entries and result reports exist.
-8. Do not stage or commit Ivy Control `_internal/` material.
+```text
+task
+ ↓
+bounded implementation
+ ↓
+validation
+ ↓
+result report → _internal/outbox/session-<N>/
+ ↓
+review
+ ↓
+promotion into authority

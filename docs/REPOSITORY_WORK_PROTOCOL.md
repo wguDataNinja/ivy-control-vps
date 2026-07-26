@@ -81,6 +81,29 @@ The report is the primary handoff artifact between the executing agent, GPT, Bud
 
 A repository using an alternative path must document it in AGENTS.md, CONTROL.md, or a clearly identified private local supplement.
 
+### VPS workspace artifact boundary
+
+A clean VPS checkout must not rely on Ivy Control VPS's Mac-local `_internal/`
+tree. For a VPS-resident repository, its AGENTS.md or CONTROL.md must declare
+the publication-safe artifact paths Hermes may use, or Hermes must remain
+limited to a single human-dispatched task. Private task packets, raw evidence,
+and runtime logs require a separately provisioned location outside the Git
+checkout. Result reports, logs, and journal proposals created by Hermes remain
+evidence only and cannot promote canonical truth.
+
+### Multi-artifact review rule
+
+When a task produces multiple artifacts that require a review decision (such as
+model outputs, comparison reports, or generated proposals):
+
+- The reviewer must inspect primary artifacts directly.
+- Agent-produced comparisons or summaries are secondary evidence only.
+- A single review bundle containing all primary artifacts must be assembled
+  before the reviewer is asked for a decision.
+
+This prevents summary substitution — the decision-maker must see the actual
+outputs, not another agent's interpretation of them.
+
 ---
 
 ## 5. Execution Logs
@@ -135,6 +158,38 @@ Each artifact has one role:
 
 An inbox artifact is preferred for multi-step or cross-session work, but a direct handoff remains valid when recorded in the result report. Read-only exploration, brief questions, and trivial safe changes may use a reduced workflow; substantial implementation, audit, architecture, durable-artifact, or operational work must use the full evidence path.
 
+### Artifact-only orchestration
+
+An explicitly dispatched Hermes orchestration run follows the artifact-driven
+lifecycle:
+
+```
+Task packet → execution agent → execution report
+  → Hermes validation → validation outcomes:
+    → [ACCEPT] → journal update → next packet or stop
+    → [REJECT] → rework or escalate
+    → [NEEDS_BUDDY_REVIEW] → stop, report to Buddy
+    → [NEEDS_CODEX] → check capability registry → escalate if authorized
+```
+
+Hermes may create task packets, factual review reports, concise orchestration
+logs, and journal proposals only inside the target repository's declared
+permitted artifact paths. It must use
+`agents/orchestrator-task-packet-template.md`, operate inside a delegation
+envelope, and stop after every delegated task unless the next packet remains
+within that envelope. Before creating any packet, Hermes must evaluate the
+roadmap section against `agents/HERMES_ROADMAP_SUFFICIENCY_GATE.md`.
+
+Between receiving an execution report and authorizing the next task, Hermes
+must produce a validation report. See `agents/HERMES_AGENT_CONTRACT.md` §3.5b
+for the validation criteria and `agents/HERMES_AGENT_CONTRACT.md` §3.5c for
+the validation outcomes.
+
+Hermes never supplies GPT/Buddy acceptance, decisions, lessons, or canonical
+promotion. Hermes coordinates; execution agents implement; Buddy approves.
+Codex escalation requires Buddy approval in all cases where
+`requires_buddy_approval` is true.
+
 ---
 
 ## 7. Minimum Start-of-Work Checks
@@ -145,11 +200,12 @@ For a normal, non-production change, use this path:
 
 1. Identify the relevant authority document and task scope. Do not use a result report or chat history as substitute authority.
 2. Inspect the current working tree and preserve unrelated or protected work.
-3. Use a bounded task branch unless an explicitly authorized exception applies; select the branch prefix from `docs/GIT_WORKFLOW.md`.
-4. Implement only the approved scope and run task-appropriate validation.
-5. Create a result report and an execution log when the work is substantial or creates a durable artifact.
-6. Have the authorized Git writer package the exact public files after reviewing the diff. Agents do not self-merge or push private history.
-7. After review, record the journal entry and promote only settled truth into the appropriate roadmap, control record, or canonical standard.
+3. **Before creating any new file**, confirm that no existing authority document can absorb the material. Apply the documentation creation governance gate (see `docs/README.md` §Repository Documentation Contract — four-question check). If the gate is unclear, do not create the document.
+4. Use a bounded task branch unless an explicitly authorized exception applies; select the branch prefix from `docs/GIT_WORKFLOW.md`.
+5. Implement only the approved scope and run task-appropriate validation.
+6. Create a result report and an execution log when the work is substantial or creates a durable artifact.
+7. Have the authorized Git writer package the exact public files after reviewing the diff. Agents do not self-merge or push private history.
+8. After review, record the journal entry and promote only settled truth into the appropriate roadmap, control record, or canonical standard.
 
 For a production, VPS, database, destructive, privacy-sensitive, or authority-changing action, stop at step 1 until the applicable control record, gate, and task authorization permit the action. `agents/VPS_ORCHESTRATION.md` defines the VPS interaction modes.
 
@@ -187,12 +243,14 @@ Before declaring task completion:
 Before closing a session:
 
 1. Inspect all task result reports for completion state.
-2. Verify Git state and distinguish pre-existing dirt from session changes.
-3. Confirm `_internal/` or equivalent private-data directory is not staged.
-4. Verify all required session logs exist.
-5. Update or verify TODO.md contains the next-session plan.
-6. Commit and push authorized durable changes.
-7. Do not discard, restore, or truncate TODO.md.
+2. Discover task boundaries from outbox artifacts, agent logs, and session context. Create a per-session task journal at `_internal/logs/sessions/session-<N>/TASK_JOURNAL.md` with one template section per task.
+3. GPT fills the semantic fields (objective, assessment, decisions, lessons, follow-up). The agent does not infer semantic content.
+4. Verify Git state and distinguish pre-existing dirt from session changes.
+5. Confirm `_internal/` or equivalent private-data directory is not staged.
+6. Verify all required session logs exist.
+7. Update or verify TODO.md contains the next-session plan.
+8. Commit and push authorized durable changes.
+9. Do not discard, restore, or truncate TODO.md.
 
 ---
 
@@ -202,6 +260,11 @@ Before closing a session:
 - Private manifests, execution packets, backup logs, and scope-decision artifacts stay outside Git.
 - Commits must not contain passwords, secrets, private absolute paths, or sensitive content.
 - Use `git-steward` or equivalent for Git write operations unless explicitly authorized otherwise.
+- **Temporary provision:** Until Git Steward is operational in `ivy-control-vps`,
+  the GPT orchestrator may authorize a specific bounded commit for a reviewed
+  manifest. See `docs/GIT_WORKFLOW.md` §Temporary Git-authority model for the
+  full rules and restrictions. This provision expires when Git Steward is
+  available.
 
 ---
 

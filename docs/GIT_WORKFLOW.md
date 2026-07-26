@@ -157,23 +157,179 @@ Implementation agents edit and validate files. They must not stage, commit, push
 
 For Git writes, invoke `git-steward`.
 
-## Git Steward handoff
+## Git Steward MVP
 
-`git-steward` handles authorized Git packaging and closeout. It must not edit or delete files.
+The Git Steward MVP lives at `tools/git_steward/` in the control repository. It
+is a publication-candidate validator with three independent operational modes.
+It does not execute push, pull-request creation, or any remote mutation during
+this task.
 
-- Implementation agents edit and validate files.
-- When Git write operations are needed, invoke the global `git-steward` subagent.
-- `git-steward` inspects the working tree, classifies changed paths, stages exact paths, commits, pushes, and performs bounded integration — all within the current task authority.
-- `git-steward` runs a mandatory internal certainty check before every write operation. It proceeds autonomously after the check passes.
-- `git-steward` does not require user confirmation for routine authorized Git work. It stops only for real ambiguity or missing authority.
-- No `LOG.md` requirement is introduced by this workflow.
+### Operational modes
 
-Existing safeguards remain unchanged:
-- Exact-path staging remains mandatory.
-- Public/private separation remains unchanged.
-- Local hooks (`pre-commit`, `pre-push`) remain active.
-- `TODO.md` remains read-only — never staged, committed, or modified.
-- No file deletion is permitted by any agent, including `git-steward`.
+The MVP exposes three explicit modes via `--mode`:
+
+| Mode | CLI flag | Purpose |
+|---|---|---|
+| Validate | `--mode validate` (default) | Read-only safety-gate check; no approval required |
+| Publish branch | `--mode publish-branch` | Requires Gate 1; validates + generates push command |
+| Create draft PR | `--mode create-draft-pr` | Requires Gate 2; validates + generates draft PR command |
+
+Each mode is independent. There is no combined push-and-PR mode, no merge mode,
+and no generic ambiguous execution mode.
+
+### Scope
+
+The MVP validates 21 safety checks per invocation:
+
+1. exact repository path
+2. exact repository identity
+3. exact remote identity
+4. exact candidate branch
+5. candidate branch is not the default branch
+6. exact expected base SHA
+7. base is an ancestor of candidate HEAD
+8. exact expected candidate HEAD
+9. clean tracked state
+10. no untracked files
+11. approved tracked-file manifest
+12. protected paths absent
+13. secret scan passes
+14. large-file scan passes
+15. absolute developer paths absent
+16. operational mode matches granted authority
+17. explicit branch push refspec uses `refs/heads/`
+18. explicit PR base and head
+19. merge remains unsupported
+20. deterministic SHA-256 evidence generated
+21. upstream-to-main warning recorded (non-blocking)
+
+It does **not** support:
+
+- merging, rebasing, or force-pushing;
+- default-branch push;
+- branch deletion;
+- tag or release publication;
+- multi-repository batches;
+- automatic credential changes;
+- unattended destructive cleanup.
+
+### Usage
+
+```bash
+# Validate mode (no approval required)
+python3 -m tools.git_steward.steward <manifest-path>
+
+# Publish-branch mode (requires Gate 1 approval)
+python3 -m tools.git_steward.steward <manifest-path> --mode publish-branch
+
+# Create-draft-PR mode (requires Gate 2 approval)
+python3 -m tools.git_steward.steward <manifest-path> --mode create-draft-pr
+
+# JSON output for programmatic consumption
+python3 -m tools.git_steward.steward <manifest-path> --json
+```
+
+A publication manifest is a YAML or JSON document specifying the repository
+path, candidate branch, expected SHAs, protected-path policy, and approval
+state. See `_internal/manifests/session-13/palworld-baseline-v1.yaml` for an
+example.
+
+### Independent authority gates
+
+Publication to a remote repository requires three explicit, independent gates:
+
+| Gate | Mode | Action | Authority in manifest |
+|---|---|---|---|
+| Gate 1 | `publish-branch` | Branch push | `approvals.branch_publication.approved` |
+| Gate 2 | `create-draft-pr` | Draft PR creation | `approvals.draft_pr_creation.approved` |
+| Gate 3 | N/A (outside MVP) | Merge | Buddy + GitHub review |
+
+Rules:
+
+- Gate 1 and Gate 2 are structurally independent. Approving Gate 1 does not
+  imply Gate 2, and vice versa.
+- Gate 3 is outside Git Steward's scope entirely — it requires GitHub review
+  and Buddy decision.
+- An approval set to `true` requires both `approved_by` (non-empty string) and
+  `approval_ref` (non-empty string).
+- An execution agent cannot approve its own work.
+- GPT review does not constitute Buddy approval.
+- `false` approval fields are valid in `validate` mode.
+- No single agent invocation may pass more than one gate without explicit
+  task authority.
+- There is no merge approval field in the executable MVP contract.
+
+### SHA-256 evidence
+
+All digests use full 64-character SHA-256 with UTF-8 encoding.
+
+**Canonical manifest digest:** computed from deterministic JSON serialization
+with sorted keys. Covers: `task_id`, `session_id`, `repository_path`,
+`repository_remote`, `expected_base_branch`, `expected_base_sha`,
+`candidate_branch`, `expected_candidate_head`, `target_pr_base`, and all
+`manifest` fields. Excludes: timestamps, run IDs, evidence output paths,
+and approval values.
+
+**Tracked-file digest:** computed from sorted `git ls-files` output joined
+with newline separators, then SHA-256 hashed.
+
+Approval changes alter execution evidence (different gate outcomes).
+Tracked-file changes alter the tracked-file digest.
+Prior evidence is invalidated when manifest fields or tracked files change.
+
+### Upstream policy
+
+If a candidate branch has an upstream configured to `origin/main`, Git Steward:
+
+- records the upstream state in evidence;
+- emits a non-blocking warning;
+- always uses an explicit full refspec for publication
+  (`refs/heads/<branch>:refs/heads/<branch>`);
+- never allows a bare `git push` that would follow the upstream.
+
+Do not alter a candidate branch's upstream during Git Steward validation.
+
+### Evidence sanitization
+
+Evidence files are checked for unsanitized content including:
+
+- token patterns (`ghp_`, `gho_`, `github_pat_`, `sk-`);
+- private key markers (`-----BEGIN`);
+- non-GitHub HTTP URLs.
+
+Each check produces a warning printed to stderr. Evidence is written before
+sanitization checking so the check result does not block evidence generation.
+
+### Safety guarantees
+
+- All validation functions are read-only — no git mutation occurs during
+  validation.
+- Push commands are generated as strings only; the MVP never executes them.
+- The generated push command uses an explicit full refspec
+  (`refs/heads/<branch>:refs/heads/<branch>`) — never a bare `git push`.
+- Publication destination is never determined by upstream configuration.
+- The generated PR command includes `--draft` — never a non-draft PR.
+- No `--force` flag appears in any generated command.
+- No merge command is generated.
+- Every failure produces a stable error identifier (`ERR_*`), a nonzero exit,
+  and a human-readable explanation.
+- Stale or removed files: the MVP does not delete, add, or modify files.
+- All validation occurs before any mutation path is executed.
+
+### First pilot environment
+
+The first publication pilot is intentionally Mac-based. It tests publication
+logic, credential readiness, and exact remote SHA verification — not VPS
+execution. VPS deployment of Git Steward is a separate follow-up task.
+
+### Implementation agents
+
+Implementation agents edit and validate files. They must not stage, commit,
+push, merge, integrate, restore, clean, or alter Git state directly.
+
+For Git writes, the executing agent follows the task authorization model in
+`docs/REPOSITORY_WORK_PROTOCOL.md`. The Git Steward MVP validates candidate
+state and generates commands; it does not perform writes on its own.
 
 ## Branch naming
 
@@ -316,3 +472,21 @@ Before a repository is published on GitHub, the following must be verified:
 - Branch and upstream state confirm clean history with no unexpected divergence
 
 Detailed gate evidence is recorded in `repos/<repo>/RELEASE_GATES.md`. This section defines the standards; the gate file records the specific pass/fail evidence.
+
+## VPS engineering-workspace readiness
+
+A VPS engineering workspace is a clean public checkout for controlled ongoing
+work. It is not automatically a production deployment. Before residency,
+verify the exact published SHA, remote identity, clean working tree, clone
+footprint and capacity reserve, and a rollback SHA. Confirm `_internal/` is
+ignored and absent, and that no secrets, private host paths, temporary
+experiments, or unreviewed generated output enter the checkout.
+
+The checkout may contain intentional publication-safe workflow artifacts, but
+private task packets, raw execution evidence, runtime logs, credentials, and
+private prompts belong in an explicitly provisioned location outside Git. A
+tracked root `TODO.md` that is not current or publication-safe may be omitted
+from a declared sparse workspace profile; never replace it with private task
+content. Do not edit the workspace ad hoc: tracked changes remain branch-based
+and review bound. A deployed runtime, service, timer, database, or data
+authority still requires its separate gate.

@@ -85,13 +85,24 @@ The following high-level direction is agreed:
 - Agents should not merge their own work.
 - Direct production edits are not the intended workflow.
 
-Development happens on Mac. GitHub distributes approved code. VPS checkouts are deployment targets only. No direct VPS code editing.
+Mac remains the primary development and private-work environment. GitHub
+distributes approved code. The VPS may also host a **governed engineering
+workspace**: a clean, exact-SHA public checkout where an unfinished repository
+can be inspected, tested, and later receive explicitly delegated branch work.
+Workspace residency is not production activation. Production data, services,
+schedulers, credentials, runtime logs, and mutable state remain outside the
+checkout and require their own gates. No direct ad-hoc VPS code editing is
+permitted; tracked changes still use scoped branches, review, and the Git
+workflow.
 
 In implementation mode, agents may operate under task-specific Buddy authorization. During this phase:
 
 - Buddy authorizes bounded implementation work (edits, tests, documentation, staging, non-production proof runs).
 - Strong Codex handles architecture, privileged execution, and irreversible operations through explicit packets.
-- Hermes operates as a read-only resident inspector — no production write, systemd, database, or destructive authority.
+- Hermes operates as a read-only resident inspector. An explicitly dispatched
+  artifact-only orchestration mode may create bounded task packets and factual
+  review artifacts in a target repository's declared paths; it has no code,
+  Git, service, database, credential, or destructive authority.
 - Future production activation will apply stricter separation: all changes flow through branches and pull requests; agents do not merge their own work; Hermes may gain recurring inspection and PR authority through a separate gate.
 
 VPS filesystem layout separates concerns:
@@ -103,30 +114,100 @@ VPS filesystem layout separates concerns:
 
 No mutable production data lives inside Git working trees. Working trees are disposable.
 
+### VPS engineering-workspace boundary
+
+A VPS engineering checkout may contain publication-safe source, tests, public
+documentation, declared control records, approved workflow artifacts, and
+documented incomplete work. It must be clean, reproducible from an approved
+SHA, and safe for another engineer or agent to continue.
+
+It must not contain `_internal/`, raw agent reasoning, private prompts,
+credentials, private evidence, machine-specific private state, temporary
+experiments, or unreviewed generated output. Private operational task material
+is provisioned only in an approved external location and is never a clone
+dependency. A tracked `TODO.md` is allowed only when it is publication-safe; it
+must not silently become a private VPS task channel.
+
 The local-development Git workflow is defined in `docs/GIT_WORKFLOW.md`. Portfolio-wide Git conventions (repository naming, commit style, PR policy, history sanitization, agent Git authority, exact-SHA deployment, tags and releases) remain pending and will be drafted as a follow-on standard. Hermes is installed as a read-only resident agent; see `docs/HERMES_OPERATOR_GUIDE.md`.
 
 ## Hermes and agents
 
+### Resident agent model
+
+The VPS runs production workloads — data collection, ingestion, health checks, backups — that follow deterministic scripts, systemd timers, and PostgreSQL queries. Not every task is deterministic. Sometimes an operator needs to inspect current state, investigate a failure, summarize health, prepare evidence, or execute a bounded non-production action.
+
+A **resident agent** handles these tasks without requiring a live SSH session or graphical desktop connection. It reads requests, inspects state, and writes responses to a shared file bridge.
+
+The **Resident Agent Interface (RAI)** is the architectural interface between human operators and resident agents:
+
+```
+Buddy / ChatGPT / OpenCode / Strong Codex
+                    │
+                    ▼
+     Resident Agent Interface (RAI)
+     — file-backed request/response bridge
+                    │
+                    ▼
+            Resident Agent
+          (e.g., Hermes)
+```
+
+RAI is a durable, auditable, file-based communication channel. Requests and responses are plain Markdown files transferred over SSH/SCP. The interface survives if the resident agent is replaced. It is not an autonomous task queue, a production control plane, a credential transfer path, or a substitute for deterministic schedulers.
+
+### Verification principle
+
+Resident-agent factual claims that influence operational decisions must be independently verified before becoming repository truth. An agent may be 95% correct, but the remaining 5% can be operationally significant. A verification step catches what the agent missed:
+
+```
+resident agent → independent verification → repository truth
+```
+
+not:
+
+```
+resident agent → repository truth
+```
+
+### Authority model
+
 The following high-level direction is agreed:
 
-- Hermes is installed as a read-only resident VPS assistant. It inspects, summarizes, and recommends. It does not have production write authority. See `docs/HERMES_OPERATOR_GUIDE.md`.
-- Hermes may invoke narrowly defined agents for bounded tasks.
+- Hermes is the orchestration layer. Its standing authority is read-only
+  inspection, validation, task packet creation, delegation, and evidence
+  review. It coordinates the flow between intent, roadmap, execution, and
+  evidence. See `docs/HERMES_OPERATOR_GUIDE.md`.
+- Hermes does not implement application code, make architecture decisions, or
+  silently resolve ambiguity. It delegates implementation to execution agents
+  and architecture to Codex.
+- Before delegating any work, Hermes must evaluate the roadmap section against
+  `agents/HERMES_ROADMAP_SUFFICIENCY_GATE.md`. If the roadmap is insufficient,
+  Hermes stops and escalates rather than delegating ambiguous work.
 - Workflows should be defined independently of any single provider or model.
+- An explicit Mode 0 delegation envelope may permit Hermes to coordinate one
+  bounded delegated task through declared workflow-artifact paths. It does not
+  turn the file bridge into an autonomous queue or grant code, Git, service,
+  database, credential, or production-data write authority.
+- Authority expansion occurs only through documented gates.
 
 Portfolio-level principles for designing LLM workflows are defined in `docs/LLM_TENETS.md`. These tenets establish the baseline for auditable interfaces, constrained workflows, model portability, minimal context, and deterministic preprocessing.
 
-A provisional VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHESTRATION.md`. Hermes is installed; its read-only authority is established. Broader deployment automation, credentials management, destructive permissions, and private-context provisioning remain unresolved.
+A VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHESTRATION.md`. Hermes is installed; its read-only authority and dispatched artifact-only coordination boundary are established. Broader deployment automation, credentials management, destructive permissions, and private-context provisioning remain unresolved.
 
 ## Work ownership
 
 | Owner | Work class | Examples |
-|---|---|---|
-| **Buddy** | Authority and risk decisions | License choice, publication scope, gate approvals, destructive-operation approval, cross-repo policy |
-| **OpenCode** | Bounded low-risk implementation | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation, readiness packets |
-| **Strong Codex** | Architecture, privileged execution, and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, production deployment, reboot proof, history rewrite planning, destructive cleanup design |
-| **Hermes** (resident agent) | Read-only VPS inspection, monitoring, drift detection, PR proposal | Scheduled scans, health checks, SHA drift detection, structured PR creation |
+|---|---|---|---|
+| **Buddy** | Authority and risk decisions | License choice, publication scope, gate approvals, destructive-operation approval, cross-repo policy, strategic decisions |
+| **Hermes** | Orchestration — reads state, validates readiness, creates bounded task packets, delegates, reviews evidence, tracks progress, escalates | Roadmap sufficiency evaluation, task packet creation, delegation, checkpoint review, progress tracking, `ROADMAP_INSUFFICIENT_FOR_ORCHESTRATION` reports |
+| **OpenCode** | Bounded implementation within explicit task packets | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation, readiness packets |
+| **Strong Codex** | Architecture, privileged execution, and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, production deployment, reboot proof, history rewrite planning, destructive cleanup design, roadmap creation and refinement. Codex escalation (roadmap repair, architecture review, blocker review, production change review) when dispatched through controlled Hermes capabilities. |
 
-OpenCode agents receive bounded tasks with explicit scope, allowed files, and validation criteria. They do not invent architecture, mutate production state, or approve their own work. Strong Codex resolves architecture-level contradictions and designs fragile cross-repo boundaries. Orchestration agents observe and propose but never execute production changes directly.
+OpenCode agents receive bounded tasks with explicit scope, allowed files, and
+validation criteria. They do not invent architecture, mutate production state,
+or approve their own work. Strong Codex resolves architecture-level
+contradictions and designs fragile cross-repo boundaries. Hermes coordinates
+the flow between intent, roadmap, execution, and evidence — it does not
+implement, architect, or operate infrastructure directly.
 
 ## Documentation maintenance
 
@@ -144,7 +225,7 @@ The following areas have defined standards; remaining implementation details are
 
 - **Git workflow** — local-development standard defined in `docs/GIT_WORKFLOW.md`. Portfolio-wide Git conventions (repository naming, commit style, PR policy, history sanitization, agent Git authority, exact-SHA deployment, tags and releases) remain pending.
 - **Logging standard** — three-layer model defined in `docs/LOGGING_STANDARD.md`. Detailed retention automation, aggregation, and repository-specific implementation remain pending.
-- **VPS/Hermes orchestration contract** — defined in `agents/VPS_ORCHESTRATION.md`. Hermes read-only authority is resolved; recurring portfolio-review, branch creation, and PR authority are future stages.
+- **VPS/Hermes orchestration contract** — defined in `agents/VPS_ORCHESTRATION.md`. Read-only inspection and dispatched artifact-only coordination are defined; recurring portfolio-review, branch creation, and PR authority are future stages.
 - **Repository admission process** — defined in `docs/REPOSITORY_CONTROL_MODEL.md`. The six-gate model applies to every managed repository. Repository-specific gate evidence is recorded in `repos/<repo>/RELEASE_GATES.md`.
 - **Data lifecycle and storage** — foundational principles defined in `docs/DATA_LIFECYCLE_STANDARD.md`. Repository-specific retention windows, pruning configurations, and growth thresholds are set in each repo's `CONTROL.md` or local retention policy.
 - **Portfolio-level LLM strategy** — foundational design tenets defined in `docs/LLM_TENETS.md`. Operational adoption, benchmarking, provider interfaces, validation patterns, and repository-specific implementation remain pending.

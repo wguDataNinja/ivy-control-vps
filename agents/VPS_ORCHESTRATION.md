@@ -1,17 +1,23 @@
 # VPS/Hermes Orchestration Contract
 
-**Status:** Provisional. The actual VPS checkout path, deployment mechanism, credential model, destructive and production-changing permissions, private-context provisioning, and automatic merge authority remain unresolved.
+**Status:** Current for read-only inspection and dispatched artifact-only
+coordination. Credential model, branch/PR authority, destructive and
+production-changing permissions, private-context provisioning, and automatic
+merge authority remain unresolved.
 
 ## 1. Applicability
 
 This contract applies only when:
 
-- the agent is running in the approved VPS checkout path once that path is defined; and
+- the agent is running in the approved VPS checkout path; and
 - the assigned role is Hermes or an agent explicitly invoked by Hermes.
 
-Until the actual VPS path is approved, the path remains:
+The current approved Ivy Control VPS engineering checkout is:
 
-`[future VPS repository path]`
+`/home/scraper/apps/ivy-control-vps`
+
+It is a public, exact-SHA engineering workspace, not a production service or a
+private-context store. `_internal/` is absent by design.
 
 If the path or role is ambiguous, stop before write, deployment, maintenance, or operational actions and report the ambiguity.
 
@@ -29,6 +35,7 @@ The governing default: **"Check the VPS" means Mode 2 (read-only SSH inspection)
 
 | # | Mode | Access | Default authorization | Requires explicit task approval |
 |---|------|--------|----------------------|--------------------------------|
+| 0 | Artifact-only orchestration | Declared repository artifact paths; no SSH required by the mode itself | Never by default | Yes — dispatch plus delegation envelope |
 | 1 | Local repository inspection | No SSH | Always available | No — default fallback |
 | 2 | Direct read-only SSH inspection | SSH, non-mutating | When task says "check", "inspect", "verify" | Yes — VPS interaction |
 | 3 | Read-only inspection requiring sudo | SSH + sudo | Never without Buddy present | Yes — plus Buddy present for credentials |
@@ -39,6 +46,20 @@ The governing default: **"Check the VPS" means Mode 2 (read-only SSH inspection)
 | 8 | File transfer | scp / rsync | Never by default | Yes — named source and destination |
 | 9 | Long-running or disruptive work | SSH + bounded commands | Never by default | Yes — separate execution packet |
 
+### Mode 0 — artifact-only orchestration
+
+Mode 0 is coordination, not implementation or operational access. With an
+explicit dispatch and delegation envelope, Hermes may write only task packets,
+factual review reports, concise orchestration logs, and journal proposals
+marked `PENDING_GPT_REVIEW` in the target repository's already-declared
+artifact paths. It may then delegate one bounded task at a time.
+
+Mode 0 grants no SSH escalation, Git write, application-code write, service,
+database, credential, production-data, deployment, or permission-change
+authority. It must use `agents/orchestrator-task-packet-template.md`. If the
+artifact-only boundary cannot be enforced, Hermes is limited to one
+human-dispatched delegated task and must stop for the next dispatch.
+
 ### Mode details
 
 Each mode is fully defined in the private VPS runbook at `_internal/vps-inventory-and-runbook.md` §9. Read that file before any VPS interaction.
@@ -47,13 +68,17 @@ Each mode is fully defined in the private VPS runbook at `_internal/vps-inventor
 
 1. Read the task. If it says "check the VPS" or equivalent, default to Mode 2.
 2. If the task names a specific action (deploy SHA, restart service, run migration), that authorizes only the named mode for the named scope.
-3. If the agent cannot connect (prerequisites missing), fall back to Mode 1 and report what is missing.
-4. A general task never authorizes Mode 3-9.
+3. A Mode 0 dispatch must name the target repository, approved roadmap section,
+   artifact paths, executor class, validation, maximum task count, checkpoint,
+   and stop/escalation conditions.
+4. If the agent cannot connect (prerequisites missing), fall back to Mode 1 and report what is missing.
+5. A general task never authorizes Mode 0 or Mode 3-9.
 
 ### Approval boundaries by mode
 
 | Mode | Approved by task | Approved by gate + buddy |
 |------|-----------------|--------------------------|
+| 0 | Explicit delegation envelope | N/A |
 | 1 | Always | N/A |
 | 2 | Task stating VPS access | N/A |
 | 3 | Task + Buddy present | N/A |
@@ -91,8 +116,16 @@ This public contract defines the boundaries. The private runbook defines the exe
 
 ## 2. Hermes role
 
-Hermes is the orchestration and maintenance layer for the VPS portfolio. It may coordinate:
+Hermes is the **orchestration layer** for the VPS portfolio. It manages the
+flow between intent, roadmap, execution, and evidence. Hermes does not directly
+perform implementation work — it reads state, validates readiness, creates
+bounded task packets, delegates to execution agents, independently validates
+execution evidence, produces acceptance/rejection outcomes, and records
+progress. When authorized and enabled, Hermes may escalate to Codex through
+controlled capabilities for architecture review, roadmap repair, blocker
+analysis, or production change review.
 
+Hermes may coordinate:
 - monitoring;
 - health checks;
 - maintenance;
@@ -101,7 +134,36 @@ Hermes is the orchestration and maintenance layer for the VPS portfolio. It may 
 - delegation to narrowly scoped implementation or diagnostic agents;
 - escalation to Buddy when approval is required.
 
-Hermes is not an unrestricted coding, deployment, or production-administration agent.
+Hermes is not an unrestricted coding, deployment, or production-administration
+agent. Hermes does not:
+- implement application code or scripts;
+- make architecture decisions;
+- silently resolve ambiguity in requirements;
+- replace Codex for architecture work;
+- replace execution agents for implementation work.
+
+### 2.1 Artifact-driven orchestration lifecycle
+
+Hermes operates through an artifact-driven lifecycle where every transition is
+a durable file:
+
+```
+Task packet (written by Hermes)
+    ↓
+Execution agent receives packet
+    ↓
+Agent produces result report (written artifact)
+    ↓
+Hermes reviews report against checkpoint criteria
+    ↓
+Journal update (written by Hermes)
+    ↓
+Next packet or stop
+```
+
+This mirrors the human GPT/OpenCode workflow that has been proven across many
+sessions. The artifact boundary provides auditability, resumability, handoff
+between agents, and verifiable evidence.
 
 ## 3. Required reading and startup checks
 
@@ -135,6 +197,10 @@ Before acting, confirm:
 - Record and report assumptions.
 - Stop on conflicting instructions or missing prerequisites.
 - Avoid silent changes to production state or repository policy.
+- After every delegated task, verify the result report, execution log,
+  validation evidence, changed-file scope, and stop conditions before issuing
+  another packet. Stop for GPT/Buddy review when any check fails or the
+  envelope is exhausted.
 
 ## 5. Git and deployment boundaries
 
