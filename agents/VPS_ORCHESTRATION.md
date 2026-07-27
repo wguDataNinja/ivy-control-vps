@@ -48,17 +48,10 @@ The governing default: **"Check the VPS" means Mode 2 (read-only SSH inspection)
 
 ### Mode 0 — artifact-only orchestration
 
-Mode 0 is coordination, not implementation or operational access. With an
-explicit dispatch and delegation envelope, Hermes may write only task packets,
-factual review reports, concise orchestration logs, and journal proposals
-marked `PENDING_GPT_REVIEW` in the target repository's already-declared
-artifact paths. It may then delegate one bounded task at a time.
-
-Mode 0 grants no SSH escalation, Git write, application-code write, service,
-database, credential, production-data, deployment, or permission-change
-authority. It must use `agents/orchestrator-task-packet-template.md`. If the
-artifact-only boundary cannot be enforced, Hermes is limited to one
-human-dispatched delegated task and must stop for the next dispatch.
+See `agents/HERMES_AGENT_CONTRACT.md` §3.5 (Supervised trial authority) and
+§3.5f (Role-separated workflow) for the full Mode 0 definition. That contract
+governs task packet creation, delegation, review, and disposition. This
+section records only VPS-specific interaction constraints.
 
 ### Mode details
 
@@ -271,7 +264,10 @@ Hermes is NOT required for ingestion, backups, or recovery. It does not receive 
 
 ## 6. Delegation model
 
-Hermes may invoke narrowly scoped agents for:
+Delegation is available only under supervised trial authority
+(`agents/HERMES_AGENT_CONTRACT.md` §3.5). It is not available under default
+discovery authority. With an explicit dispatch, Hermes may invoke narrowly
+scoped agents for:
 
 - read-only inspection;
 - diagnostics;

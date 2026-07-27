@@ -4,7 +4,7 @@
 read-only resident assistant on the VPS. Explicitly dispatched artifact-only
 coordination is defined but has not yet passed its first repository pilot.
 
-**Parent document:** `docs/OPERATING_MODEL.md` — defines the resident agent model, RAI architecture, and verification principle. (Formerly `docs/RESIDENT_AGENT_MODEL.md`, merged.)
+**Parent document:** `docs/OPERATING_MODEL.md` — defines the resident agent model, RAI architecture, and verification principle.
 
 ## Purpose
 
@@ -161,12 +161,9 @@ Do not put credentials, API keys, `.env` contents, chat bodies, or production da
 
 ## Role boundaries
 
-| Agent | Role |
-|-------|------|
-| **Hermes** | Orchestration layer. Reads state, validates readiness, creates task packets, delegates execution, validates evidence, produces acceptance/rejection outcomes, and may request controlled Codex escalation through approved capabilities. |
-| **OpenCode** | Bounded implementation and verification agent. Used via local Mac session for source work, documentation, tests, and independent evidence verification. |
-| **Strong Codex** | Architecture authority. Resolves design questions, creates/refines roadmaps, handles difficult reasoning. Invoked through controlled capabilities, never autonomously. |
-| **Buddy** | Authority and risk decisions. Sole approver for production mutations, Git writes, privilege expansion, destructive actions, and Codex escalation approval. |
+See `agents/HERMES_AGENT_CONTRACT.md` §3.5e for the full Hermes role
+boundary, §3.7–3.9 for the memory authority boundary, and
+`docs/OPERATING_MODEL.md` §Work ownership for the overall agent hierarchy.
 
 ## Stop and escalation boundaries
 

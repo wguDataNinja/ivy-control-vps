@@ -27,7 +27,7 @@ This index is the operational map for agents and maintainers working with IvyCon
 | [`DATA_LIFECYCLE_STANDARD.md`](DATA_LIFECYCLE_STANDARD.md) | Portfolio data-lifecycle principles — data classes, retention, growth measurement, disk thresholds, health metrics |
 | [`LOGGING_STANDARD.md`](LOGGING_STANDARD.md) | Three-layer logging standard — machine/runtime, agent work, and GPT/planning logs |
 | [`LLM_TENETS.md`](LLM_TENETS.md) | Design tenets for auditable, constrained, portable, and data-efficient LLM systems |
-| [`RESIDENT_AGENT_MODEL.md`](RESIDENT_AGENT_MODEL.md) | Resident Agent Interface architecture — **redirect**; content merged into `OPERATING_MODEL.md` §Hermes and agents |
+| <del>`RESIDENT_AGENT_MODEL.md`</del> | Removed. Content merged into `OPERATING_MODEL.md` §Hermes and agents. |
 
 ### Operations and access
 
@@ -42,8 +42,12 @@ This index is the operational map for agents and maintainers working with IvyCon
 
 | Document | Purpose |
 |----------|---------|
+| [`../agents/HERMES_AGENT_CONTRACT.md`](../agents/HERMES_AGENT_CONTRACT.md) | Normative Hermes orchestration contract — reading route, preflight, eligibility, lifecycle, delegation, memory governance, authority chain |
+| [`../agents/HERMES_ROADMAP_SUFFICIENCY_GATE.md`](../agents/HERMES_ROADMAP_SUFFICIENCY_GATE.md) | Pre-delegation roadmap evaluation — Hermes validates roadmap clarity before task creation |
 | [`../agents/VPS_ORCHESTRATION.md`](../agents/VPS_ORCHESTRATION.md) | VPS/Hermes orchestration contract — interaction modes (read-only inspection, bounded mutation, full production), approval boundaries, logging |
 | [`../agents/orchestrator-task-packet-template.md`](../agents/orchestrator-task-packet-template.md) | Reusable Mode 0 task-packet template — execution aid, not authority |
+| [`../agents/hermes-validation-report-template.md`](../agents/hermes-validation-report-template.md) | Hermes validation report template — required report structure for delegated task review |
+| [`../agents/codex-escalation-context-template.md`](../agents/codex-escalation-context-template.md) | Codex escalation context template — structure for architecture/blocker escalation requests |
 | [`../agents/LOCAL_IMPLEMENTATION.md`](../agents/LOCAL_IMPLEMENTATION.md) | Local implementation agent contract — rules for OpenCode, Codex, and similar agents operating from this repository |
 
 ### Health subsystem
@@ -119,7 +123,7 @@ Read these only when applicable to the assigned work:
 - Detailed gate evidence or phase packet only when the task requires gate-specific detail.
 - For public work lifecycle, read [`../workflows/README.md`](../workflows/README.md) and `REPOSITORY_WORK_PROTOCOL.md`. A locally provisioned private supplement may add private mechanics but is not required for clone orientation.
 - For VPS operational work, read `agents/VPS_ORCHESTRATION.md` first. A private local runbook may provide approved host-specific procedures when it is provisioned.
-- For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification.
+- For Hermes bridge interaction, read `HERMES_OPERATOR_GUIDE.md` — bridge protocol, orientation flow, independent verification. Note: This guide exists primarily for Buddy (operator installation, launch, bridge setup). Hermes reads `agents/HERMES_AGENT_CONTRACT.md` for its own operating rules.
 
 ## Actor-specific reading paths
 
@@ -161,16 +165,23 @@ Strong Codex needs the broadest path due to architecture, deployment, and databa
 
 ### Hermes (orchestration)
 
+Use the complete deterministic route defined in `agents/HERMES_AGENT_CONTRACT.md`
+§2 (Steps 0–12). That route is the single authoritative reading order for
+Hermes. The summary below is a navigation aid, not a replacement.
+
 ```
-agents/HERMES_AGENT_CONTRACT.md
-→ PORTFOLIO.md (Buddy's all-project view)
-→ docs/PORTFOLIO_INTENT.md (formal intent layer)
-→ docs/OPERATING_MODEL.md (resident agent model, authority model)
-→ agents/VPS_ORCHESTRATION.md
-→ docs/HERMES_OPERATOR_GUIDE.md
-→ REPOSITORY_WORK_PROTOCOL.md (artifact-only orchestration §)
-→ target repos/<repo>/CONTROL.md
-→ orchestrator-task-packet-template.md
+agents/HERMES_AGENT_CONTRACT.md §2 (full route with checkout verification)
+  0. Checkout verification
+  1. AGENTS.md
+  2. VPS_ORCHESTRATION.md (VPS context only)
+  3. HERMES_AGENT_CONTRACT.md (includes §3.11 preflight)
+  4. docs/README.md + OPERATING_MODEL.md
+  5. PORTFOLIO.md + PORTFOLIO_INTENT.md
+  6. PORTFOLIO_UNIVERSE.md + ROADMAP.md
+  7–9. Portfolio tool commands
+ 10. Target repos/<repo>/CONTROL.md
+ 11. repos/<repo>/RELEASE_GATES.md
+ 12. Task-specific standards
 ```
 
 Hermes reads agent contracts before repository governance because its authority model is defined there.
@@ -190,6 +201,10 @@ The first view is a **derived managed-record summary**: purpose, lifecycle, cont
 For the authoritative distinction and refresh rules, see [`REPOSITORY_CONTROL_MODEL.md`](REPOSITORY_CONTROL_MODEL.md#portfolio-intelligence-and-refresh). Generated output is for orientation and routing; confirm a decision in the relevant `CONTROL.md`, health evidence, and roadmap before acting. For public recent-work context, use `ROADMAP.md` completed milestones and Git history; private reports and journals are not assumed to be available in a clone.
 
 ## Authority model
+
+This section describes the **planning hierarchy** — how strategic intent
+flows into execution. For the **evidence-priority chain** (which source wins
+when facts conflict), see `agents/HERMES_AGENT_CONTRACT.md` §3.9.
 
 ### Hierarchy
 

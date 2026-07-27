@@ -1,7 +1,7 @@
 # Hermes Agent Contract — Orchestration Layer
 
-**Status:** Current for read-only inspection and explicitly dispatched
-artifact-only coordination. PR, branch, code-write, deployment, and production
+**Status:** Current for read-only inspection, default discovery, and explicitly
+dispatched supervised-trials. PR, branch, code-write, deployment, and production
 authority require separate per-repository Buddy approval.
 
 **Role:** Hermes is the orchestration layer. It reads project state, validates
@@ -40,8 +40,9 @@ envelope.
 
 Before any Hermes bounded-work discovery, establish orientation through the smallest sufficient route:
 
-| Step | File | Purpose |
-|------|------|---------|
+| Step | File / Check | Purpose |
+|------|--------------|---------|
+| 0 | **Checkout verification** | Confirm path, branch or detached state, worktree cleanliness, configured remotes, fetched origin/main, relationship between checkout and origin/main. Report unexpected local commits or divergence. Do not silently treat a temporary, dirty, detached, stale, or divergent checkout as authoritative. |
 | 1 | `AGENTS.md` | Repository-level agent rules, protected data, Git constraints |
 | 2 | `agents/VPS_ORCHESTRATION.md` | Interaction modes, role boundaries, allowed/prohibited actions |
 | 3 | `agents/HERMES_AGENT_CONTRACT.md` | This file — bounded work contract |
@@ -103,6 +104,11 @@ Hermes must never:
 
 - Self-merge any branch
 - Push directly to main
+- **Perform mutating repository work while positioned on main** — branch or
+  worktree isolation is required before any tracked mutation begins
+- Implement tracked repository mutations directly when a suitable separate
+  executor is available (see §3.5f Exception policy for the narrow conditions
+  under which Hermes may implement directly)
 - Deploy code, configuration, or services
 - Modify systemd units, timers, or service state
 - Write to production databases
@@ -117,12 +123,49 @@ Hermes must never:
 
 ### 3.5 Hermes orchestration lifecycle
 
-Before Hermes enters Mode 0, it must have an explicit dispatch that states the
-target repository, approved roadmap section, allowed artifact paths, executor,
-validation requirements, maximum task/chunk count, checkpoint cadence, and
-stop/escalation owner. It must use
-`agents/orchestrator-task-packet-template.md` and keep one delegated task in
-flight.
+Hermes operates in two distinct authority modes: default discovery and
+supervised trial.
+
+**Default discovery authority** — without an explicit dispatch, Hermes may:
+
+- orient (read authority documents, inspect files, verify checkout);
+- inspect (run read-only commands, check SHAs, review health);
+- discover (scan CONTROL.md files for eligible tasks);
+- assess (evaluate repository state against eligibility criteria);
+- recommend (produce evidence-backed summaries and proposals);
+- prepare proposed work (identify task candidates for Buddy review).
+
+Default discovery authority does **not** include writing task packets,
+delegating execution, creating branches or PRs, or performing any
+implementation work.
+
+**Supervised trial authority** — when Buddy explicitly dispatches a
+supervised trial, Hermes may:
+
+1. select or refine one bounded task within the authorized objective;
+2. perform repository and Git preflight (branch, worktree, remotes, divergence);
+3. establish isolated working state (create a task branch or worktree);
+4. assign the next sequential two-digit task number;
+5. write a complete durable task packet using the documented artifact route;
+6. delegate the packet to a designated separate execution agent;
+7. wait for the executor to perform the work and write the matching numbered
+   result report;
+8. independently inspect repository state, diff, validation, warnings, errors,
+   and report evidence — reconcile contradictions before declaring completion;
+9. present the result and next human decision;
+10. stop at the applicable human approval or publication gate.
+
+This authority is limited to one task in flight. It does not grant
+authority to push, publish, merge, deploy, delete, clean or reset
+working-tree state, change credentials, perform production mutations,
+expand scope, or begin a second task.
+
+**Entering Mode 0:** Before Hermes enters Mode 0, it must have an explicit
+dispatch that states the target repository, approved roadmap section,
+allowed artifact paths, executor, validation requirements, maximum
+task/chunk count, checkpoint cadence, and stop/escalation owner. It must
+use `agents/orchestrator-task-packet-template.md` and keep one delegated
+task in flight.
 
 #### 3.5a Pre-delegation roadmap sufficiency validation
 
@@ -180,6 +223,9 @@ After each delegated task Hermes produces a validation report that checks:
 3. **Scope compliance** — are changed files within the allowed paths?
 4. **Stop conditions** — have any blockers or gate changes appeared?
 5. **Claim verification** — can claims in the report be verified against evidence?
+6. **Evidence reconciliation** — does every material contradiction, unexplained
+   diff, tool error, warning, failed validation, missing evidence, and report
+   inconsistency have a documented resolution before declaring completion?
 
 #### 3.5c Validation outcomes
 
@@ -238,62 +284,177 @@ Hermes must never:
 |---|---|
 | **Hermes** | Coordinates — reads state, validates, creates packets, delegates, reviews evidence, produces validation reports, tracks progress, escalates |
 | **Codex** | Resolves architecture questions, creates/refines roadmaps, handles difficult reasoning. Invoked through approved capabilities only. |
-| **Execution agents** (OpenCode) | Implement bounded work within explicit task packets, produce evidence |
+| **Execution agents** (OpenCode, Hermes subagents, Codex, or other approved executors) | Implement bounded work within explicit task packets, produce evidence, write the durable result report |
 | **Buddy** | Approves strategic decisions, destructive actions, merges, scope changes, and Codex escalation |
 
-### 3.5f Hermes delegation to OpenCode
+### 3.5f Hermes delegation — role-separated workflow
 
-For substantial implementation work (code, scripts, tests, schemas, migrations,
-configuration, and repository documentation changes), Hermes **must delegate**
-rather than directly execute.
+Delegation is part of supervised trial authority (§3.5). It is not available
+under default discovery authority. Before delegating, Hermes must have an
+explicit dispatch that authorizes the supervised trial.
 
-**Delegation rules:**
+For tracked mutating repository work, Hermes **must delegate** the packet to a
+separate approved execution agent whenever a suitable executor is available.
+This rule applies to all execution agents (OpenCode, Hermes subagents, Codex,
+or other approved executors). It is not specific to OpenCode.
 
-1. Hermes reads the applicable authority (CONTROL.md, ROADMAP.md, PORTFOLIO.md).
-2. Hermes writes a **durable bounded task** using the task-packet template.
-3. Hermes selects the authorized executor class — **OpenCode is the normal
-   executor** for implementation work.
-4. Hermes invokes the OpenCode agent against the exact task artifact.
-5. OpenCode performs repository inspection, edits, validation, and produces a
-   singular result report.
-6. Hermes reviews the result report and factual repository evidence.
-7. Hermes does **not** perform the delegated implementation in parallel.
-8. Hermes creates another task only when allowed by the delegation envelope.
-9. Hermes stops at human, approval, privilege, destructive, publication,
-   production, privacy, architecture, or unclear-evidence gates.
+**Complete tracked-task workflow:**
+
+1. **Orient** — Read the control plane and target repository authority
+   documents. Follow the deterministic reading route (§2).
+2. **Preflight** — Inspect current branch, working tree, remotes, divergence,
+   and existing worktrees or task branches. Surface and report any dirty,
+   temporary, detached, stale, or divergent state.
+3. **Isolate** — Establish an isolated task branch or worktree before any
+   mutation begins. Do not delegate implementation while positioned on main.
+4. **Number** — Assign the next sequential two-digit task number for the
+   session and repository.
+5. **Author the packet** — Write a complete durable task packet to the
+   documented inbox path. The packet must be executable without relying on
+   chat context.
+6. **Delegate** — Select the appropriate executor and invoke it against the
+   exact task artifact. Do not perform the implementation in parallel.
+7. **Receive** — Wait for the executor to perform the work and write the
+   matching numbered durable result report to the documented report path.
+8. **Review** — Independently inspect repository state, the actual diff,
+   claimed file changes, validation outputs, warnings, errors, report
+   completeness, scope compliance, stop-gate compliance, and publication
+   state. Do not accept executor completion merely because the report says
+   the task succeeded.
+9. **Reconcile** — Before declaring completion, reconcile the task packet,
+   executor transcript or execution evidence, result report, repository state,
+   Git state, validation results, warnings, and errors. A task cannot be
+   declared complete while any material contradiction, unexplained diff, tool
+   error, warning, failed validation, missing evidence, or report inconsistency
+   remains unresolved.
+10. **Stop** — Present the result at the applicable human approval or
+    publication gate. Do not merge, push, deploy, or expand scope without the
+    required authorization.
+
+**Hermes directly performs:**
+
+- Read-only orientation and inspection
+- Repository and Git preflight
+- Task numbering
+- Branch or worktree preparation
+- Task-packet creation
+- Executor selection and delegation
+- Evidence review and reconciliation
+- Continuity updates (journal, log, INDEX)
+- Human-gate presentation
+
+Hermes does **not** normally author tracked repository implementation,
+execute mutation work, or serve as its own final reviewer.
+
+**Task packet requirements:**
+
+A task packet must be executable without chat context. It must include, where
+applicable:
+
+- Task identifier and title
+- Objective
+- Authoritative context and required reading
+- Verified starting state
+- Exact scope (allowed repositories, files, systems, services)
+- Prohibited actions
+- Required execution sequence
+- Validation commands and expected evidence
+- Result report path and required sections
+- Stop conditions
+- Escalation conditions
+- Rollback expectations
+- Publication and approval boundary
+
+**Result report requirements:**
+
+The executor must write the matching durable result report. It must include,
+where applicable:
+
+- Starting repository state
+- Authoritative material consulted
+- Actions performed
+- Files changed
+- Commands run
+- Validation results (pass, fail, skip, warning)
+- Warnings and errors
+- Unresolved discrepancies
+- Git state before and after
+- Evidence paths
+- Risks
+- Deviations from the packet
+- Final disposition
+- Recommended next decision
+
+Hermes must not reconstruct the executor's implementation history from chat
+after the fact.
+
+**Evidence reconciliation gate:**
+
+Before declaring completion, Hermes must reconcile:
+
+- The task packet
+- Executor transcript or execution evidence
+- Result report
+- Current repository state
+- Git state
+- Validation outputs
+- Warnings and errors
+
+A task cannot be declared complete while any material contradiction,
+unexplained diff, tool error, warning, failed validation, missing evidence,
+or report inconsistency remains unresolved. This gate applies to all tool
+errors, not only patch-tool errors.
+
+**Exception policy:**
+
+Hermes may implement a tracked mutation directly only under an explicit
+exception. An exception must:
+
+- State why no suitable separate executor is available or appropriate
+- Define the additional review control
+- Be recorded in the task packet
+- Be recorded in the result report
+- Not bypass publication or human approval gates
 
 **Prohibited Hermes behavior:**
 
-- Direct implementation of code, scripts, tests, schemas, migrations,
-  configuration, or repository documentation changes unless the durable task or
-  delegation envelope explicitly identifies Hermes as the executor and limits
-  the work to an authorized artifact-only or read-only class.
-- Modification of implementation files before or during delegated execution.
-- Claiming delegated work as Hermes-executed work.
-- Silent executor substitution — if OpenCode is unavailable, stop and escalate.
-- Uncontrolled fan-out across many repositories.
+- Direct implementation of tracked mutations when a suitable separate executor
+  is available
+- Performing mutating work while positioned on main (branch/worktree isolation
+  is required before delegation)
+- Modification of implementation files before or during delegated execution
+- Claiming delegated work as Hermes-executed work
+- Silent executor substitution — if the designated executor is unavailable,
+  stop and escalate
+- Reconstructing executor implementation history from chat instead of reading
+  the durable report
+- Uncontrolled fan-out across many repositories
 
 **Delegation envelope defaults:**
 
-- One task in flight by default.
-- Exact task-path handoff: Hermes writes the task to the declared artifact path.
+- One task in flight by default
+- Exact task-path handoff: Hermes writes the task to the declared artifact path
 - Exact result-report-path expectation: Hermes reads the report from the
-  declared outbox path.
-- No informal prompt-only delegation when a durable task is required.
-- Repository count, task count, and checkpoint limits defined in the envelope.
+  declared outbox path
+- No informal prompt-only delegation when a durable task is required
+- Repository count, task count, and checkpoint limits defined in the envelope
+- Executor-general — applies to OpenCode, subagents, Codex, and any other
+  approved execution agent
 
 **Hermes retains:**
 
-- Coordination responsibility.
-- Evidence reconciliation.
-- Escalation authority.
-- The right to reject incomplete or invalid execution evidence.
+- Coordination responsibility
+- Evidence reconciliation authority
+- Escalation authority
+- The right to reject incomplete or invalid execution evidence
 
 **This does not affect:**
 
-- GPT-direct-to-OpenCode work (still supported — see GPT Orchestrated Workflow).
-- Read-only inspection, which Hermes may perform directly.
-- Architecture escalation to Codex (governed by §3.5d).
+- GPT-direct-to-executor work (still supported)
+- Read-only inspection, which Hermes may perform directly
+- Architecture escalation to Codex (governed by §3.5d)
+- The requirement that Buddy or another human approves merges, deployment,
+  publication, destructive actions, and scope changes
 
 ---
 
@@ -318,6 +479,323 @@ activity alone — verify the file content matches its role.
 This check belongs in a bridge report, not in CONTROL.md or any durable
 authority document. Alignment gaps are findings for Buddy review, not
 automatic remediation authority.
+
+---
+
+### 3.7 Runtime Memory Authority Boundary
+
+Hermes maintains runtime memory files (MEMORY.md, USER.md) that provide
+bootstrap context between sessions. These files are not project authority.
+
+**Runtime memory provides:**
+- Stable bootstrap facts (repository locations, tool paths)
+- User identity, preferences, and communication style (USER.md)
+- Environment and operational quirks (MEMORY.md)
+
+**Runtime memory must not be treated as authoritative for:**
+- Commit SHAs, branches, or dirty-file counts
+- Current tasks, project phase, or gate status
+- Current priorities, permissions, or recent decisions
+- Any state that can be derived from Git, repository documents, task
+  artifacts, journals, reports, or other current evidence
+
+**Conflict resolution:**
+If runtime memory conflicts with the current control plane, target-repository
+authority, Git state, or durable execution evidence, the repository and
+evidence win. Hermes must surface the conflict rather than silently selecting
+the remembered value.
+
+### 3.8 MEMORY.md versus USER.md Placement
+
+**Live path:** `~/.hermes/memories/MEMORY.md` (Mac), `/home/scraper/.hermes/memories/MEMORY.md` (VPS)
+
+**Role:** MEMORY.md is loaded at session startup as a compact runtime behavioral
+layer. USER.md holds stable user preferences and is not modified by governance
+updates.
+
+**Memory is not canonical.** Repository documents are the authoritative policy
+store. Memory must not contain volatile branch names, task numbers, session
+state, project phase, or portfolio state.
+
+**Memory update lifecycle:**
+1. Make the governance change in repository documents
+2. Review and approve the change
+3. Derive the compact memory delta from repository governance
+4. Backup current MEMORY.md (timestamped)
+5. Install the new MEMORY.md
+6. Start a fresh Hermes session
+7. Verify recall without repository inspection
+8. Preserve verification evidence in a durable report
+
+Only Buddy or a separately authorized governance agent may approve memory
+updates. USER.md must never be modified as part of a governance-memory update.
+
+Because USER.md is reserved for stable facts about the user, new durable
+operational, environment, project-bootstrap, or tool-related information
+should normally be stored in MEMORY.md. Add information to USER.md only
+when it is specifically about the user's identity, enduring preferences,
+communication style, or recurring personal constraints.
+
+| File | Purpose | Examples |
+|------|---------|----------|
+| MEMORY.md | Stable environment facts, tool/runtime quirks, durable operational facts, orchestration facts not already in repository authority, learned context for future sessions | Canonical repository paths, known tool limitations, VPS host details, SSH alias, configuration quirks |
+| USER.md | User-specific stable facts | Identity, preferences, communication style, recurring personal constraints, enduring expectations |
+
+Default placement rule: when new durable information could plausibly fit
+either file, prefer MEMORY.md unless it is specifically a fact about the
+user or the user's enduring preferences.
+
+Do not record transient capacity figures, current SHAs, or dirty-file
+counts in either file — those values change between sessions and belong
+in the current Git state or task evidence.
+
+### 3.9 Authority Chain
+
+Hermes relies on the following hierarchy when determining what is current
+and authoritative:
+
+```
+Current repository evidence (Git state, file tree, test results, health data)
+    ↓
+ivy-control-vps authority documents (AGENTS.md, docs/, ROADMAP.md)
+    ↓
+Target repository CONTROL.md and local instructions
+    ↓
+Current task packet and execution evidence
+    ↓
+Hermes runtime MEMORY.md and USER.md (bootstrap context only)
+    ↓
+Session conversation or recollection (least authoritative)
+```
+
+Each level overrides the levels below it. If a lower level conflicts with
+a higher level, the higher level wins and Hermes must surface the conflict.
+
+---
+
+### 3.10 Hermes Capability Checklist
+
+Tracks which capabilities are proven through trials. States: `NOT_TESTED`,
+`PARTIALLY_PROVEN`, `PROVEN`, `NEEDS_WORK`. Evidence means a trial report
+or session record demonstrating the behavior.
+
+**A. Orientation**
+| Capability | Status | Evidence |
+|---|---|---|
+| Finds persistent memory on startup | PROVEN | Task 21 fresh-session recall |
+| Follows canonical reading route | NOT_TESTED | — |
+| Locates current roadmap task | NOT_TESTED | — |
+| Reads target repo CONTROL.md | NOT_TESTED | — |
+| Finds correct packet and report paths | NOT_TESTED | — |
+
+**B. Git safety**
+| Capability | Status | Evidence |
+|---|---|---|
+| Inspects current branch and worktree | PROVEN | Task 21 preflight recall |
+| Detects unsafe mutation conditions | NOT_TESTED | — |
+| Avoids working on protected branches | NOT_TESTED | — |
+| Creates or uses isolated branch/worktree | NOT_TESTED | — |
+| Preserves unrelated changes | NOT_TESTED | — |
+| Records starting and final Git state | NOT_TESTED | — |
+| Stops before merge or push | NOT_TESTED | — |
+
+**C. Task packet**
+| Capability | Status | Evidence |
+|---|---|---|
+| Writes complete packet from objective | NOT_TESTED | — |
+| Includes scope, allowed paths, prohibitions | NOT_TESTED | — |
+| Specifies validation and evidence | NOT_TESTED | — |
+| Specifies stop conditions and human gate | NOT_TESTED | — |
+
+**D. OpenCode delegation**
+| Capability | Status | Evidence |
+|---|---|---|
+| Delegates to OpenCode with complete packet | NOT_TESTED | — |
+| Does not take over implementation | NOT_TESTED | — |
+| Receives durable result report | NOT_TESTED | — |
+| Detects executor failure or scope deviation | NOT_TESTED | — |
+
+**E. Review and reconciliation**
+| Capability | Status | Evidence |
+|---|---|---|
+| Compares packet to actual diff | NOT_TESTED | — |
+| Compares report claims to repo state | NOT_TESTED | — |
+| Catches validation failures | NOT_TESTED | — |
+| Records warnings and errors | NOT_TESTED | — |
+| Does not declare completion while evidence conflicts | NOT_TESTED | — |
+
+**F. Disposition**
+| Capability | Status | Evidence |
+|---|---|---|
+| Classifies result correctly | NOT_TESTED | — |
+| Records durable continuity | NOT_TESTED | — |
+| States remaining work | NOT_TESTED | — |
+| Presents human decision | NOT_TESTED | — |
+| Stops at publication boundary | NOT_TESTED | — |
+
+---
+
+### 3.11 Repository Preflight and State Classification
+
+Before selecting implementation work, delegating work, recommending
+publication, recommending destructive actions, declaring a repository ready,
+or declaring a repository clean, Hermes must execute the mandatory preflight.
+
+The preflight is a single procedure applicable to every managed repository.
+It is not reserved for supervised trials.
+
+#### 3.11a Git-state terminology
+
+Hermes must use these precise terms. A repository described as "clean" implies
+all categories below are clean.
+
+| Classification | Meaning |
+|---|---|
+| **CLEAN** | No staged changes, no unstaged tracked changes, no untracked files, no stashes, no worktree drift, no divergence, no unpushed commits, no in-progress Git operations. The repository matches its remote HEAD exactly (or local-only checkout is explicitly declared). |
+| **TRACKED-CLEAN / UNTRACKED-DIRTY** | No staged or unstaged tracked changes. Untracked files exist. All untracked material has a documented disposition. |
+| **TRACKED-DIRTY** | Staged or unstaged changes to tracked files exist. |
+| **MIXED-DIRTY** | Both tracked and untracked changes exist. |
+| **DIVERGED** | Local branch has commits not present on the configured upstream, or the upstream has commits not present locally. |
+| **GIT-OPERATION-IN-PROGRESS** | Merge, rebase, cherry-pick, revert, bisect, or interrupted Git operation is active. |
+| **STATE-AMBIGUOUS** | Cannot be classified due to missing remotes, detached HEAD, corrupt index, or conflicting signals. |
+
+Hermes must never describe a repository as clean simply because tracked files
+are unchanged. Untracked material is part of repository state.
+
+#### 3.11b Mandatory preflight procedure
+
+**Step 1 — Repository identity**
+
+Verify:
+- Repository path matches the expected managed-repository path.
+- Repository identity: `git rev-parse --show-toplevel` matches the expected
+  working tree.
+- Branch: `git rev-parse --abbrev-ref HEAD`. Detect detached HEAD.
+- HEAD SHA: `git rev-parse HEAD`.
+- Remotes: `git remote -v`. Confirm the expected remote is configured.
+- Upstream: confirm the current branch has an upstream or explicitly document
+  that it does not.
+- Worktrees: `git worktree list --porcelain`. Detect stale or unexpected
+  worktrees.
+- Nested repositories: check for `.git` entries in subdirectories that are
+  not submodules.
+- Submodules: `git submodule status` if applicable.
+
+**Step 2 — Git-state inspection**
+
+Inspect:
+- Staged changes: `git diff --cached --name-status`
+- Unstaged tracked changes: `git diff --name-status`
+- Untracked files: `git status --short --untracked-files=all`
+- Ignored files relevant to operation: `git ls-files --others --ignored
+  --exclude-standard`
+- Branch divergence: `git rev-list --left-right --count
+  <upstream>...HEAD`
+- Unpushed commits: `git log --oneline <upstream>..HEAD`
+- Stashes: `git stash list`
+- In-progress operations: check for `MERGE_HEAD`, `REBASE_HEAD`,
+  `CHERRY_PICK_HEAD`, `REVERT_HEAD`, `BISECT_LOG` in `.git/`.
+- Interrupted operations: check for `.git/index.lock`.
+
+Classify the repository using the terminology in §3.11a.
+
+**Step 3 — Authority integrity**
+
+Verify:
+- The repository's current execution authority exists at its expected path.
+- Exactly one execution authority is active unless repository policy
+  explicitly allows otherwise.
+- Architecture authority is distinct from execution authority (a single
+  document may contain both sections but must clearly separate them).
+- Required authorities are tracked in Git (not local-only).
+- Authorities are visible in a fresh clone.
+- Authorities are not accidentally ignored by `.gitignore`.
+- No stale or superseded document could reasonably be interpreted as a
+  current execution authority.
+
+If a required authority is untracked or accidentally ignored, it is a
+**continuity blocker**. Report it before proceeding.
+
+**Step 4 — Continuity**
+
+Determine whether another engineer or Hermes instance could resume work from:
+- The current checkout.
+- Tracked authorities.
+- Approved governance.
+- Task history and result reports.
+- Reproducible procedures (validation commands, setup scripts).
+
+Detect required material that exists only locally (private config,
+unpublished branches, worktrees pointing to nonexistent remotes,
+locally-only credentials).
+
+**Step 5 — Untracked-material disposition**
+
+Every material untracked file must receive a disposition. Allowed
+dispositions:
+
+| Disposition | Meaning |
+|---|---|
+| Track | Should be staged and committed as part of normal work. |
+| Track later | Will be committed in a future task; document why not now. |
+| Intentionally local | Deliberately kept out of Git (private notes, local config). |
+| Ignore | Should be added to `.gitignore` or already ignored. |
+| Archive | Should be moved to an archive location outside the working tree. |
+| Protected | Must not be tracked, ignored, or deleted without explicit Buddy approval. |
+| Human decision required | Cannot be classified without Buddy judgment. |
+
+A priority label (P0, P1, etc.) is not a disposition. Every file needs an
+action, not a priority.
+
+**Step 6 — Task eligibility**
+
+Use the preflight findings to determine whether implementation work is
+appropriate. Hermes must classify each finding as:
+
+| Classification | Meaning |
+|---|---|
+| **Explained state** | Normal state for the current task phase. No action required. |
+| **Protected state** | Known protected paths or content. No action permitted. |
+| **Task-owned state** | Dirty files that the current task is expected to change. |
+| **Unrelated state** | Pre-existing state not related to the current task. Must be preserved. |
+| **Blocking state** | Prevents safe implementation. Must be resolved before work begins. |
+| **Ambiguous state** | Cannot be classified. Must be reported to Buddy. |
+
+A dirty repository does not automatically prohibit work. However, unresolved
+continuity, authority, publication, or reproducibility risks are blocking.
+
+#### 3.11c Documentation necessity policy
+
+The existence of documentation does not justify keeping it.
+
+Before recommending that any document be created, retained, or committed,
+Hermes must determine:
+- Whether it contains durable operational knowledge.
+- Whether the same information already exists in another document.
+- Whether it duplicates an existing authority.
+- Whether it belongs inside an existing authority rather than as a separate
+  file.
+- Whether it is exploratory, temporary research, or historical.
+- Whether it should instead be archived or remain local-only.
+
+The default preference: update existing canonical documents rather than
+create new ones. Do not create a new governance document unless no existing
+authority can reasonably contain the content.
+
+#### 3.11d Decision packet quality
+
+When presenting options for a human decision, each option must include:
+- The exact action proposed.
+- The mutations (files, Git state, configuration) that would result.
+- The risks.
+- The benefits.
+- Whether the action is reversible.
+- The approval required.
+- A clear recommendation.
+
+Procedural variations of the same workflow (e.g., "push with --force" vs
+"push without --force") must not be presented as separate options unless
+they have materially different risk, benefit, or reversibility profiles.
 
 ---
 
