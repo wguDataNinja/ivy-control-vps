@@ -242,14 +242,15 @@ Publication to a remote repository requires three explicit, independent gates:
 |---|---|---|---|
 | Gate 1 | `publish-branch` | Branch push | `approvals.branch_publication.approved` |
 | Gate 2 | `create-draft-pr` | Draft PR creation | `approvals.draft_pr_creation.approved` |
-| Gate 3 | N/A (outside MVP) | Merge | Buddy + GitHub review |
+| Gate 3 | N/A (outside MVP) | Merge | [Gate 3 — Merge Review Procedure](#gate-3--merge-review-procedure) |
 
 Rules:
 
 - Gate 1 and Gate 2 are structurally independent. Approving Gate 1 does not
   imply Gate 2, and vice versa.
-- Gate 3 is outside Git Steward's scope entirely — it requires GitHub review
-  and Buddy decision.
+- Gate 3 is outside Git Steward's scope entirely — it follows the
+  [Gate 3 — Merge Review Procedure](#gate-3--merge-review-procedure) defined
+  below, which requires GitHub review, Buddy decision, and post-merge verification.
 - An approval set to `true` requires both `approved_by` (non-empty string) and
   `approval_ref` (non-empty string).
 - An execution agent cannot approve its own work.
@@ -331,6 +332,207 @@ For Git writes, the executing agent follows the task authorization model in
 `docs/REPOSITORY_WORK_PROTOCOL.md`. The Git Steward MVP validates candidate
 state and generates commands; it does not perform writes on its own.
 
+## Gate 3 — Merge Review Procedure
+
+Gate 3 is the merge gate. It is outside Git Steward's scope (the MVP stops at
+Gate 2). A Gate 3 merge requires explicit task authorization from Buddy with
+an approved PR head SHA, base SHA, and merge strategy.
+
+### Identity and topology
+
+Record these before review:
+
+- **Repository:** canonical remote and local path
+- **PR number and URL**
+- **Exact head SHA** (the approved feature commit)
+- **Exact base SHA** (the target branch commit at review time)
+- **Merge base** (the common ancestor)
+- **Ahead/behind:** commits ahead of base, commits behind head
+- **Draft state:** whether the PR is a draft
+- **Mergeability:** whether GitHub reports the PR as mergeable
+
+### Review scope
+
+The reviewer must confirm:
+
+1. **Full commit review** — every commit message, author, and diff in the PR.
+2. **Full diff review** — every added, modified, and deleted file.
+3. **Subsystem classification** — classify each changed file:
+   - documentation or governance
+   - source code or tooling
+   - tests or fixtures
+   - configuration or workflow
+   - authority documents (CONTROL.md, AGENTS.md, RELEASE_GATES.md)
+   - session or evidence artifacts
+   - unrelated or private content
+4. **Authority-document changes** — verify that any change to `AGENTS.md`,
+   `CONTROL.md`, `ROADMAP.md`, `docs/`, or similar authority files is
+   independently reviewable and does not silently change governance.
+5. **Executable or operational changes** — verify that code changes are
+   tested and do not alter production behavior without explicit scope.
+6. **Unrelated or private content** — verify that no `_internal/`, credential,
+   private path, or unreviewed session artifact appears in the diff.
+
+### Validation
+
+Before approving, the reviewer must run or confirm these pass:
+
+| Check | Command |
+|---|---|
+| Whitespace / formatting | `git diff --check <base>..<head>` |
+| Whitespace / formatting | `git diff --check <base>..<head>` — no output |
+| Repository tests | repository-defined test suite |
+| Portfolio / control validation | `python3 tools/portfolio_registry.py --validate` |
+| Git Steward tests | `python3 -m pytest tests/test_git_steward.py -q` |
+| Portfolio status | `tools/show_portfolio_status.sh --no-color` |
+| Tool smoke test | verify executable entrypoints load |
+| Remote SHA match | confirm remote head equals the approved head SHA |
+| Remote base match | confirm remote base equals the reviewed base SHA |
+| Mergeable | confirm GitHub reports MERGEABLE |
+
+### Publication safety
+
+Before merging, confirm:
+
+- No secrets, tokens, or credentials in the diff.
+- No private paths (`/Users/buddy/`, `_internal/`, etc.) in committed files.
+- No large or generated files without a documented exception.
+- No protected paths (_.env, *.key, *.pem, tunnel.json, config/ with secrets)
+  are added or modified.
+- No internal-only artifacts (raw evidence, execution packets, private prompts)
+  appear in the diff.
+- Test fixtures are clearly identifiable and contain no sensitive data.
+
+### Consequences of merging
+
+Merging:
+
+- updates `main` to include the approved changes at the merge commit SHA;
+- makes the approved feature history reachable from `main`;
+- does **not** deploy application code, restart services, or activate
+  production behavior;
+- does **not** change credentials, rotate keys, or modify infrastructure;
+- does **not** delete the feature branch;
+- does **not** change repository visibility or branch protection;
+- does **not** authorize publication in managed repositories;
+- does **not** authorize autonomous Hermes operation beyond the bounded
+  readiness checks in the authorizing task.
+
+If the merge includes an approved SHA update for a managed repository, update
+`repos/<repo>/CONTROL.md` approved_sha in a separate reviewed change.
+
+### Rollback
+
+A merge commit can be reverted with `git revert -m 1 <merge-sha>`. This is a
+new commit and requires its own review and approval. Reverting does not
+restore the pre-merge branch state — the feature branch remains on the remote
+and can be used for a corrected merge after the revert is reviewed.
+
+### Decision outcomes
+
+| Outcome | Meaning | Action |
+|---|---|---|
+| `APPROVE_MERGE` | All checks pass, authorization matches. | Merge using the authorized strategy. |
+| `APPROVE_AFTER_BOUNDED_CORRECTIONS` | Minor non-structural issues found. List exact corrections; re-review only the changed scope. | Apply corrections, re-validate, then merge. |
+| `DO_NOT_MERGE` | Structural issues, authority violation, or safety failure. | Stop. Report to Buddy with evidence. |
+| `HUMAN_DECISION_REQUIRED` | Precondition changed, ambiguity, or external dependency. | Stop. Report to Buddy without merging. |
+
+### Approval template
+
+A Gate 3 authorization must bind the following:
+
+```text
+Repository: <owner>/<repo>
+PR: #<number> — <title>
+Approved head SHA: <full-sha>
+Approved base SHA: <full-sha before merge>
+Merge strategy: merge commit | squash | rebase
+Permitted actions:
+  - merge (merge commit)
+  - [list any other explicitly permitted actions]
+Explicit non-authorizations:
+  - deployment of application workloads
+  - production activation
+  - database changes
+  - systemd changes
+  - branch deletion (unless separately authorized)
+  - repository visibility changes
+  - credential changes
+  - managed-repository publication
+  - autonomous Hermes operation beyond bounded checks
+Authorization valid only if:
+  - PR head is still exactly the approved SHA
+  - PR base remains the authorized target
+  - PR remains mergeable
+  - no unreviewed commits have been added
+  - no material new findings
+```
+
+### Post-merge verification
+
+After merging, verify:
+
+| Check | Command |
+|---|---|
+| Resulting main SHA | `git rev-parse origin/main` |
+| Merge parents | `git show --no-patch --pretty=raw <merge-sha>` — confirm first parent is previous main, second is approved head |
+| Head reachability | `git merge-base --is-ancestor <approved-head> origin/main` |
+| Branch state | `git branch -r --list origin/<feature-branch>` — branch should still exist unless separately authorized for deletion |
+| Stash unchanged | `git stash list` — no new stashes introduced |
+| Working tree | `git status --short` — clean unless pre-existing state is documented |
+| Validation re-runs | Re-run applicable validation from the merged main |
+| Validation re-runs | `git diff --check <pre-merge-base>..origin/main` |
+| Validation re-runs | repository test suite |
+| Validation re-runs | portfolio validation tools |
+| Validation re-runs | tool smoke tests |
+| Rollback evidence | Record the pre-merge main SHA for revert reference |
+
+### Reusable merge-review checklist
+
+Use this template in future task packets. Fill each field before deciding.
+
+```text
+## Pre-merge verification
+
+- [ ] PR head matches approved SHA: ______
+- [ ] PR base matches reviewed base: ______
+- [ ] PR is mergeable (MERGEABLE): ______
+- [ ] PR is not a draft (or draft merge is separately authorized): ______
+- [ ] No unreviewed commits exist: ______
+- [ ] Status checks pass (or none configured): ______
+
+## Review scope
+
+- [ ] All commits reviewed
+- [ ] All diffs reviewed by file type
+- [ ] Authority-document changes independently verified
+- [ ] No secrets, private paths, or credentials in diff
+- [ ] No protected or internal-only artifacts in diff
+
+## Validation
+
+- [ ] `git diff --check <base>..<head>` — clean
+- [ ] Repository tests pass
+- [ ] Portfolio validation passes
+- [ ] Tool smoke tests pass
+- [ ] Remote head matches approved SHA
+
+## Authorization
+
+- [ ] Merge strategy is authorized: ______
+- [ ] Non-authorizations are respected
+- [ ] Rollback SHA recorded: ______
+
+## Post-merge
+
+- [ ] Merge commit SHA: ______
+- [ ] First parent: ______ (previous main)
+- [ ] Second parent: ______ (approved head)
+- [ ] Approved head reachable from main: ______
+- [ ] Feature branch still exists (unless deletion authorized): ______
+- [ ] Validation re-runs pass: ______
+```
+
 ## Branch naming
 
 Public branches:
@@ -366,12 +568,145 @@ The scope is optional when it adds no clarity. Existing concise imperative histo
 
 Public and private changes must be committed in their respective repositories.
 
+## Branch Integration Workflow
+
+The Branch Integration Workflow governs promotion of reviewed work from a
+working branch into the repository's authoritative branch (`main`).
+
+It applies after:
+- Hermes completes the delegation workflow (`agents/HERMES_AGENT_CONTRACT.md` §3.5f)
+- The implementation agent commits completed work to a working branch
+- Human review has accepted the result
+
+### Step 1 — Working branch completion
+
+Before requesting integration, the implementation agent must:
+
+- Commit all intended changes to the working branch.
+- Run task validation and confirm passing results.
+- Run `git diff --check` — no whitespace or formatting errors.
+- Run `git status --short` — confirm no staged or unstaged changes remain.
+- Record the branch name, HEAD SHA, and validation results in the integration packet.
+
+### Step 2 — Integration packet
+
+The implementation agent produces an integration packet containing:
+
+| Field | Content |
+|-------|---------|
+| Branch | Working branch name |
+| Commit SHA(s) | Exact commits proposed for integration |
+| Summary | One-paragraph description of changes |
+| Validations performed | Commands run, exit codes, pass/fail summary |
+| Pre-integration Git state | Branch, HEAD, status, stash, divergence |
+| Risks | Anything that could break during integration |
+| Recommended strategy | Merge commit, cherry-pick, fast-forward, or rebase |
+| Post-integration SHA | Expected resulting HEAD on the authoritative branch |
+| Rollback | How to revert if integration fails (exact `git revert` command) |
+| Required approvals | Who must approve before integration |
+
+The packet is a markdown document. It may be embedded in a result report or
+standalone. The agent writes the packet; GPT and Buddy review it.
+
+### Step 3 — GPT review
+
+GPT reviews the packet against:
+
+- Architecture consistency — does the change align with repository direction?
+- Governance compliance — are all required authorities followed?
+- Documentation impact — are documentation changes consistent and complete?
+- Repository consistency — does the change work with the rest of the repo?
+- Integration suitability — does the change belong on the authoritative branch?
+
+GPT produces one of:
+
+| Outcome | Meaning |
+|---------|---------|
+| `APPROVE` | Ready for integration |
+| `REQUEST_CHANGES` | Specific defects identified; list exactly what must change |
+| `DO_NOT_INTEGRATE` | Structural issue, authority violation, or safety failure |
+
+### Step 4 — Human approval
+
+Buddy reviews the packet and GPT's recommendation, then decides:
+
+- Whether to integrate.
+- Whether additional work is required.
+- Whether the proposed integration strategy is acceptable.
+- Whether any post-integration validation is required beyond the standard checks.
+
+Buddy approval is required for all integrations into the authoritative branch.
+No agent may self-approve integration.
+
+### Step 5 — Integration execution
+
+Only after Buddy approval may the authorized agent execute the integration.
+
+Integration strategies and when each is appropriate:
+
+| Strategy | When appropriate | Governance implications |
+|----------|-----------------|------------------------|
+| **Merge commit** | Default for multi-commit branches, PR merges, or when preserving feature-branch history matters. Creates an explicit merge commit with both parents. | Preserves full history. The merge commit documents the integration event. Post-integration `git log --first-parent` shows only merge commits. |
+| **Fast-forward** | When the working branch is a linear extension of the authoritative branch with no divergence. No merge commit is created. | Produces a linear history. Suitable for short-lived single-commit tasks where the authoritative branch has not advanced. |
+| **Cherry-pick** | When only specific commits from a branch should be promoted, or when the working branch cannot be merged as a unit. Each commit is applied individually. | Creates new commits with different SHAs. The original branch remains intact. Use when the branch contains commits that should not all be promoted, or when the working branch has diverged and a merge is undesirable. |
+| **Rebase** | Requires explicit Buddy approval. Only when linear history is required and the author understands the rewrite implications. | Rewrites commit history. Creates new SHAs. Breaks existing references to old SHAs. Prohibited without explicit task authorization per the Destructive commands section. |
+
+The integration agent must:
+- Verify the authoritative branch is checked out and up to date.
+- Apply the approved strategy.
+- Confirm the resulting HEAD SHA matches the expected post-integration SHA.
+- Record the integration in a result report.
+
+### Step 6 — Post-integration validation
+
+After integration, validate:
+
+| Check | Command |
+|-------|---------|
+| Authoritative branch HEAD | `git rev-parse <branch>` — matches expected SHA |
+| Working tree | `git status --short` — clean |
+| Tests | Repository test suite — passing |
+| Whitespace | `git diff --check <pre-sha>..HEAD` — clean |
+| Expected commits | `git log --oneline <pre-sha>..HEAD` — matches packet |
+
+The working branch may be deleted only if separately authorized. By default,
+it is preserved for reference.
+
+### Integration packet example
+
+```markdown
+## Integration Packet — Task 30
+
+- **Branch:** `docs/branch-integration-workflow`
+- **Commits:** `a1b2c3d` — `docs: add branch integration workflow`
+- **Summary:** Formalizes the six-step promotion lifecycle from working branch
+  to authoritative branch, including integration packet, review, approval,
+  execution, and post-integration validation.
+- **Validations:** `git diff --check` (clean), `pytest tests/` (53 passed),
+  `portfolio_registry --validate` (0 issues)
+- **Pre-integration state:** `docs/branch-integration-workflow` at `a1b2c3d`,
+  clean working tree, no stash, no divergence.
+- **Risks:** Documentation-only change; no behavioral impact.
+- **Strategy:** Merge commit (multiple commits in branch).
+- **Expected post-integration SHA:** `f8e9d0c` (merge commit).
+- **Rollback:** `git revert -m 1 <merge-sha>`.
+- **Required approvals:** Buddy.
+- **GPT outcome:** `APPROVE`.
+- **Buddy decision:** [pending]
+```
+
 ## Merge and integration authority
 
 - Agents do not approve their own work.
 - Agents do not merge public work unless the task explicitly authorizes a bounded integration after validation.
 - The private repository is never merged into the public repository.
 - Buddy remains the default authority for policy and public-history decisions.
+- All integrations follow the [Branch Integration Workflow](#branch-integration-workflow).
+- **Gate 3 merges** (merging a feature branch into `main` via pull request) follow the
+  explicit procedure defined in the [Gate 3 — Merge Review Procedure](#gate-3--merge-review-procedure)
+  section above. That section defines the review scope, validation, publication safety,
+  decision outcomes, approval template, and post-merge verification for every merge.
+- No integration may proceed without a completed integration packet, GPT review, and Buddy approval.
 
 ## Branch and review model
 

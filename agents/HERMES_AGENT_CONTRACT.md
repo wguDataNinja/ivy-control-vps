@@ -328,8 +328,10 @@ or other approved executors). It is not specific to OpenCode.
    error, warning, failed validation, missing evidence, or report inconsistency
    remains unresolved.
 10. **Stop** — Present the result at the applicable human approval or
-    publication gate. Do not merge, push, deploy, or expand scope without the
-    required authorization.
+     publication gate. Do not merge, push, deploy, or expand scope without the
+     required authorization. After Buddy approval, the
+     [Branch Integration Workflow](../docs/GIT_WORKFLOW.md#branch-integration-workflow)
+     governs promotion into the authoritative branch.
 
 **Hermes directly performs:**
 

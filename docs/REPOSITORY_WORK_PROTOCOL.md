@@ -234,7 +234,10 @@ Before declaring task completion:
 6. Confirm TODO.md was not changed by the agent.
 7. Confirm required result report exists.
 8. Confirm required execution log exists (if applicable).
-9. Report final branch, status, and anything requiring Buddy.
+9. Produce an integration packet if the work should be promoted to the
+   authoritative branch. See `docs/GIT_WORKFLOW.md` §Branch Integration Workflow
+   for the packet format and lifecycle.
+10. Report final branch, status, and anything requiring Buddy.
 
 ---
 
