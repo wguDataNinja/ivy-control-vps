@@ -148,9 +148,44 @@ Every substantial task must produce two artifacts in `_internal/`:
 | Result report | `_internal/outbox/session-<N>/<NN>-<descriptive-slug>.md` | Consolidated outcome, evidence, validation, next handoff |
 | Execution log | `_internal/logs/agents/YYYY-MM-DD/<task-slug>.md` | Concise chronology of actions performed |
 
-Writing these artifacts is explicitly authorized despite the general `_internal/` protection rule. Result reports must contain the minimum fields defined in `docs/REPOSITORY_WORK_PROTOCOL.md` §4. Execution logs must not duplicate the report — they record what was done, not what was found.
+Writing these artifacts is explicitly authorized despite the general `_internal/` protection rule. Result reports must contain the minimum fields defined in `docs/REPOSITORY_WORK_PROTOCOL.md` §4, supplemented by the fields below. Execution logs must not duplicate the report — they record what was done, not what was found.
 
 Tasks without a session number use `session-0`.
+
+### Applicability
+
+These reporting rules apply uniformly to all execution agents — Hermes, OpenCode, Codex, and any future approved executor. Every agent performing substantial work must follow the same artifact conventions regardless of its role, invocation method, or whether it operates as orchestrator, implementer, reviewer, or validator.
+
+### Pre-work requirements
+
+Before beginning any substantial task, every agent must:
+
+1. Determine the current session number from `TODO.md`, the task inbox, or the most recent session journal.
+2. Determine the current task number or stable identifier.
+3. Locate the matching inbox task packet at `_internal/inbox/session-<N>/` or the target repository's equivalent inbox path.
+4. If the task was received only through a direct chat handoff (no inbox packet exists), create a task packet and place it in the correct inbox location before starting execution. The packet must record the original prompt source, scope, authority boundaries, and validation expectations.
+
+### Post-work requirements
+
+After every substantial task — whether it completes, partially completes, fails, or is blocked — the agent must produce exactly one result report and one execution log at the paths specified above. The result report and log are required even when the task terminates early due to a blocker, gate, error, or ambiguous authority. A task that produces neither a report nor a log is not considered complete.
+
+### Minimum report fields
+
+Result reports must include the following fields. These are consistent with `docs/REPOSITORY_WORK_PROTOCOL.md` §4 and extend them with fields specific to execution agent reporting:
+
+| Field | Description |
+|---|---|
+| Session | Session number |
+| Task number | Task identifier |
+| Executor | Agent that performed the work |
+| Source task packet | Path to the inbox packet, or "direct handoff" |
+| Scope received | Scope as defined in the task or packet |
+| Actions performed | What the agent actually did |
+| Evidence/validation | Tests, checks, and verification performed |
+| Files changed | Paths created, modified, or deleted |
+| Blockers/deviations | What stopped progress or differed from the approved scope |
+| Final disposition | Completed, partial, failed, blocked, or human decision required |
+| Recommended next action | What the next actor or session should do |
 
 ## Work lifecycle
 
