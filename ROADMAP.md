@@ -271,6 +271,68 @@ The pilot demonstrated:
 
 ---
 
+## §6B Hermes Continuous Orchestration — In Progress
+
+**Status:** IN PREPARATION. Hermes is evolving from a guided task-executor
+toward a continuous orchestration layer that selects bounded work, delegates
+to execution agents, reviews evidence, updates continuity, and proceeds
+without requiring Buddy to approve every routine step.
+
+### Phases
+
+**Phase 1: Complete the repository governance baseline**
+- The Branch Integration Workflow, preflight gate, terminology, and
+  command-plan self-review are now documented in `docs/GIT_WORKFLOW.md`.
+- All Hermes governance contracts are canonical in the repository.
+- The repository is authoritative for all operating rules; Hermes memory is
+  a compact runtime summary derived from it.
+
+**Phase 2: Establish the standard delegation cycle**
+- The repeatable process is documented in `agents/HERMES_AGENT_CONTRACT.md`
+  §3.5f: preflight, isolation, numbering, packet creation, OpenCode
+  delegation, result reporting, Hermes review, evidence reconciliation, and
+  human publication gate.
+- Validate and fill remaining gaps during trials rather than pre-building.
+
+**Phase 3: Run one complete trial on a bounded real task**
+- Buddy selects a bounded task. Hermes orients, inspects Git state,
+  isolates, numbers, creates the packet, delegates to OpenCode, receives
+  the report, inspects the result, reconciles evidence, and stops at the
+  human gate.
+- The trial validates the delegation contract and identifies documentation
+  gaps before broader use.
+
+**Phase 4: Convert the successful trial into canonical reference**
+- Preserve the packet, report, and Hermes review as reference examples.
+- Update templates or memory where trials show gaps.
+
+**Phase 5: Begin normal roadmap execution**
+- Hermes works through properly sized roadmap tasks one at a time.
+- OpenCode remains the default executor unless demonstrated otherwise.
+- Hermes may propose the next task without requiring Buddy to choose
+  every work item individually.
+
+**Phase 6: Expand autonomy after proven reliability**
+- Only after repeated reliable operation should the project consider:
+  portfolio task selection, automatic task decomposition, alternative
+  executors, concurrency, or broader autonomy.
+- This is a later design review, not an assumed destination.
+
+### Dependencies
+- Human operator provides plain-language trial objectives and selects
+  initial tasks.
+- Documentation and repository governance are complete.
+- No infrastructure, deployment, database, or production changes required.
+
+### Risks
+- Hermes may attempt to implement rather than delegate (mitigated by
+  role-separation rule and governance contracts in
+  `agents/HERMES_AGENT_CONTRACT.md` §3.5f).
+- OpenCode unavailability would block the trial.
+- Trial may reveal documentation gaps requiring iteration.
+
+---
+
 ## §7 Decisions Requiring Buddy
 
 1. Reddit Ops clean publication/history strategy.

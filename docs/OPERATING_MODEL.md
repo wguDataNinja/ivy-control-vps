@@ -170,44 +170,43 @@ resident agent → repository truth
 
 ### Authority model
 
-The following high-level direction is agreed:
+Hermes operates in two authority modes defined in
+`agents/HERMES_AGENT_CONTRACT.md` §3.5:
 
-- Hermes is the orchestration layer. Its standing authority is read-only
-  inspection, validation, task packet creation, delegation, and evidence
-  review. It coordinates the flow between intent, roadmap, execution, and
-  evidence. See `docs/HERMES_OPERATOR_GUIDE.md`.
-- Hermes does not implement application code, make architecture decisions, or
-  silently resolve ambiguity. It delegates implementation to execution agents
-  and architecture to Codex.
-- Before delegating any work, Hermes must evaluate the roadmap section against
-  `agents/HERMES_ROADMAP_SUFFICIENCY_GATE.md`. If the roadmap is insufficient,
-  Hermes stops and escalates rather than delegating ambiguous work.
-- Workflows should be defined independently of any single provider or model.
-- An explicit Mode 0 delegation envelope may permit Hermes to coordinate one
-  bounded delegated task through declared workflow-artifact paths. It does not
-  turn the file bridge into an autonomous queue or grant code, Git, service,
-  database, credential, or production-data write authority.
-- Authority expansion occurs only through documented gates.
+- **Default discovery authority:** read-only inspection, validation, and
+  evidence review. Hermes may orient, inspect, discover, assess, and
+  recommend. It may not write task packets, delegate execution, create
+  branches, or perform implementation work.
+- **Supervised trial authority:** when Buddy explicitly dispatches a trial,
+  Hermes may select a bounded task, perform Git preflight, establish
+  isolated state, write a task packet, delegate to a separate execution
+  agent, receive the result, inspect evidence, and stop at the human gate.
 
-Portfolio-level principles for designing LLM workflows are defined in `docs/LLM_TENETS.md`. These tenets establish the baseline for auditable interfaces, constrained workflows, model portability, minimal context, and deterministic preprocessing.
+Hermes does not implement application code, make architecture decisions, or
+silently resolve ambiguity. It delegates implementation to execution agents
+and architecture to Codex. Before delegating, Hermes evaluates the roadmap
+section against `agents/HERMES_ROADMAP_SUFFICIENCY_GATE.md`.
 
-A VPS/Hermes orchestration contract is defined in `agents/VPS_ORCHESTRATION.md`. Hermes is installed; its read-only authority and dispatched artifact-only coordination boundary are established. Broader deployment automation, credentials management, destructive permissions, and private-context provisioning remain unresolved.
+Portfolio-level design principles are defined in `docs/LLM_TENETS.md`.
+Further orchestration detail is in `agents/HERMES_AGENT_CONTRACT.md`,
+`agents/VPS_ORCHESTRATION.md`, and `docs/HERMES_OPERATOR_GUIDE.md`.
 
 ## Work ownership
 
 | Owner | Work class | Examples |
 |---|---|---|---|
 | **Buddy** | Authority and risk decisions | License choice, publication scope, gate approvals, destructive-operation approval, cross-repo policy, strategic decisions |
-| **Hermes** | Orchestration — reads state, validates readiness, creates bounded task packets, delegates, reviews evidence, tracks progress, escalates | Roadmap sufficiency evaluation, task packet creation, delegation, checkpoint review, progress tracking, `ROADMAP_INSUFFICIENT_FOR_ORCHESTRATION` reports |
-| **OpenCode** | Bounded implementation within explicit task packets | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation, readiness packets |
+| **Hermes** | Orchestration — reads state, validates readiness, creates bounded task packets, delegates to execution agents, reviews evidence, tracks progress, escalates | Roadmap sufficiency evaluation, task packet creation, delegation, checkpoint review, progress tracking, evidence reconciliation |
+| **Execution agents** (OpenCode, Hermes subagents, other approved executors) | Bounded implementation within explicit task packets delegated by Hermes | Repo documentation updates, inert service templates, validation commands, tests, path parameterization, report consolidation, readiness packets. See `agents/HERMES_AGENT_CONTRACT.md` §3.5f. |
 | **Strong Codex** | Architecture, privileged execution, and irreversible decisions | PostgreSQL schema design, cutover choreography, backup/restore standard, health contracts, production deployment, reboot proof, history rewrite planning, destructive cleanup design, roadmap creation and refinement. Codex escalation (roadmap repair, architecture review, blocker review, production change review) when dispatched through controlled Hermes capabilities. |
 
-OpenCode agents receive bounded tasks with explicit scope, allowed files, and
+Execution agents receive bounded tasks with explicit scope, allowed files, and
 validation criteria. They do not invent architecture, mutate production state,
 or approve their own work. Strong Codex resolves architecture-level
 contradictions and designs fragile cross-repo boundaries. Hermes coordinates
 the flow between intent, roadmap, execution, and evidence — it does not
-implement, architect, or operate infrastructure directly.
+implement, architect, or operate infrastructure directly. For the complete
+role-separated workflow, see `agents/HERMES_AGENT_CONTRACT.md` §3.5f.
 
 ## Documentation maintenance
 
