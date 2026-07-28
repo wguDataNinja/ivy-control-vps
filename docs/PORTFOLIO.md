@@ -29,6 +29,25 @@ document explicitly labels them as derived.
 
 ---
 
+## Portfolio Command View
+
+Quick-scan table for the human operator. Fields sourced from `CONTROL.md`,
+`ROADMAP.md`, and this document's per-repo entries.
+
+| Repository | Intent | Desired outcome | State | Priority | Blocker | Human decision | Hermes next action | Executor |
+|---|---|---|---|---|---|---|---|---|
+| ivy-control-vps | Portfolio control plane | Reliable Hermes-centered orchestration | Admitted (Gate 3) | — | None | Next trial objective | Prove delegation cycle | OpenCode |
+| palworld-kb | Capability prototype | Clean published baseline | Source-only (Gate 3) | P4 | None pending | PR #2 merge | Post-merge governance | OpenCode |
+| reddit-ops | Data pipeline | Canonical collection | Production (Gate 5) | P1 | Credential commit e4acae0 | Clean publication strategy | Inspect/report only | Codex |
+| traderie | Data pipeline | Focused pc_hc_nl recovery | Production (Gate 5) | P3 | pc_hc_nl timeout | Recovery approach | Inspect/report only | Codex |
+| idlehacking-kb | Knowledge system | Acknowledged, replayable capture | Browser-dep. | P2 | Privacy/publication | IH ownership disposition | Inspect/report only | — |
+| ih-market-companion | Knowledge system | Acknowledged, replayable capture | Browser-dep. (Gate 2) | P2 | Userscript authority | Userscript source decision | Inspect/report only | — |
+| sjc-intel | Source-only | Remote configured | Source-only (Gate 2) | Low | No remote | Remote establishment plan | Inspect/report only | — |
+| wgu-catalog | Batch process | Version/manifest procedure | Batch | Low | Procedure design | Admission path | Inspect/report only | — |
+| wgu-atlas | Downstream | Boundary resolved | Downstream | Low | Boundary gates | Admission path | Inspect/report only | — |
+| bsda-courses | Downstream | Path, remote, boundary resolved | Downstream | Low | All unknown | Source discovery | Inspect/report only | — |
+| reckless-ben | Restricted | Preserve restricted | Restricted | — | NO_LAUNCH | None needed | None | — |
+
 ## Portfolio Purpose and Desired Direction
 
 *Ivy Control VPS is the portfolio control plane for governing and improving a collection
@@ -131,7 +150,7 @@ Buddy's edited version.*
 
 | Dimension | State |
 |---|---|
-| Control plane version | `feat/git-steward-mvp-integration` @ `a5953e1` |
+| Control plane version | `main` @ `12ca8c2` (merged `feat/git-steward-mvp-integration`) |
 | Managed repositories | 11 (5 operational, 3 source-only, 2 downstream, 1 restricted) |
 | Palworld publication pilot | PR #1 merged — `publish/baseline-v1` -> `main` |
 | Git Steward tests | 53/53 passing |
@@ -186,8 +205,8 @@ CONTROL.md and evidence — they do not read this document for operational state
 independent engineering assets through shared standards, evidence-based operations,
 Git workflows, and bounded human/agent collaboration.
 
-**Current state:** Admitted (Gate 3). Active development on `feat/git-steward-mvp-integration`.
-Palworld publication pilot completed. Git Steward MVP at 53 tests.
+**Current state:** Admitted (Gate 3). `feat/git-steward-mvp-integration` merged to `main` at
+`12ca8c2`. Git Steward MVP at 53 tests. Post-merge validation passes.
 
 **Priority:** N/A (this is the control plane)
 **What Buddy wants next:** First bounded artifact-only pilot through complete

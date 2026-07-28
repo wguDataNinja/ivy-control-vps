@@ -5,7 +5,7 @@ repository:
   purpose: "Portfolio control plane for repository governance, evidence, continuity, and bounded agent coordination."
   remote: "https://github.com/wguDataNinja/ivy-control-vps.git"
   default_branch: main
-  approved_sha: "1cd48d756ede1018b7f74f0ecc30c3f8fc68e044"
+  approved_sha: "12ca8c22d9d5078828c50b25981b2d4cda4fd73a"
   local_path: null
   vps_path: "/home/scraper/apps/ivy-control-vps"
 lifecycle:
@@ -62,7 +62,7 @@ evidence_basis: "docs/VPS_INVENTORY.md"
 **Purpose:** Active governance authority for the portfolio control plane itself.
 **Canonical remote:** `https://github.com/wguDataNinja/ivy-control-vps.git`
 **Default branch:** `main`
-**Approved SHA:** `1cd48d756ede1018b7f74f0ecc30c3f8fc68e044`
+**Approved SHA:** `12ca8c22d9d5078828c50b25981b2d4cda4fd73a`
 **VPS engineering workspace:** `/home/scraper/apps/ivy-control-vps`
 
 ## Portfolio Admission State
@@ -71,7 +71,7 @@ evidence_basis: "docs/VPS_INVENTORY.md"
 |---|---|---|
 | Gate 1 — Portfolio Admission | PASS | Control plane is a managed portfolio asset. |
 | Gate 2 — Public Repository Readiness | PASS WITH CONDITION | The resident workspace excludes the obsolete tracked root `TODO.md`; broader public cleanup/publishing remains pending. |
-| Gate 3 — GitHub Publication | PASS | The approved resident SHA is published on `main`; this does not approve unreviewed local governance changes. |
+| Gate 3 — GitHub Publication | PASS | Merged at `12ca8c2`. Approved head `f847045` is second parent. Full Gate 3 procedure formalized in `docs/GIT_WORKFLOW.md`. |
 | Gate 4 — Deployment Readiness | NOT APPLICABLE | Engineering workspace only; no runtime or authority transfer. |
 | Gate 5 — VPS Deployment | NOT APPLICABLE | Workspace residency is not service deployment. |
 | Gate 6 — Operational Activation | NOT APPLICABLE | No service, timer, database, or production writer. |
@@ -95,11 +95,8 @@ workflow artifact, and branch/PR authority remains a later gate.
 
 ## Current Blocker
 
-The first bounded artifact-only pilot has not yet demonstrated the complete
+The first bounded artifact-only Hermes pilot has not yet demonstrated the complete
 packet → execution → factual review → GPT/Buddy journal-acceptance cycle.
-The current local governance changes and root `TODO.md` also require review and
-intentional publication before the public clone becomes the complete current
-control-plane presentation.
 
 ## Next Authorized Work
 

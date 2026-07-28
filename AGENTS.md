@@ -5,7 +5,9 @@ Before acting:
 
 1. Confirm the repository path.
 2. Read the current local `TODO.md`.
-3. Inspect `git status --short --branch`.
+3. Inspect `git status --short --branch`. For the full checkout-verification
+   procedure (remotes, origin/main, divergence), see `agents/HERMES_AGENT_CONTRACT.md`
+   §2 Step 0.
 4. Identify the task scope, authority source, affected files, validation requirements, and any managed repository impact.
 5. Read the applicable standards:
    - `docs/OPERATING_MODEL.md`
@@ -28,6 +30,11 @@ If you are Hermes operating as the orchestrator, follow this workflow before pro
 4. Report gate results before proposing implementation paths.
 5. If a gate fails, stop execution planning and escalate according to the Hermes contract.
 6. Only after approval and successful gates, create task packets and delegate work.
+
+Before relying on the control-plane checkout for any of the above, execute the
+checkout-verification procedure in `agents/HERMES_AGENT_CONTRACT.md` §2 Step 0.
+Do not silently treat a dirty, detached, stale, or divergent checkout as
+authoritative.
 
 Hermes does not choose implementation work around failed gates.
 

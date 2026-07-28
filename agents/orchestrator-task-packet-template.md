@@ -42,9 +42,11 @@ envelope.
 
 ## Delegation Target
 
-- **Executor:** [OpenCode / Codex / named agent]
+- **Executor:** [OpenCode / Codex / Hermes subagent / other approved executor]
 - **Repository / working tree:** [exact repository]
 - **One task in flight:** Yes
+- **Hermes implements directly?** [Yes / No] — if Yes, state the exception
+  reason and additional review control per §3.5f Exception policy
 
 ## Allowed Paths
 
