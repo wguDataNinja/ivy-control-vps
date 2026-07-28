@@ -578,6 +578,118 @@ It applies after:
 - The implementation agent commits completed work to a working branch
 - Human review has accepted the result
 
+Task packets that delegate integration work must include the instruction:
+"Follow the Branch Integration Workflow in docs/GIT_WORKFLOW.md. Perform
+its repository preflight and stop at every required approval gate."
+
+### Prerequisites
+
+#### Normal starting condition
+
+Branch integration must begin from an environment that is:
+
+- a clean working tree — no staged, unstaged, or untracked changes in
+  tracked files;
+- a known branch — not detached HEAD;
+- an understood relationship to the authoritative remote branch —
+  divergence classified and documented;
+- no in-progress Git operation — no active merge, rebase, cherry-pick,
+  revert, bisect, or index lock.
+
+Known and intentionally isolated work may exist in a separate worktree,
+separate clone, or documented preservation location, but the environment
+where integration executes must satisfy every condition above.
+
+#### Unexpected-dirty-state gate
+
+Before any integration step, the agent must inspect the repository:
+
+- `git status --short --branch`
+- `git diff --cached --name-status`
+- `git diff --name-status`
+- `git stash list`
+- `git worktree list --porcelain`
+- presence of `MERGE_HEAD`, `REBASE_HEAD`, `CHERRY_PICK_HEAD`,
+  `REVERT_HEAD`, `BISECT_LOG`, or `.git/index.lock`
+
+If preflight finds unexpected state, the agent must stop before
+integration. Unexpected state includes:
+
+- staged changes;
+- unstaged tracked changes;
+- untracked files whose disposition is unknown;
+- unresolved conflicts;
+- active or interrupted Git operation;
+- local branch divergence not yet classified;
+- stashes whose relevance to the integration is unclear.
+
+The agent that encounters unexpected state must:
+
+- classify the state using `agents/HERMES_AGENT_CONTRACT.md` §3.11a
+  terminology;
+- preserve all work — do not reset, clean, stash, commit unrelated
+  changes, or discard work;
+- explain how the state affects the proposed integration;
+- propose a reconciliation or isolation method;
+- obtain approval before continuing.
+
+The agent must not automatically:
+
+- `git reset` of any form;
+- `git clean`;
+- `git stash` (unless the stash contents are documented and the action
+  is approved);
+- commit unrelated work;
+- `git checkout` or `git switch` merely to continue without a
+  preservation plan;
+- overwrite or amend existing commits.
+
+#### Committed history versus working-tree state
+
+Correct integration reasoning requires these distinctions:
+
+| Term | Meaning |
+|------|---------|
+| **Committed branch history** | Commits reachable from a branch ref. The only material Git operations (merge, cherry-pick, rebase, fast-forward) transfer between branches. |
+| **Staged changes** | Files in the index. Not part of any branch. |
+| **Unstaged tracked changes** | Working-tree edits to files Git tracks. Not part of any branch. |
+| **Untracked files** | Files Git does not track. Not part of any branch. |
+| **Stashes** | Working-tree snapshots outside branch history. |
+| **Worktree-local state** | Changes specific to one `git worktree` link. Invisible to other worktrees. |
+
+A merge, cherry-pick, fast-forward, or rebase operates only on committed
+branch history. These operations do **not** carry uncommitted working-tree
+changes, staged content, untracked files, stashes, or worktree-local
+state. Uncommitted changes in the worktree may cause Git to refuse the
+operation (Git will not overwrite dirty tracked files), but they are
+never introduced by the operation. An agent that claims otherwise is
+making a terminology error.
+
+#### Environment selection
+
+For a clean repository that satisfies the starting condition, normal
+integration may proceed in the existing worktree.
+
+When the current worktree contains unrelated or unresolved state,
+acceptable isolation options include:
+
+- a separate Git worktree created with `git worktree add`;
+- a separate clone of the repository;
+- an approved preservation-and-cleanup procedure that documents the
+  current state, preserves it, and restores it afterward.
+
+A separate worktree is not required for every integration. The default
+principle is:
+
+> Use the simplest environment that is demonstrably clean, understood,
+> and safe.
+
+Cherry-pick selects specific commits from a branch, but it does **not**
+by itself provide a clean execution environment. The workspace where
+cherry-pick runs must still satisfy the starting condition. Merge,
+fast-forward, cherry-pick, and rebase must each be evaluated for
+workspace cleanliness independently of commit selection.
+
 ### Step 1 — Working branch completion
 
 Before requesting integration, the implementation agent must:
@@ -652,10 +764,35 @@ Integration strategies and when each is appropriate:
 | **Rebase** | Requires explicit Buddy approval. Only when linear history is required and the author understands the rewrite implications. | Rewrites commit history. Creates new SHAs. Breaks existing references to old SHAs. Prohibited without explicit task authorization per the Destructive commands section. |
 
 The integration agent must:
-- Verify the authoritative branch is checked out and up to date.
+
+- Confirm the execution environment satisfies the starting condition
+  defined in this workflow.
+- Distinguish **commit selection** (which commits will be promoted) from
+  **workspace isolation** (where the promotion executes). Cherry-pick
+  isolates selected commits; it does not by itself provide a clean
+  execution environment.
+- Verify the authoritative branch is checked out in the correct
+  environment and is up to date.
 - Apply the approved strategy.
 - Confirm the resulting HEAD SHA matches the expected post-integration SHA.
-- Record the integration in a result report.
+- Record the integration environment (worktree path or clone path) and
+  final state in a result report.
+
+### Command-plan self-review
+
+Before recommending approval, the agent must review every proposed command
+against the reported Git state. The review must answer:
+
+- Can this command fail because of current working-tree state?
+- Can it alter unrelated work?
+- Does it depend on the current branch?
+- Does it modify the authoritative branch?
+- Does it require a clean worktree?
+- Is rollback valid for the exact proposed strategy?
+- Is the written explanation technically accurate?
+
+An integration packet must not recommend `APPROVE` if its own command
+sequence conflicts with the reported repository state.
 
 ### Step 6 — Post-integration validation
 
@@ -707,6 +844,14 @@ it is preserved for reference.
   section above. That section defines the review scope, validation, publication safety,
   decision outcomes, approval template, and post-merge verification for every merge.
 - No integration may proceed without a completed integration packet, GPT review, and Buddy approval.
+- Agent authority for integration operates within these boundaries:
+  - OpenCode may inspect, validate, classify, and propose integration plans.
+  - OpenCode may execute an approved integration plan in an environment that
+    satisfies the starting condition defined in this workflow.
+  - GPT reviews the proposal for technical and governance correctness.
+  - Buddy approves promotion to the authoritative branch.
+  - Unexpected repository state returns the process to a stop-and-report gate
+    before any integration work proceeds.
 
 ## Branch and review model
 
