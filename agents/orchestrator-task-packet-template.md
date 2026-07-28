@@ -51,7 +51,13 @@ envelope.
 ## Allowed Paths
 
 - [exact source/test/doc paths the executor may change]
-- **Hermes artifact paths only:** [declared task/report/log/journal-proposal paths]
+- **Active Hermes artifact paths only:** [declared inbox packet, outbox
+  report, validation report, execution log, journal-proposal paths]. Ivy Control
+  VPS active queue paths must use `_internal/inbox/runs/<run-id>/` and
+  `_internal/outbox/runs/<run-id>/`, or one documented repository queue path.
+  Do not use bare `session-<N>` directories for new artifacts.
+- **Durable archive target:** `_internal/orchestration/repos/<repo>/tasks/[Task ID]/`
+  or `_internal/orchestration/cross-repo/tasks/[Task ID]/`
 
 ## Validation Requirements
 
@@ -78,6 +84,16 @@ Hermes produces a validation report with one of these outcomes:
 `agents/HERMES_AGENT_CONTRACT.md` §3.5c for outcome definitions.
 
 ## After Completion
+
+After Hermes validates a completed task, it archives the packet, execution
+report, validation report, and execution log with:
+
+```bash
+python3 -m tools.hermes_orchestrator archive-task --task-id [Task ID] ...
+```
+
+Archive promotion copies active queue artifacts; it does not move or delete
+inbox/outbox artifacts.
 
 Hermes may write the next packet only if the validation outcome permits
 continuation (`HERMES_ACCEPT` or `HERMES_ACCEPT_WITH_NOTE`) and the envelope

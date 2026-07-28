@@ -145,12 +145,81 @@ Every substantial task must produce two artifacts in `_internal/`:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| Result report | `_internal/outbox/session-<N>/<NN>-<descriptive-slug>.md` | Consolidated outcome, evidence, validation, next handoff |
+| Result report | `_internal/outbox/runs/<run-id>/<task-id>-<descriptive-slug>.md` | Consolidated outcome, evidence, validation, next handoff awaiting review |
 | Execution log | `_internal/logs/agents/YYYY-MM-DD/<task-slug>.md` | Concise chronology of actions performed |
+
+Inbox and outbox paths are active workflow queues, not durable history.
+
+Use inbox for:
+
+- pending task packets;
+- bounded instructions awaiting execution;
+- active run inputs.
+
+Use outbox for:
+
+- fresh execution results awaiting review;
+- validation output awaiting acceptance;
+- temporary delivery artifacts.
+
+New Ivy Control VPS inbox/outbox paths must use one canonical queue location:
+
+```text
+_internal/inbox/runs/<run-id>/
+_internal/outbox/runs/<run-id>/
+```
+
+Accepted run ID formats:
+
+- `YYYY-MM-DD-<descriptive-slug>`
+- `session-<N>-<descriptive-slug>`
+
+Examples:
+
+- `2026-07-28-portfolio-readiness`
+- `2026-07-28-idlehacking-context`
+- `session-14-palworld-kb`
+
+Agents must not invent a bare `session-<N>` inbox or outbox directory. Existing
+historical `_internal/inbox/session-<N>/` and `_internal/outbox/session-<N>/`
+directories are legacy evidence only; do not use them for new artifacts.
+
+If repository-oriented active queue views are needed, use:
+
+```text
+_internal/inbox/repos/<repo>/<task-id>/
+_internal/outbox/repos/<repo>/<task-id>/
+```
+
+Do not duplicate the same artifact into both run and repository queue views.
+Choose one canonical active queue location and link from any secondary index.
+
+After Hermes validates a completed task, copy the task packet, execution report,
+validation report, and execution log into the durable repository-organized
+archive:
+
+```text
+_internal/orchestration/repos/<repo>/tasks/<task-id>/
+_internal/orchestration/cross-repo/tasks/<task-id>/
+```
+
+Use the cross-repo namespace for tasks spanning multiple managed repositories.
+Use `_internal/orchestration/cross-repo/tasks/<task-id>/` for portfolio-wide
+reviews, multi-repository context packets, authority-resolution work,
+control-plane migration work, and cross-repository dependency analysis. Do not
+move or delete active inbox/outbox artifacts during archive promotion. Stable
+task IDs must link packet, report, validation, log, and archive manifest.
+
+Before writing a new artifact path, validate ambiguous destinations with:
+
+```bash
+python3 -m tools.hermes_orchestrator validate-artifact-destination --path <path>
+```
 
 Writing these artifacts is explicitly authorized despite the general `_internal/` protection rule. Result reports must contain the minimum fields defined in `docs/REPOSITORY_WORK_PROTOCOL.md` §4, supplemented by the fields below. Execution logs must not duplicate the report — they record what was done, not what was found.
 
-Tasks without a session number use `session-0`.
+Tasks without a session number must still use a globally distinguishable
+`<run-id>` rather than falling back to `session-0`.
 
 ### Applicability
 
@@ -162,7 +231,7 @@ Before beginning any substantial task, every agent must:
 
 1. Determine the current session number from `TODO.md`, the task inbox, or the most recent session journal.
 2. Determine the current task number or stable identifier.
-3. Locate the matching inbox task packet at `_internal/inbox/session-<N>/` or the target repository's equivalent inbox path.
+3. Locate the matching inbox task packet at `_internal/inbox/runs/<run-id>/`, `_internal/inbox/repos/<repo>/<task-id>/`, or the target repository's documented equivalent inbox path.
 4. If the task was received only through a direct chat handoff (no inbox packet exists), create a task packet and place it in the correct inbox location before starting execution. The packet must record the original prompt source, scope, authority boundaries, and validation expectations.
 
 ### Post-work requirements
@@ -198,8 +267,13 @@ bounded implementation
  ↓
 validation
  ↓
-result report → _internal/outbox/session-<N>/
+result report → _internal/outbox/runs/<run-id>/
+ ↓
+Hermes validation
+ ↓
+durable artifact archive → _internal/orchestration/repos/<repo>/tasks/<task-id>/ or cross-repo equivalent
  ↓
 review
  ↓
 promotion into authority
+```

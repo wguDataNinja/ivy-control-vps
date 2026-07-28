@@ -47,6 +47,31 @@ evidence and recommend the next bounded review. It may not create a health
 claim, alter a control record, restart a service, change permissions, or act on
 its recommendation without a separately authorized task.
 
+## Repository Intake Mode
+
+For repository-specific status reconstruction, use read-only intake before any
+task packet, ranking, or implementation planning:
+
+```bash
+python3 -m tools.hermes_orchestrator intake-repository \
+  --repo idlehacking-kb \
+  --path /Users/buddy/projects/idlehacking_kb \
+  --task-id idlehacking-kb-intake-001 \
+  --archive-root _internal/orchestration \
+  --json-out _internal/outbox/runs/2026-07-28-idlehacking-intake/idlehacking-kb-intake.json \
+  --report-out _internal/outbox/runs/2026-07-28-idlehacking-intake/idlehacking-kb-intake.md
+```
+
+The command reports what Hermes knows, what it inferred, what it could not
+establish, and what Buddy must decide before implementation. It never stages,
+commits, cleans, rewrites, or repairs a target repository. Dirty and untracked
+files are reported as protected state.
+
+Blocked intake statuses are `AUTHORITY_UNRESOLVED`, `IDENTITY_CONFLICT`, and
+`RESTRICTED`. Those statuses are stop conditions for planning and delegation.
+`RESTRICTED` is expected for repositories whose control record declares Hermes
+scope `none`.
+
 ## Installation layout
 
 Hermes Agent (`v0.18.2`, upstream `226e8de8`) was installed via the official per-user Linux installer:

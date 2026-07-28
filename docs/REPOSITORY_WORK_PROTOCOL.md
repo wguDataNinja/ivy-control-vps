@@ -27,9 +27,16 @@ A session does not need to align exactly with one task, roadmap phase, commit, r
 
 Every substantial unit of agent work receives a stable identifier.
 
-Preferred format: `agent-<number>-<descriptive-slug>` or equivalent per-repository convention.
+Preferred format: `YYYY-MM-DD-<descriptive-slug>` for run-level tasks or
+`agent-<number>-<descriptive-slug>` / equivalent per-repository convention for
+repository-local task IDs.
 
 Identifiers must not be reused within the same session and actor sequence. A completed or superseded task retains its identifier.
+
+For Ivy Control VPS active queues, agents must not create a bare `session-<N>`
+directory. A run/task ID must be globally distinguishable inside the control
+plane, for example `2026-07-28-portfolio-readiness`,
+`2026-07-28-idlehacking-context`, or `session-14-palworld-kb`.
 
 ---
 
@@ -70,16 +77,70 @@ The report is the primary handoff artifact between the executing agent, GPT, Bud
 | Git state | Current branch, status |
 | Next handoff | What the next actor should do |
 
-### Repository-approved locations
+### Active workflow locations
 
-| Repository | Prompt location | Result-report location | Log location |
+Inbox and outbox paths are active workflow queues. They hold work currently
+being dispatched, reviewed, or handed off. They are not the long-term index for
+all Hermes task history.
+
+| Repository | Prompt location | Active result-report location | Log location |
 |---|---|---|---|
-| Ivy Control VPS | `_internal/inbox/session-<N>/` | `_internal/outbox/session-<N>/` | `_internal/logs/agents/YYYY-MM-DD/` |
+| Ivy Control VPS | `_internal/inbox/runs/<run-id>/` | `_internal/outbox/runs/<run-id>/` | `_internal/logs/agents/YYYY-MM-DD/` |
 | Palworld KB | `_inbox/` | `agent-reports/` (by type) | `logs/agent-log.md` |
 | SJC Intel | (none defined) | `_outbox/` | `logs/agents/` |
 | Other repos | `_inbox/`, `inbox/`, or documented equivalent | `_outbox/`, `outbox/`, or documented equivalent | `logs/` or documented equivalent |
 
 A repository using an alternative path must document it in AGENTS.md, CONTROL.md, or a clearly identified private local supplement.
+
+The optional repository-oriented active queue view is:
+
+```text
+_internal/inbox/repos/<repo>/<task-id>/
+_internal/outbox/repos/<repo>/<task-id>/
+```
+
+Use this only when it is the canonical queue location for that artifact. Do not
+copy the same active artifact into both `runs/` and `repos/` queues. The
+durable repository-organized archive remains the permanent task-history index.
+
+Legacy `_internal/inbox/session-<N>/` and `_internal/outbox/session-<N>/`
+directories remain historical evidence and may be linked from old reports,
+control records, and docs. New work must not target those bare session paths.
+Validate proposed new destinations with:
+
+```bash
+python3 -m tools.hermes_orchestrator validate-artifact-destination --path <path>
+```
+
+### Durable Hermes artifact history
+
+After Hermes validates a completed task, active artifacts are promoted into a
+repository-organized durable history under the control plane's private
+orchestration tree:
+
+```text
+_internal/orchestration/repos/<repo>/tasks/<task-id>/
+_internal/orchestration/cross-repo/tasks/<task-id>/
+```
+
+Use `repos/<repo>/tasks/<task-id>/` when one managed repository owns the task.
+Use `cross-repo/tasks/<task-id>/` when the task spans multiple repositories or
+portfolio-level coordination and should not be attributed to one repository.
+
+Each archived task directory contains a `manifest.json` that records the stable
+task ID, repositories, source queue paths, copied archive paths, artifact
+hashes, validation disposition, and the fact that active queue artifacts were
+copied rather than moved.
+
+The archive step is allowed only after Hermes validation returns `COMPLETED` or
+`COMPLETED_WITH_WARNINGS`. Other dispositions remain in the active queue until
+rework, escalation, or Buddy review resolves them.
+
+Historical migration rule: do not bulk-move legacy session trees merely to
+normalize paths. Preserve auditability by leaving cited evidence in place unless
+a specific artifact has a known incorrect location and can be moved with a
+manifest recording original path, filename, checksum, migration date, inferred
+repository/workstream, confidence, source session name, and destination.
 
 ### VPS workspace artifact boundary
 
@@ -141,6 +202,8 @@ task intent (inbox artifact or direct handoff)
   → bounded execution
   → outbox result report
   → agent execution log when meaningful work occurred
+  → Hermes validation
+  → archive/promotion into repository-organized artifact history
   → review and acceptance meaning
   → journal navigation entry
   → intentional promotion into canonical documentation when durable truth changed
@@ -153,6 +216,7 @@ Each artifact has one role:
 | Inbox | Task intent, scope, constraints, and validation expectations | Decision or architecture authority |
 | Result report | Consolidated outcome, evidence, validation, risks, and next handoff | Permanent documentation automatically |
 | Agent log | Concise execution chronology | A second result report or architecture explanation |
+| Artifact manifest | Stable task-to-artifact index after validation | Canonical policy or roadmap truth |
 | Journal | Navigation across reviewed substantial results | A task transcript |
 | Canonical documentation | Settled operating, product, or policy truth | A replacement for task evidence |
 
