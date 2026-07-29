@@ -9,7 +9,7 @@ files.
 architectural decisions, portfolio thesis, and sequencing rationale. This roadmap
 references that document rather than duplicating all rationale.
 
-**Updated:** 2026-07-25
+**Updated:** 2026-07-29
 
 ---
 
@@ -80,6 +80,7 @@ A portfolio of independently governed repositories, each with:
 | idlehacking-kb | `browser-dependent` | Knowledge system |
 | ih-market-companion | `browser-dependent` | Market collection |
 | sjc-intel | `source-only` | Intelligence research |
+| sts-workbench | `source-only` | V1 finish-line (Nitewing voice assistant) |
 | wgu-catalog | `batch` | Data source |
 | wgu-atlas | `downstream` | LLM consumer |
 | bsda-courses | `downstream` | LLM consumer |
@@ -192,6 +193,7 @@ optional production activation.
 | Idle Hacking KB | Mac | privacy | metadata DB | VPS metadata | Mac | read-only |
 | SJC Intel | Mac | prepare | none | none | Mac | read-only |
 | Palworld KB | Mac | published | none | none | none | read-only |
+| STS Workbench | Mac | none | none | none | none | read-only |
 | WGU Catalog | Mac | published | none | none | none | read-only |
 | WGU Atlas | Mac | published | none | none | none | none |
 | BSDA Courses | unknown | unknown | none | none | none | none |
@@ -273,7 +275,7 @@ The pilot demonstrated:
 
 ## §6B Hermes Continuous Orchestration — In Progress
 
-**Status:** IN PREPARATION. Hermes is evolving from a guided task-executor
+**Status:** IN PROGRESS — Phase 4 (two delegation cycles completed and validated). Hermes is evolving from a guided task-executor
 toward a continuous orchestration layer that selects bounded work, delegates
 to execution agents, reviews evidence, updates continuity, and proceeds
 without requiring Buddy to approve every routine step.
@@ -294,19 +296,19 @@ without requiring Buddy to approve every routine step.
   human publication gate.
 - Validate and fill remaining gaps during trials rather than pre-building.
 
-**Phase 3: Run one complete trial on a bounded real task**
-- Buddy selects a bounded task. Hermes orients, inspects Git state,
-  isolates, numbers, creates the packet, delegates to OpenCode, receives
-  the report, inspects the result, reconciles evidence, and stops at the
+✅ **Phase 3: Complete**
+- Ran one complete trial on a bounded real task. Hermes oriented, inspected Git state,
+  isolated, numbered, created the packet, delegated to OpenCode, received
+  the report, inspected the result, reconciled evidence, and stopped at the
   human gate.
-- The trial validates the delegation contract and identifies documentation
+- The trial validated the delegation contract and identified documentation
   gaps before broader use.
 
-**Phase 4: Convert the successful trial into canonical reference**
-- Preserve the packet, report, and Hermes review as reference examples.
-- Update templates or memory where trials show gaps.
+✅ **Phase 4: Complete**
+- H0–H3 supervised-cycle contracts, decision-packet schemas, isolated worktree tests, and maker/checker cycle implemented and merged (31 passing tests). Session 13 Palworld pilot artifacts preserved as canonical reference.
+- `docs/HERMES_ORCHESTRATION_CONTRACTS.md`, `schemas/hermes_orchestration/decision-packet.schema.json`, `schemas/hermes_orchestration/supervised-cycle.schema.json` merged.
 
-**Phase 5: Begin normal roadmap execution**
+**Phase 5: Begin normal roadmap execution** — ⬆️ In progress
 - Hermes works through properly sized roadmap tasks one at a time.
 - OpenCode remains the default executor unless demonstrated otherwise.
 - Hermes may propose the next task without requiring Buddy to choose
@@ -333,7 +335,30 @@ without requiring Buddy to approve every routine step.
 
 ---
 
-## §7 Decisions Requiring Buddy
+## §6C H4 Supervised-Cycle Pilot — STS Workbench Dirty-State Preservation
+
+**Status:** APPROVED — Buddy authorized 2026-07-29.
+
+**Pilot repository:** STS Workbench (`/Users/buddy/projects/sts-workbench`)
+**Roadmap item:** `STS-V1-01` — Dirty-State Preservation and Reconciliation (per `docs/V1_FINISH_LINE_ROADMAP.md`)
+
+**Scope:** Classify every dirty tracked/untracked path in the STS Workbench checkout, record non-destructive preservation options, and produce a path-to-classification table. Allowed files: `agent/inbox/`, `agent/reports/`, `agent/INDEX.md` in isolated worktree only. Denied: `v1/**`, `docs/**`, `HANDOFF.md`, `TODO.md`, Git staging/commit/reset/stash/clean, `_internal/**`, all network/runtime paths.
+
+**Boundaries:** No product/runtime/credential/publishing scope. No Git mutation. Human gate: Buddy chooses preservation strategy.
+
+**Preconditions:** STS Workbench admitted as managed repository (`repos/sts-workbench/CONTROL.md` created). ivy-control-vps baseline clean and authoritative.
+
+**After pilot:** Result report, Decision Packet (if required), and capability evidence for future STS-V1-02 through STS-V1-08 progression.
+
+---
+
+## §6D Managed-Repository Admission: STS Workbench
+
+**Status:** IN PROGRESS — Buddy approved admission 2026-07-29. CONTROL.md creation in process.
+
+**Activities:**
+- Create `repos/sts-workbench/CONTROL.md` with standard gate model
+- Verify STS Workbench checkout state and baseline
 
 1. Reddit Ops clean publication/history strategy.
 2. Reddit Ops legacy fallback retirement (after canonicality proven).
@@ -346,4 +371,4 @@ without requiring Buddy to approve every routine step.
 9. Per-repo ROADMAP.md creation priority and timing.
 10. Palworld 36-commit publication audit disposition.
 11. First pilot credential model (fine-grained PAT vs GitHub App).
-12. STS Workbench managed-repository admission timing.
+12. ✅ STS Workbench managed-repository admission timing — Buddy approved 2026-07-29. CONTROL.md creation in progress.

@@ -45,7 +45,7 @@ health:
   state: unknown
 roadmap:
   gates: [1, 2, 3]
-  blockers: []
+  blockers: ["PR #2 open, unmerged — awaiting Buddy merge decision"]
   next_task: "ROADMAP.md §6F — footprint review, Hermes admission packet, source-only VPS clone"
 continuity:
   current_focus: "Workflow remediation and bounded source-only admission preparation; content quality remains the main product work."
@@ -155,7 +155,9 @@ None — no runtime or database work is possible for a source-only repository.
 
 ## Current Blocker
 
-None. Palworld KB is published and suitable for source-only admission after footprint review.
+PR #2 is open and unmerged. The PORTFOLIO.md row previously listed "None pending"; pkb-trial-001 corrected this. Once PR #2 is merged, the blocker is cleared and post-merge governance assessment can proceed.
+
+**Depends on:** Buddy merge decision.
 
 ---
 

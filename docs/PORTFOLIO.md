@@ -36,8 +36,8 @@ Quick-scan table for the human operator. Fields sourced from `CONTROL.md`,
 
 | Repository | Intent | Desired outcome | State | Priority | Blocker | Human decision | Hermes next action | Executor |
 |---|---|---|---|---|---|---|---|---|
-| ivy-control-vps | Portfolio control plane | Reliable Hermes-centered orchestration | Admitted (Gate 3) | — | None | Next trial objective | Prove delegation cycle | OpenCode |
-| palworld-kb | Capability prototype | Clean published baseline | Source-only (Gate 3) | P4 | None pending | PR #2 merge | Post-merge governance | OpenCode |
+| ivy-control-vps | Portfolio control plane | Reliable Hermes-centered orchestration | Admitted (Gate 3) | — | None | Phase 4 complete — trial evidence promoted | Normal roadmap execution | OpenCode |
+| palworld-kb | Capability prototype | Clean published baseline | Source-only (Gate 3) | P4 | PR #2 open, unmerged | PR #2 merge | Post-merge governance | OpenCode |
 | reddit-ops | Data pipeline | Canonical collection | Production (Gate 5) | P1 | Credential commit e4acae0 | Clean publication strategy | Inspect/report only | Codex |
 | traderie | Data pipeline | Focused pc_hc_nl recovery | Production (Gate 5) | P3 | pc_hc_nl timeout | Recovery approach | Inspect/report only | Codex |
 | idlehacking-kb | Knowledge system | Acknowledged, replayable capture | Browser-dep. | P2 | Privacy/publication | IH ownership disposition | Inspect/report only | — |

@@ -3,7 +3,9 @@
 **Status:** Current for read-only inspection and dispatched artifact-only
 coordination. Credential model, branch/PR authority, destructive and
 production-changing permissions, private-context provisioning, and automatic
-merge authority remain unresolved.
+merge authority remain unresolved. Read-only delegation cycle (Mode 0 →
+OpenCode) proven 2026-07-28 via pkb-trial-001 and two subsequent session-1
+trials.
 
 ## 1. Applicability
 
