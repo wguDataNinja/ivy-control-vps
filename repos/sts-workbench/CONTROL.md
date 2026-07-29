@@ -5,7 +5,7 @@ repository:
   purpose: "V1 Palworld Nitewing voice assistant — typed/audio interaction, STT/TTS, evidence/citation browser, OpenCode communication, and Palworld CLI integration."
   remote: null
   default_branch: master
-  approved_sha: "9782dfb7093471bc6dc19cc21a912849574228ec"
+  approved_sha: "d60c3d51b5cb76ff8b011da5a348be3ba96da1d2"
   local_path: "/Users/buddy/projects/sts-workbench"
   vps_path: null
 lifecycle:
@@ -45,12 +45,12 @@ health:
   state: unknown
 roadmap:
   gates: [1]
-  blockers: ["19 dirty tracked files and 3 untracked files pending STS-V1-01 classification and Buddy preservation decision"]
-  next_task: "STS-V1-01 — Dirty-State Preservation and Reconciliation"
+  blockers: ["STS-V1-01 complete — preserved at d60c3d5. Pre-existing backend Whisper failures (2) and contract-validator exit 1 remain."]
+  next_task: "STS-V1-02 — Current Validation and Compatibility Baseline"
 continuity:
-  current_focus: "V1 finish-line completion — dirty-state preservation, lifecycle repair, acceptance, and release packaging."
-  recent_milestone: "HITL acceptance in progress (2/8 checklist items); backend 365+p tests, frontend typecheck/unit/build passing (with one backend communication-repair failure)."
-  recent_reference: "docs/V1_FINISH_LINE_ROADMAP.md (Buddy-approved 2026-07-27); docs/HITL_ACCEPTANCE_2026-07-24.md"
+  current_focus: "V1 finish-line completion — STS-V1-02 validation baseline, lifecycle repair, acceptance, and release packaging."
+  recent_milestone: "STS-V1-01 complete: 19 dirty paths preserved at d60c3d5. H4 supervised-cycle pilot proven (maker/checker cycle). Backend 363p/2f/1s, frontend typecheck/unit/build passing."
+  recent_reference: "docs/V1_FINISH_LINE_ROADMAP.md; ivy-control-vps _internal/outbox/runs/session-14-sts-h4/"
   long_horizon: "V1 completion for bounded Nitewing voice assistant, then evaluate follow-on scope."
 hermes:
   scope: "read-only"
@@ -150,9 +150,12 @@ None — no runtime or database work is possible for a source-only repository. C
 
 ## Current Blocker
 
-The STS Workbench checkout has 19 dirty tracked files and 3 untracked files from prior completed work. These must be classified and preserved through an approved non-destructive route (STS-V1-01) before sustained V1 progression can begin.
+STS-V1-01 complete — all 19 dirty paths classified as completed V1 work and preserved at `d60c3d5`. Pre-existing conditions:
+- Backend: 2 Whisper-adapter test failures (environment-dependent fixture issue)
+- Contract validator exits 1 (36 "Other errs" — schema fixture behavior)
+These were not introduced by the preservation commit.
 
-**Depends on:** H4 supervised-cycle pilot completion and Buddy preservation strategy decision.
+**Next:** STS-V1-02 — Current Validation and Compatibility Baseline requires Buddy gate for deferral or fix decisions on pre-existing failures.
 
 ---
 
