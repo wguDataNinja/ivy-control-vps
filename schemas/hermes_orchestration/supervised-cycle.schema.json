@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivy-control.local/schemas/hermes/supervised-cycle.schema.json",
+  "title": "Hermes Supervised Cycle State",
+  "type": "object",
+  "required": ["schema_version", "run_id", "state", "immutable_contract", "baseline", "attempts", "budget", "events"],
+  "properties": {
+    "schema_version": {"const": "hermes.supervised_cycle.v1"},
+    "run_id": {"type": "string"},
+    "state": {"enum": ["initialize", "establish_baseline", "claim", "provision_isolated_worktree", "dispatch_maker", "seal_submission", "run_independent_checker", "pass", "precise_revision", "stop_escalate", "integrate", "suspend", "reconcile_clean_state"]},
+    "immutable_contract": {"type": "object", "required": ["base_sha", "allowed_paths", "denied_paths", "authority_digest", "acceptance_digest"]},
+    "baseline": {"type": "object"},
+    "attempts": {"type": "array"},
+    "budget": {"type": "object", "required": ["max_attempts", "max_identical_failures", "max_units", "used_units"]},
+    "events": {"type": "array"}
+  },
+  "additionalProperties": false
+}

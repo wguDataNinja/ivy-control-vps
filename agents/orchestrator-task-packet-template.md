@@ -48,6 +48,16 @@ envelope.
 - **Hermes implements directly?** [Yes / No] — if Yes, state the exception
   reason and additional review control per §3.5f Exception policy
 
+## Supervised-cycle invariants
+
+- **Pinned base SHA:** [full SHA]
+- **Authority digest / acceptance digest:** [SHA-256 values]
+- **Model and wall budget:** [bounded amount]
+- **Retry limits:** [attempts / identical failures]
+- **Checker:** [separate named role; maker cannot approve]
+- **Verification tier:** [static / behavioral / system / semantic gate]
+- **Decision packet, if needed:** [path and required authority]
+
 ## Allowed Paths
 
 - [exact source/test/doc paths the executor may change]
