@@ -35,8 +35,8 @@ health:
   state: unknown
 roadmap:
   gates: [1, 2, 3]
-  blockers: ["Artifact-only Hermes pilot and per-repository permission review remain pending"]
-  next_task: "Session 12: complete the bounded Hermes artifact-only pilot on a clean target repository"
+  blockers: ["H4 supervised-cycle pilot (STS-V1-01) in progress — pending Buddy preservation decision"]
+  next_task: "Session 14: execute H4 STS-V1-01 supervised-cycle pilot on STS Workbench"
 continuity:
   current_focus: "VPS engineering-workspace residency and bounded Hermes orchestration foundations."
   recent_milestone: "Clean public VPS workspace refreshed to the approved published SHA without private material."
@@ -53,7 +53,7 @@ codex_stops:
   - "Do not grant branch, PR, deployment, service, database, or credential authority without a separate approved gate."
 buddy_decisions:
   - "Approve per-repository Hermes artifact-only or branch/PR scope — PENDING"
-last_verified: "2026-07-20"
+last_verified: "2026-07-29"
 evidence_basis: "docs/VPS_INVENTORY.md"
 ---
 
@@ -95,12 +95,10 @@ workflow artifact, and branch/PR authority remains a later gate.
 
 ## Current Blocker
 
-The first bounded artifact-only Hermes pilot has not yet demonstrated the complete
-packet → execution → factual review → GPT/Buddy journal-acceptance cycle.
+The H4 supervised-cycle pilot (STS-V1-01 — Dirty-State Preservation and Reconciliation) is in progress. Hermes is executing the first bounded supervised cycle on STS Workbench under the Alori harness framework. Completion requires Buddy preservation strategy decision after the result report.
 
 ## Next Authorized Work
 
-1. Use the packet template and Mode 0 contract for one clean, non-production
-   repository pilot.
-2. Review the evidence cycle with GPT/Buddy before any multi-task continuation
-   or branch/PR authority.
+1. **Immediate:** Execute STS-V1-01 dirty-state classification on STS Workbench via isolated worktree. Maker: OpenCode. Checker: Hermes.
+2. **After H4 completion:** Progression through STS-V1-02 through STS-V1-08 per `docs/V1_FINISH_LINE_ROADMAP.md` (each requires separate Buddy gate).
+3. **After STS V1 completion:** Evidence-backed capability demonstration for broader autonomous orchestration.
