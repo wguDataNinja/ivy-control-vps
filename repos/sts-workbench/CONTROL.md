@@ -54,6 +54,15 @@ continuity:
   long_horizon: "V1 completion for bounded Nitewing voice assistant, then evaluate follow-on scope."
 hermes:
   scope: "read-only"
+git_custody:
+  inspect: true
+  local_commit: false
+  push_branch: false
+  create_pr: false
+  merge: false
+  update_approved_sha: false
+  protected_paths:
+    - "_internal/**"
 codex_stops:
   - "No runtime or database work possible for a source-only repository"
   - "VPS clone requires separate admission gate"
@@ -69,7 +78,7 @@ evidence_basis: "docs/V1_FINISH_LINE_ROADMAP.md"
 **Purpose:** Active governance authority for STS Workbench within IvyControlVPS.
 **Canonical remote:** Not yet published — no GitHub remote configured
 **Default branch:** `master`
-**Approved SHA:** `9782dfb7093471bc6dc19cc21a912849574228ec`
+**Approved SHA:** `d60c3d51b5cb76ff8b011da5a348be3ba96da1d2`
 **Local path:** `/Users/buddy/projects/sts-workbench`
 **Lifecycle state:** `source-only` — V1 finish-line admission; no service, DB, or runtime
 **Detailed gate evidence:** `repos/sts-workbench/RELEASE_GATES.md` (pending creation)
@@ -106,7 +115,7 @@ evidence_basis: "docs/V1_FINISH_LINE_ROADMAP.md"
 
 | Standard | Applicability | Compliance | Notes |
 |----------|--------------|------------|-------|
-| Git workflow | REQUIRED | PASS WITH CONDITION | Local `master` branch; no remotes; dirty tracked state pending classification |
+| Git workflow | REQUIRED | PASS WITH CONDITION | Local `master` branch; no remotes; STS-V1-01 preserved at approved SHA `d60c3d5` |
 | Public/private boundary | REQUIRED | PASS WITH CONDITION | `_internal/` excluded via `.gitignore`; publication not yet configured |
 | Runtime logging | NOT APPLICABLE | PASS | No runtime |
 | LLM tenets | NOT APPLICABLE | PASS | No operational LLM stage |

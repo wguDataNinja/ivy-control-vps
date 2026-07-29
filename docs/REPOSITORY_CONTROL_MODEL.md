@@ -196,6 +196,14 @@ This mapping prevents ambiguity without creating a competing gate model.
 
 Every managed repository has a recorded approved SHA. This is the commit that was verified at publication time. Future deployment must use this SHA or a later reviewed and recorded replacement. The approved SHA is recorded in `CONTROL.md` and cross-referenced in `RELEASE_GATES.md`.
 
+`CONTROL.md` may include a `git_custody` block. It is a fail-closed capability
+record: `inspect`, `local_commit`, `push_branch`, `create_pr`, `merge`, and
+`update_approved_sha` are explicit booleans. In H4.1 only `inspect` and a
+separately dispatched `local_commit` may be true; remote/policy-changing fields
+remain false. Conflicting approved-SHA values between machine-readable and
+human-readable control content block custody until canonical evidence resolves
+them.
+
 ---
 
 ## Control-sheet update triggers

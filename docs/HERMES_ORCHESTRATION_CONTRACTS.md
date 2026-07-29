@@ -394,6 +394,11 @@ bounded unresolved semantic, architecture, policy, privacy, production,
 credential, destructive, or capability-promotion question reaches GPT, Strong
 Codex, or Buddy at the authority named in the packet.
 
+Before worktree cleanup, Hermes archives the task packet, maker result, checker
+result, and execution log and records their digests. Any Git-custody packet
+also binds its immutable authority and acceptance digests to the sealed
+manifest. Missing archive evidence or a changed digest is a stop condition.
+
 ## Runtime Diagnostic
 
 Before a fresh Hermes test session, verify the runtime baseline:
@@ -423,7 +428,7 @@ Iteration 1 registry:
 |---|---|---|---|
 | Hermes subagent | Read-only artifact assistance | Documented, not fully proven | Supervised only |
 | OpenCode | Repository implementation | CLI path unresolved | Requires packet and isolation |
-| Git Steward | Publication validation and command generation | Implemented in `tools/git_steward/` | Gate-specific only |
+| Git Steward | Publication validation plus H4.1 local exact-manifest custody | Implemented in `tools/git_steward/` | Hermes-invoked supervised only; no remote action |
 | Strong Codex | Architecture/review escalation | Available by Buddy dispatch | Never autonomous from Hermes |
 
 ## State Machine

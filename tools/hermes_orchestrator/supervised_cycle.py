@@ -84,6 +84,14 @@ def reconcile(state: dict[str, Any], worktree_exists: bool, lease_exists: bool, 
         return transition(state, "stop_escalate", "clean-state reconciliation failed", worktree_exists=worktree_exists, lease_exists=lease_exists, repository_head=repository_head)
     return transition(state, "reconcile_clean_state", "repository, worktree, lease, and base reconciled")
 
+def seal_archive_before_cleanup(state: dict[str, Any], archive_paths: list[str]) -> dict[str, Any]:
+    """Record artifact hashes before a worktree can be removed."""
+    if state["state"] not in {"pass", "stop_escalate", "integrate", "suspend"}: raise ValueError("archive sealing requires terminal state")
+    missing = [path for path in archive_paths if not Path(path).is_file()]
+    if not archive_paths or missing: return transition(state, "stop_escalate", "archive-before-cleanup evidence missing", missing=missing)
+    sealed = [{"path": path, "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest()} for path in archive_paths]
+    return transition(state, state["state"], "archive sealed before cleanup", archives=sealed)
+
 def check_submission(state: dict[str, Any], checker: str, evidence: Any, disposition: str, revision: list[str] | None = None) -> dict[str, Any]:
     if state["state"] != "run_independent_checker": raise ValueError("checker is not currently permitted")
     attempt = state["attempts"][-1]
