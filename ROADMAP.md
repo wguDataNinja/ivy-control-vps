@@ -363,6 +363,23 @@ STS branch at `cd36e36`, found/fixed porcelain-output handling, and reset
 - `repos/sts-workbench/CONTROL.md` established; source-only and no remote.
 - STS-V1-02 remains gated by its existing Buddy decision packet.
 
+---
+
+## §6E Portfolio Harness Baseline and Alori Workbench
+
+**Status:** ACTIVE — baseline adopted 2026-07-29.
+
+The portfolio now uses the minimal shared harness in
+`docs/PORTFOLIO_ENGINEERING_HARNESS.md`: repository-local orientation and
+deterministic checks; central admission, orchestration, sealed evidence, and
+Git custody. Existing repositories retain declared artifact conventions until a
+specific migration is justified and verified.
+
+Alori is admitted source-only as the harness workbench. Its first eligible
+task is `ALORI-001`, a read-only Decision Packet that resolves replacement KB
+identity and three explicit policy decisions. No replacement KB runtime,
+legacy execution, remote publication, or autonomous scheduling is authorized.
+
 1. Reddit Ops clean publication/history strategy.
 2. Reddit Ops legacy fallback retirement (after canonicality proven).
 3. Canonical Idle Hacking userscript source and duplicate disposition.

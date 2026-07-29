@@ -49,7 +49,7 @@ It does not own live health, priorities, deployment state, schedules, approved r
 | chive_gate | External / private | Referenced lineage and dependency context; no current Ivy Control support model. | Discovery required |
 | idle-hacker | External / private | Related ecosystem context; ownership and governance remain unresolved. | Discovery required |
 | Hermes | Infrastructure / support | Read-only resident observation assistant; not a scheduler or production authority. | Confirmed by current operator documentation |
-| Alori | Portfolio candidate | Local harness-engineering workbench and source of the principles used for H4/H4.1. It is not yet a managed product repository: `/Users/buddy/projects/alori` is not a Git root; only the vendored course is Git. | Confirmed path; governance identity unresolved |
+| Alori | Source-only workbench | Local harness workbench and source of the principles used for H4/H4.1. The root is a managed Git repository; the vendored course remains reference-only. Replacement IdleHacking KB identity and privacy/authority decisions remain unresolved. | Gate 1 source-only admission; no runtime or publication authority |
 | adult-media-research | External / private | Separate private research asset acknowledged without current Ivy Control governance. | Discovery required |
 | adultgraph | External / private | Separate private asset acknowledged without current Ivy Control governance. | Discovery required |
 

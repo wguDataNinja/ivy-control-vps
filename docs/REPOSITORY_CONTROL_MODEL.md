@@ -408,6 +408,11 @@ The control plane answers different questions through different sources. Do not 
 2. When an operational support relationship is deliberately accepted, create a managed `repos/<repo>/CONTROL.md` record and state applicable standards, support state, boundaries, and next authorized work.
 3. The registry generator may then expose the CONTROL metadata as a derived summary. A source-only, restricted, or deferred asset receives only the controls proportional to its role.
 4. Health producers or adapters are added only for a workload that actually needs operational evidence. Their output remains subject to the health contract and evidence freshness rules.
+5. New harness-profile repositories also follow
+   `docs/PORTFOLIO_ENGINEERING_HARNESS.md`: they declare one local orientation
+   manifest and one task/report/journal convention, then pass the central
+   validator. Existing managed repositories are migrated only by an explicit,
+   verifiable task; their declared local conventions remain valid meanwhile.
 
 **Refresh is not discovery and is not Git activity.** A refresh either re-runs a generated view from existing records or collects permitted operational evidence. It never silently changes an authority document, upgrades an asset's importance, or makes an incomplete inventory complete.
 
