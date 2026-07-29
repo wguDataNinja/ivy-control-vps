@@ -367,6 +367,33 @@ The restart command reconstructs transient state from the run-state file:
 python3 -m tools.hermes_orchestrator reconstruct --run-state <run-state.json>
 ```
 
+## Supervised execution cycle and decision packets
+
+The orchestration state, schemas, and tools are the canonical owner of this
+cycle; Git publication remains exclusively governed by `docs/GIT_WORKFLOW.md`
+and Git Steward. Hermes maximizes safely delegated work between GPT, Strong
+Codex, and Buddy decision stages. It does not make the decision itself.
+
+A supervised cycle is: `initialize → establish baseline → claim → provision
+isolated worktree → dispatch maker → seal submission → run independent checker
+→ pass | precise revision | stop/escalate → integrate or suspend → reconcile
+clean state`. Each side-effecting transition is recorded before the effect.
+Missing, stale, malformed, or contradictory evidence stops the run. Retries
+retain the pinned base SHA, authority and acceptance digests, path manifest,
+and budget; a maker can never approve its own submission.
+
+`schemas/hermes_orchestration/decision-packet.schema.json` makes a decision
+packet first-class. Its lifecycle is `identified → preparation_required →
+preparation_in_progress → ready_for_review → under_review →
+supplemental_evidence_required | decided | deferred → superseded | invalidated`.
+Packets curate repository/runtime/semantic evidence, representative and
+high-risk samples, counterexamples, uncertainties, options, tradeoffs,
+recommendation, safe default, and a bounded response format. High-reasoning
+review is tiered: deterministic evidence first; domain review second; only a
+bounded unresolved semantic, architecture, policy, privacy, production,
+credential, destructive, or capability-promotion question reaches GPT, Strong
+Codex, or Buddy at the authority named in the packet.
+
 ## Runtime Diagnostic
 
 Before a fresh Hermes test session, verify the runtime baseline:
