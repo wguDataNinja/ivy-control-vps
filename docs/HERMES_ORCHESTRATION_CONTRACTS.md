@@ -420,6 +420,14 @@ The diagnostic must report:
 
 `status: PASS` is required before Stage 2 fresh-session tests.
 
+## Human task entrypoint
+
+For every archived task Hermes creates the durable archive's `README.md` index
+and the sole `final-report.md` before worktree cleanup. The index links the
+packet, maker result, checker validation, custody result, decision packet when
+present, logs, and manifest. Cross-repository links use absolute owning-
+repository paths. Role reports are evidence, never additional final reports.
+
 ## Executor Registry
 
 Iteration 1 registry:

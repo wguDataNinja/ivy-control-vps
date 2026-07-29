@@ -302,6 +302,9 @@ def test_archive_task_artifacts_copies_validated_task_without_moving_active_queu
     assert (task_root / "execution-report.md").read_text(encoding="utf-8") == "report\n"
     assert (task_root / "validation-report.json").exists()
     assert (task_root / "execution-log.md").exists()
+    assert (task_root / "README.md").exists()
+    assert (task_root / "task.md").exists()
+    assert (task_root / "final-report.md").exists()
     manifest = json.loads((task_root / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["active_queue_semantics"] == "copied_not_moved"
 
