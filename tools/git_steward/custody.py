@@ -7,7 +7,7 @@ from pathlib import Path
 def _digest(v: object) -> str: return hashlib.sha256(json.dumps(v, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 def _git(repo: Path, *args: str) -> tuple[int, str, str]:
     p = subprocess.run(["git", *args], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-    return p.returncode, p.stdout.strip(), p.stderr.strip()
+    return p.returncode, p.stdout, p.stderr.strip()
 
 @dataclass(frozen=True)
 class LocalCommitManifest:
@@ -30,13 +30,13 @@ def execute_local_commit(m: LocalCommitManifest, authority: object, acceptance: 
     if not m.task_id or not m.commit_message or not m.allowed_paths: errors.append("task_id, commit_message, and allowed_paths are required")
     if not all(Path(p).exists() for p in m.archive_paths): errors.append("required archive evidence is missing")
     code, head, _=_git(repo,"rev-parse","HEAD")
-    if code or head!=m.base_sha: errors.append("pinned base SHA does not match repository HEAD")
+    if code or head.strip()!=m.base_sha: errors.append("pinned base SHA does not match repository HEAD")
     _, branch, _=_git(repo,"branch","--show-current")
-    if not branch or branch!=m.branch: errors.append("repository is not on declared isolated branch")
+    if not branch.strip() or branch.strip()!=m.branch: errors.append("repository is not on declared isolated branch")
     _, remotes, _=_git(repo,"remote")
     if remotes: errors.append("H4.1 local custody requires no configured remote")
     _, staged, _=_git(repo,"diff","--cached","--name-only")
-    if staged: errors.append("pre-existing staged state is prohibited")
+    if staged.strip(): errors.append("pre-existing staged state is prohibited")
     _, status, _=_git(repo,"status","--porcelain"); paths=[line[3:] for line in status.splitlines() if line]
     invalid=[p for p in paths if p not in m.allowed_paths or p in m.denied_paths or p.startswith("_internal/")]
     if invalid: errors.append("manifest path violation: "+", ".join(sorted(invalid)))
@@ -45,5 +45,5 @@ def execute_local_commit(m: LocalCommitManifest, authority: object, acceptance: 
     if rc: return {"status":"CUSTODY_BLOCKED","errors":["git add failed: "+err],"head_before":head,"committed":False}
     rc,_,err=_git(repo,"commit","-m",m.commit_message)
     if rc: return {"status":"CUSTODY_STOPPED","errors":["git commit failed: "+err],"head_before":head,"committed":False}
-    _,after,_=_git(repo,"rev-parse","HEAD"); _,residual,_=_git(repo,"status","--porcelain"); ok=after!=head and not residual
+    _,after,_=_git(repo,"rev-parse","HEAD"); _,residual,_=_git(repo,"status","--porcelain"); ok=after.strip()!=head.strip() and not residual.strip()
     return {"status":"CUSTODY_COMMITTED" if ok else "CUSTODY_STOPPED","errors":[] if ok else ["post-commit reconciliation failed"],"head_before":head,"head_after":after,"commit_evidence_digest":_digest({"manifest":m.__dict__,"head_before":head,"head_after":after}),"committed":ok}
