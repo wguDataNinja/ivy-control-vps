@@ -32,27 +32,31 @@ harness framework.
 - [x] Update ROADMAP.md and TODO.md
 - [x] Establish clean authoritative baseline
 
-## Phase B — STS Workbench Repository Admission
+## Phase B — STS Workbench Repository Admission (DONE)
 
-1. Create `repos/sts-workbench/CONTROL.md` with standard gate model
-2. Verify STS Workbench checkout state against V1_FINISH_LINE_ROADMAP.md
-3. Record admission evidence
+- [x] Create `repos/sts-workbench/CONTROL.md` with standard gate model
+- [x] Verify STS Workbench checkout state against V1_FINISH_LINE_ROADMAP.md
+- [x] Record admission evidence
 
-### Read-only? YES — control record creation only
-### Requires Buddy approval? YES — for admission validation
+## Phase C — H4 Supervised Pilot: STS-V1-01 (DONE)
 
-## Phase C — H4 Supervised Pilot: STS-V1-01
+- [x] Preflight STS Workbench checkout (baseline SHA, dirty state, worktrees)
+- [x] Create bounded task packet for Dirty-State Preservation and Reconciliation
+- [x] Delegate to OpenCode for execution
+- [x] Review evidence against task packet (HERMES_ACCEPT)
+- [x] Buddy approved preservation commit at `d60c3d5`
 
-1. Preflight STS Workbench checkout (baseline SHA, dirty state, worktrees)
-2. Create bounded task packet for Dirty-State Preservation and Reconciliation
-3. Delegate to OpenCode for execution
-4. Review evidence against task packet
-5. Present at Buddy human gate for preservation strategy decision
+## Phase D — STS-V1-02 Eligibility (PENDING BUDDY DECISION)
 
-### Expected artifact
-- Task packet: `agent/inbox/sts-v1-01-dirty-state-preservation.md`
-- Result report: `agent/reports/sts-v1-01-dirty-state-preservation.md`
-- Hermes validation: `_internal/outbox/runs/session-14-sts-h4/hermes-validation.md`
+STS-V1-02 task packet is prepared at `_internal/inbox/runs/session-14-sts-h4/sts-v1-02-validation-baseline.md`.
 
-### May write? Yes — task packets and reports in declared artifact paths only
-### Requires Buddy approval? Yes — for preservation strategy decision (human gate)
+**Requires Buddy decision on the following pre-existing failures:**
+
+1. Whisper-adapter test failures (2) — environment-dependent; recommend defer
+2. Contract validator exit 1 — known behavior; recommend defer
+3. Palworld KB commit drift — locked `f94a618` vs current `9debe47`; expected
+4. Contract registry not found at expected path
+
+See Decision Packet at: `_internal/outbox/runs/session-14-sts-h4/sts-v1-02-eligibility-decision-packet.md`
+
+**After Buddy decision:** dispatch STS-V1-02 to OpenCode for validation baseline recording.
