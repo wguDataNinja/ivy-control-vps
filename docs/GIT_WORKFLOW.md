@@ -159,6 +159,17 @@ For Git writes, invoke `git-steward`.
 
 ## Git Steward MVP
 
+### H4.1 local custody extension
+
+Git Steward is a Hermes-invoked supervised execution role and registered
+resident capability, never an independently acting agent. H4.1 permits only a
+single local commit in an isolated non-default worktree when a sealed manifest
+has an accepted independent checker disposition, matching authority and
+acceptance digests, archived task evidence, exact allowed paths, and no remote.
+It cannot push, create a PR, merge, update an approved SHA, tag, delete,
+rewrite, reset, clean, or access credentials. Every other custody permission
+defaults to false in the repository CONTROL record.
+
 The Git Steward MVP lives at `tools/git_steward/` in the control repository. It
 is a publication-candidate validator with three independent operational modes.
 It does not execute push, pull-request creation, or any remote mutation during

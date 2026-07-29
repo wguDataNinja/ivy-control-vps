@@ -39,6 +39,14 @@ roadmap:
   next_task: "<next-authorized-work-reference>"
 hermes:
   scope: "<read-only|read-only-with-pr|none>"
+git_custody:
+  inspect: true
+  local_commit: false
+  push_branch: false
+  create_pr: false
+  merge: false
+  update_approved_sha: false
+  protected_paths: []
 codex_stops: []
 buddy_decisions: []
 last_verified: "<yyyy-mm-dd>"

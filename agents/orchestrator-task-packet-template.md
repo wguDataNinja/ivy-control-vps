@@ -57,6 +57,8 @@ envelope.
 - **Checker:** [separate named role; maker cannot approve]
 - **Verification tier:** [static / behavioral / system / semantic gate]
 - **Decision packet, if needed:** [path and required authority]
+- **Git custody (optional):** [local commit only / none]; require archive paths,
+  separate checker disposition, and exact manifest before any Git side effect.
 
 ## Allowed Paths
 

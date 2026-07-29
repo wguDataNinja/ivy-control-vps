@@ -2,7 +2,7 @@ import subprocess
 
 from tools.hermes_orchestrator.supervised_cycle import (
     check_submission, claim_attempt, establish_baseline, new_cycle, reconcile,
-    provision_worktree, seal_submission, validate_decision_packet,
+    provision_worktree, seal_archive_before_cleanup, seal_submission, validate_decision_packet,
 )
 
 AUTHORITY = {"permitted": ["bounded docs"]}
@@ -66,3 +66,10 @@ def test_worktree_lease_and_provisioning_are_isolated(tmp_path):
     assert result["state"] == "dispatch_maker"
     assert (tmp_path / "worktree").is_dir()
     assert provision_worktree(state, repo, tmp_path / "worktree", "ignored", tmp_path / "leases" / "run-worktree")["state"] == "stop_escalate"
+
+def test_archive_is_sealed_before_cleanup(tmp_path):
+    evidence = {"paths": ["docs/a.md"], "evidence": {"ok": True}}
+    passed = check_submission(sealed(), "checker", evidence, "pass")
+    assert seal_archive_before_cleanup(passed, [str(tmp_path / "missing")])["state"] == "stop_escalate"
+    archive = tmp_path / "report.md"; archive.write_text("evidence", encoding="utf-8")
+    assert seal_archive_before_cleanup(passed, [str(archive)])["events"][-1]["reason"] == "archive sealed before cleanup"
