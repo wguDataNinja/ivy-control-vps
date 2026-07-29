@@ -1068,6 +1068,34 @@ def archive_task_artifacts(
         task_root.mkdir(parents=True, exist_ok=False)
         for item in copied:
             shutil.copy2(item["source"], item["destination"])
+        task_alias = task_root / "task.md"
+        shutil.copy2(packet_path, task_alias)
+        final_path = task_root / "final-report.md"
+        final_path.write_text(
+            "# Canonical Final Report\n\n"
+            f"**Task:** `{task_id}`  \n"
+            f"**Disposition:** `{disposition}`  \n"
+            f"**Repository scope:** `{', '.join(sorted(set(repositories)))}`\n\n"
+            "## Summary\n\n"
+            "This durable entrypoint preserves the completed task's sealed evidence. "
+            "The execution report remains the detailed executor account; the validation "
+            "report is the independent disposition.\n\n"
+            "## Detailed evidence\n\n"
+            f"- Task packet source: `{packet_path.resolve()}`\n"
+            f"- Execution report source: `{report_path.resolve()}`\n"
+            f"- Validation source: `{validation_path.resolve()}`\n"
+            + (f"- Execution log source: `{log_path.resolve()}`\n" if log_path else "")
+            + "- Archived copies: `task.md`, `execution-report.md`, `validation-report.*`, "
+              "and `execution-log.*` when present.\n"
+        )
+        (task_root / "README.md").write_text(
+            f"# Task index — {task_id}\n\n"
+            "- [Canonical final report](final-report.md)\n"
+            "- [Task packet](task.md)\n"
+            "- [Execution report](execution-report.md)\n"
+            "- [Archive manifest](manifest.json)\n",
+            encoding="utf-8",
+        )
         write_json(manifest_path, manifest)
     return manifest
 

@@ -335,7 +335,28 @@ Before closing a session:
 
 ---
 
-## 11. Session Journals
+## 11. Canonical human task directory
+
+The durable archive is the one canonical human-facing directory for each
+completed task: `_internal/orchestration/repos/<repo>/tasks/<task-id>/` or
+`_internal/orchestration/cross-repo/tasks/<task-id>/`. It contains exactly one
+`README.md` task index and one `final-report.md` marked `# Canonical Final
+Report`, plus `task.md`, `manifest.json`, and detailed evidence or links.
+Buddy opens the README or final report; role-specific maker, checker, custody,
+decision, and log records remain detailed evidence, not competing outcomes.
+
+Final reports give identity/objective, repository-qualified absolute paths,
+starting/ending SHAs, disposition, change and validation summary, limitations,
+decisions, next action, and links. Worktree cleanup is prohibited until packet,
+maker result, checker result, and execution log are copied or linked and sealed
+from this directory. Existing historical inbox/outbox files are retained and
+linked, never silently moved. Cross-repository reports must name the owning
+repository with absolute paths.
+
+`tests/test_task_directory.py` enforces a final report, index links, evidence
+section, and cross-repository path qualification.
+
+## 12. Session Journals
 
 Each managed repository must declare its journal location in AGENTS.md, CONTROL.md, or a clearly identified private local supplement.
 

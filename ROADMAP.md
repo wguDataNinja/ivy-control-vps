@@ -337,7 +337,7 @@ without requiring Buddy to approve every routine step.
 
 ## §6C H4 Supervised-Cycle Pilot — STS Workbench Dirty-State Preservation
 
-**Status:** APPROVED — Buddy authorized 2026-07-29.
+**Status:** COMPLETED — H4 accepted and H4.1 local-custody pilot completed 2026-07-29.
 
 **Pilot repository:** STS Workbench (`/Users/buddy/projects/sts-workbench`)
 **Roadmap item:** `STS-V1-01` — Dirty-State Preservation and Reconciliation (per `docs/V1_FINISH_LINE_ROADMAP.md`)
@@ -348,17 +348,37 @@ without requiring Buddy to approve every routine step.
 
 **Preconditions:** STS Workbench admitted as managed repository (`repos/sts-workbench/CONTROL.md` created). ivy-control-vps baseline clean and authoritative.
 
-**After pilot:** Result report, Decision Packet (if required), and capability evidence for future STS-V1-02 through STS-V1-08 progression.
+**Outcome:** H4 accepted; H4.1 committed one accepted manifest in an isolated
+STS branch at `cd36e36`, found/fixed porcelain-output handling, and reset
+`local_commit` to false. Canonical report:
+`_internal/orchestration/repos/sts-workbench/tasks/h4-sts-h4-1-summary/final-report.md`.
 
 ---
 
 ## §6D Managed-Repository Admission: STS Workbench
 
-**Status:** IN PROGRESS — Buddy approved admission 2026-07-29. CONTROL.md creation in process.
+**Status:** ADMITTED — source-only control record established 2026-07-29.
 
 **Activities:**
-- Create `repos/sts-workbench/CONTROL.md` with standard gate model
-- Verify STS Workbench checkout state and baseline
+- `repos/sts-workbench/CONTROL.md` established; source-only and no remote.
+- STS-V1-02 remains gated by its existing Buddy decision packet.
+
+---
+
+## §6E Portfolio Harness Baseline and Alori Workbench
+
+**Status:** ACTIVE — baseline adopted 2026-07-29.
+
+The portfolio now uses the minimal shared harness in
+`docs/PORTFOLIO_ENGINEERING_HARNESS.md`: repository-local orientation and
+deterministic checks; central admission, orchestration, sealed evidence, and
+Git custody. Existing repositories retain declared artifact conventions until a
+specific migration is justified and verified.
+
+Alori is admitted source-only as the harness workbench. Its first eligible
+task is `ALORI-001`, a read-only Decision Packet that resolves replacement KB
+identity and three explicit policy decisions. No replacement KB runtime,
+legacy execution, remote publication, or autonomous scheduling is authorized.
 
 1. Reddit Ops clean publication/history strategy.
 2. Reddit Ops legacy fallback retirement (after canonicality proven).

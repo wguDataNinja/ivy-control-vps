@@ -35,12 +35,12 @@ health:
   state: unknown
 roadmap:
   gates: [1, 2, 3]
-  blockers: ["H4 supervised-cycle pilot (STS-V1-01) in progress — pending Buddy preservation decision"]
-  next_task: "Session 14: execute H4 STS-V1-01 supervised-cycle pilot on STS Workbench"
+  blockers: ["No control-plane blocker. STS-V1-02 has an external Buddy deferral decision; Alori requires repository identity/admission before delegated work."]
+  next_task: "Prepare Alori repository identity and one bounded product task, or resolve STS-V1-02 deferrals."
 continuity:
-  current_focus: "VPS engineering-workspace residency and bounded Hermes orchestration foundations."
-  recent_milestone: "Clean public VPS workspace refreshed to the approved published SHA without private material."
-  recent_reference: "docs/VPS_INVENTORY.md"
+  current_focus: "Return to product engineering with H4/H4.1 supervised-cycle and task-directory evidence available."
+  recent_milestone: "H4 STS supervised cycle accepted; H4.1 local custody completed at STS commit cd36e36; canonical task report/index adopted."
+  recent_reference: "ROADMAP.md §6C"
   long_horizon: "A trustworthy portfolio control plane that helps humans and agents operate independent repositories safely."
 hermes:
   scope: "read-only"
@@ -95,10 +95,14 @@ workflow artifact, and branch/PR authority remains a later gate.
 
 ## Current Blocker
 
-The H4 supervised-cycle pilot (STS-V1-01 — Dirty-State Preservation and Reconciliation) is in progress. Hermes is executing the first bounded supervised cycle on STS Workbench under the Alori harness framework. Completion requires Buddy preservation strategy decision after the result report.
+No control-plane implementation blocker. H4 and H4.1 are complete; their
+public status is recorded in `ROADMAP.md` §6C.
+STS-V1-02 remains externally blocked on Buddy's substantive deferral decision.
+Alori is a portfolio candidate rather than a managed repository because
+`/Users/buddy/projects/alori` has no Git root or task authority.
 
 ## Next Authorized Work
 
-1. **Immediate:** Execute STS-V1-01 dirty-state classification on STS Workbench via isolated worktree. Maker: OpenCode. Checker: Hermes.
-2. **After H4 completion:** Progression through STS-V1-02 through STS-V1-08 per `docs/V1_FINISH_LINE_ROADMAP.md` (each requires separate Buddy gate).
-3. **After STS V1 completion:** Evidence-backed capability demonstration for broader autonomous orchestration.
+1. **Alori readiness:** establish the actual Git repository/product boundary and one dependency-closed task packet; then dispatch under the proven supervised cycle.
+2. **STS:** resolve STS-V1-02 deferrals before dispatching its validation baseline.
+3. **Portfolio:** use the canonical task index for continuation; do not expand orchestration until a product task exposes a concrete gap.

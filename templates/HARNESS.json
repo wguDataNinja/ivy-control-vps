@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "repository": "<repository-slug>",
+  "purpose": "<one sentence>",
+  "authority_files": ["README.md", "AGENTS.md", "ROADMAP.md"],
+  "active_task": "<relative task packet path or null>",
+  "health_commands": ["<deterministic command>"],
+  "task_paths": {"packets": "<path>", "reports": "<path>", "journal": "<path>"},
+  "git": {"writer": "<role>", "remote_mutation": false}
+}
