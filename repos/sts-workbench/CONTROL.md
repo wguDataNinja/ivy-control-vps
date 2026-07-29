@@ -45,8 +45,8 @@ health:
   state: unknown
 roadmap:
   gates: [1]
-  blockers: ["STS-V1-01 complete — preserved at d60c3d5. Pre-existing backend Whisper failures (2) and contract-validator exit 1 remain."]
-  next_task: "STS-V1-02 — Current Validation and Compatibility Baseline"
+  blockers: ["H4.1 custody pilot in progress — bounded local-commit validation on STS Workbench. STS-V1-02 pending Buddy deferral decision."]
+  next_task: "H4.1 custody pilot: validate supervised local git commit on V1_FINISH_LINE_ROADMAP.md"
 continuity:
   current_focus: "V1 finish-line completion — STS-V1-02 validation baseline, lifecycle repair, acceptance, and release packaging."
   recent_milestone: "STS-V1-01 complete: 19 dirty paths preserved at d60c3d5. H4 supervised-cycle pilot proven (maker/checker cycle). Backend 363p/2f/1s, frontend typecheck/unit/build passing."
@@ -56,7 +56,7 @@ hermes:
   scope: "read-only"
 git_custody:
   inspect: true
-  local_commit: false
+  local_commit: true
   push_branch: false
   create_pr: false
   merge: false
@@ -142,12 +142,13 @@ evidence_basis: "docs/V1_FINISH_LINE_ROADMAP.md"
 | Read-only inspection | YES | Inspect repository, check SHA, verify cleanliness |
 | Test execution | YES | Run tests; report results |
 | Dirty-state classification | YES | STS-V1-01 pilot: classify paths, record preservation options |
+| Local commit (via custody) | YES | H4.1 custody pilot: one bounded dispatch with accepted manifest. `local_commit: true` enabled for STS. |
 | Branch creation | Requires per-repo Buddy approval | Future gated stage |
 | Pull request preparation | Requires per-repo Buddy approval | Future gated stage |
 | VPS operations | NO | Not applicable — no runtime |
 | Database operations | NO | Not applicable — no database |
 
-**Stop conditions:** Do not stage, commit, reset, stash, or clean Git state. Do not modify `v1/**`, `docs/**`, `HANDOFF.md`, or `TODO.md`. Classification is read-only.
+**Stop conditions:** Do not stage, commit (outside custody pilot), reset, stash, or clean Git state. Do not modify `v1/**`, `docs/**`, `HANDOFF.md`, or `TODO.md`. Classification is read-only. Custody pilot limited to one accepted manifest, no remote, no push, no PR, no merge.
 
 ---
 
@@ -170,8 +171,8 @@ These were not introduced by the preservation commit.
 
 ## Next Authorized Work
 
-1. **Immediate:** STS-V1-01 — Dirty-State Preservation and Reconciliation (H4 supervised-cycle pilot).
-2. **After V1-01:** STS-V1-02 — Current Validation and Compatibility Baseline (requires Buddy gate).
+1. **Immediate:** H4.1 custody pilot — one bounded local commit via supervised custody cycle (update V1_FINISH_LINE_ROADMAP.md to mark STS-V1-01 complete).
+2. **After H4.1:** STS-V1-02 — Current Validation and Compatibility Baseline (requires Buddy gate for pre-existing failure deferrals).
 3. **After baseline:** STS-V1-03 through STS-V1-08 per `docs/V1_FINISH_LINE_ROADMAP.md`.
 
 ---
