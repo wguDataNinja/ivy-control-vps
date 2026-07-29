@@ -93,7 +93,7 @@ def check_submission(state: dict[str, Any], checker: str, evidence: Any, disposi
     out = deepcopy(state); out["attempts"][-1].update({"checker": checker, "result": disposition, "revision": revision or []})
     if disposition == "precise_revision":
         prior = [a for a in out["attempts"] if a.get("result") == "precise_revision" and a.get("revision") == (revision or [])]
-        if len(prior) >= out["budget"]["max_identical_failures"]: return transition(out, "stop_escalate", "repeated identical checker failure", revision=revision or [])
+        if len(prior) > out["budget"]["max_identical_failures"]: return transition(out, "stop_escalate", "repeated identical checker failure", revision=revision or [])
     return transition(out, disposition, "independent checker disposition", checker=checker, revision=revision or [])
 
 def validate_decision_packet(packet: dict[str, Any]) -> list[str]:

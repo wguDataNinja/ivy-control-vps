@@ -1,6 +1,8 @@
+import subprocess
+
 from tools.hermes_orchestrator.supervised_cycle import (
     check_submission, claim_attempt, establish_baseline, new_cycle, reconcile,
-    seal_submission, validate_decision_packet,
+    provision_worktree, seal_submission, validate_decision_packet,
 )
 
 AUTHORITY = {"permitted": ["bounded docs"]}
@@ -36,7 +38,7 @@ def test_maker_cannot_check_and_stale_evidence_stops():
 def test_checker_revision_retry_and_budget_stop():
     evidence = {"paths": ["docs/a.md"], "evidence": {"ok": True}}
     revision = check_submission(sealed(), "checker", evidence, "precise_revision", ["add a test"])
-    assert revision["state"] == "stop_escalate"  # max identical failure is one
+    assert revision["state"] == "precise_revision"
     exhausted = claim_attempt(establish_baseline(new_cycle("run-2", "abc", ["docs"], ["secrets"], AUTHORITY, ACCEPTANCE, {"max_attempts": 1}), "repo", "abc", [], {}), "maker", CONTRACT)
     retry_state = __import__("tools.hermes_orchestrator.supervised_cycle", fromlist=["transition"]).transition(exhausted, "precise_revision", "fixture")
     assert claim_attempt(retry_state, "maker", CONTRACT)["state"] == "stop_escalate"
@@ -47,3 +49,20 @@ def test_invalid_decision_and_restart_reconciliation():
     passed = check_submission(sealed(), "checker", evidence, "pass")
     assert reconcile(passed, False, False, "abc")["state"] == "reconcile_clean_state"
     assert reconcile(passed, True, False, "abc")["state"] == "stop_escalate"
+
+def test_worktree_lease_and_provisioning_are_isolated(tmp_path):
+    repo = tmp_path / "repo"; repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, stdout=subprocess.PIPE)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+    (repo / "README.md").write_text("x", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, stdout=subprocess.PIPE)
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True, text=True, stdout=subprocess.PIPE).stdout.strip()
+    state = new_cycle("run-worktree", head, ["docs"], [], AUTHORITY, ACCEPTANCE, {"max_attempts": 1})
+    state = establish_baseline(state, str(repo), head, [], {})
+    state = claim_attempt(state, "maker", {**CONTRACT, "base_sha": head, "denied_paths": []})
+    result = provision_worktree(state, repo, tmp_path / "worktree", "ignored", tmp_path / "leases" / "run-worktree")
+    assert result["state"] == "dispatch_maker"
+    assert (tmp_path / "worktree").is_dir()
+    assert provision_worktree(state, repo, tmp_path / "worktree", "ignored", tmp_path / "leases" / "run-worktree")["state"] == "stop_escalate"
