@@ -46,16 +46,27 @@ harness framework.
 - [x] Review evidence against task packet (HERMES_ACCEPT)
 - [x] Buddy approved preservation commit at `d60c3d5`
 
-## Phase D — STS-V1-02 Eligibility (PENDING BUDDY DECISION)
+## Phase D — H4.1 Custody Pilot (DONE)
+
+- [x] Integrate H4.1 branch into main (merge commit `412082b`)
+- [x] Enable `local_commit: true` in STS CONTROL.md
+- [x] Execute full supervised cycle + custody commit on V1_FINISH_LINE_ROADMAP.md
+- [x] CUSTODY_COMMITTED at `cd36e36` on branch `custody/h4-1-roadmap-update`
+- [x] Bug found and fixed in `_git()` stdout stripping
+- [x] `local_commit` reset to `false` (bounded dispatch complete)
+
+## Phase E — STS-V1-02 (PENDING BUDDY DECISION)
 
 STS-V1-02 task packet is prepared at `_internal/inbox/runs/session-14-sts-h4/sts-v1-02-validation-baseline.md`.
 
-**Requires Buddy decision on the following pre-existing failures:**
+**H4.1 custody pilot is complete and does NOT block STS-V1-02.** STS-V1-02 is a read-only classification task (no commit needed). The two are independent.
+
+**Requires Buddy decision on the following pre-existing conditions:**
 
 1. Whisper-adapter test failures (2) — environment-dependent; recommend defer
 2. Contract validator exit 1 — known behavior; recommend defer
 3. Palworld KB commit drift — locked `f94a618` vs current `9debe47`; expected
-4. Contract registry not found at expected path
+4. Contract registry not found at `v1/contracts/contract-registry.json`
 
 See Decision Packet at: `_internal/outbox/runs/session-14-sts-h4/sts-v1-02-eligibility-decision-packet.md`
 
